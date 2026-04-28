@@ -11,12 +11,13 @@ class SuperAdminSeeder extends Seeder
 {
     public function run(): void
     {
-        // pastikan role ada
+        // 1. Pastikan role super_admin ada
         $role = Role::firstOrCreate([
-            'name' => 'super_admin'
+            'name' => 'super_admin',
+            'guard_name' => 'web',
         ]);
 
-        // buat user
+        // 2. Buat / ambil user (biar gak duplicate)
         $user = User::firstOrCreate(
             ['email' => 'superadmin@gmail.com'],
             [
@@ -25,7 +26,7 @@ class SuperAdminSeeder extends Seeder
             ]
         );
 
-        // assign role
-        $user->assignRole($role);
+        // 3. Assign role (sync biar clean)
+        $user->syncRoles([$role]);
     }
 }
