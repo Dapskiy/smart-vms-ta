@@ -7,7 +7,7 @@ use BezhanSalleh\FilamentShield\FilamentShieldPlugin;
 use Filament\Http\Middleware\AuthenticateSession;
 use Filament\Http\Middleware\DisableBladeIconComponents;
 use Filament\Http\Middleware\DispatchServingFilamentEvent;
-use Filament\Pages\Dashboard;
+use App\Filament\Pages\Dashboard;
 use Filament\Panel;
 use Filament\PanelProvider;
 use Filament\Support\Colors\Color;
@@ -30,18 +30,29 @@ class AdminPanelProvider extends PanelProvider
             ->path('admin')
             ->login()
             ->colors([
-                'primary' => Color::Amber,
+                'primary' => '#1a56db',
             ])
+            ->font('DM Sans')
+            ->brandName('VISITA.')
+            ->renderHook(
+                'panels::head.end',
+                fn (): string => \Illuminate\Support\Facades\Blade::render('
+                    <link rel="preconnect" href="https://fonts.googleapis.com">
+                    <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+                    <style>
+                        h1, h2, h3, h4, h5, h6, .fi-logo { font-family: "Syne", sans-serif !important; letter-spacing: -0.5px; }
+                        .fi-logo { font-size: 22px !important; font-weight: 800 !important; color: #0d0d0d !important; }
+                        .dark .fi-logo { color: #ffffff !important; }
+                    </style>
+                ')
+            )
             ->discoverResources(in: app_path('Filament/Resources'), for: 'App\Filament\Resources')
             ->discoverPages(in: app_path('Filament/Pages'), for: 'App\Filament\Pages')
             ->pages([
                 Dashboard::class,
             ])
             ->discoverWidgets(in: app_path('Filament/Widgets'), for: 'App\Filament\Widgets')
-            ->widgets([
-                AccountWidget::class,
-                FilamentInfoWidget::class,
-            ])
+            ->widgets([])
             ->middleware([
                 EncryptCookies::class,
                 AddQueuedCookiesToResponse::class,
