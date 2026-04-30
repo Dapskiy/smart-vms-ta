@@ -13,19 +13,27 @@ class ListAppointments extends ListRecords
     protected function getHeaderActions(): array
     {
         return [
-            \Filament\Actions\Action::make('create_appointment')
+            CreateAction::make('create_appointment')
                 ->label('New Appointment')
+                ->modalHeading('Create New Appointment')
                 ->icon('heroicon-o-calendar-days')
                 ->color('success')
-                ->url(fn (): string => AppointmentResource::getUrl('create', ['type' => 'appointment']))
-                ->visible(fn () => auth()->user()->can('create appointment')),
+                ->visible(fn () => auth()->user()->can('create appointment'))
+                ->mutateFormDataUsing(function (array $data): array {
+                    $data['type'] = 'appointment';
+                    return $data;
+                }),
 
-            \Filament\Actions\Action::make('create_walkin')
+            CreateAction::make('create_walkin')
                 ->label('New Walk-in')
+                ->modalHeading('Create Walk-in Registration')
                 ->icon('heroicon-o-user-plus')
                 ->color('warning')
-                ->url(fn (): string => AppointmentResource::getUrl('create', ['type' => 'walk-in']))
-                ->visible(fn () => auth()->user()->can('create walk-in')),
+                ->visible(fn () => auth()->user()->can('create walk-in'))
+                ->mutateFormDataUsing(function (array $data): array {
+                    $data['type'] = 'walk-in';
+                    return $data;
+                }),
         ];
     }
 }

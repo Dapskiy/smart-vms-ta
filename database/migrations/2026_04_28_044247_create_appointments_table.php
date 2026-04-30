@@ -19,6 +19,8 @@ return new class extends Migration
             $table->string('purpose');
             $table->date('visit_date');
             $table->time('visit_time');
+            $table->integer('pax')->default(1);
+            $table->string('vehicle_number')->nullable();
             $table->string('token')->unique(); // Token unik untuk link self-service
             $table->enum('status', ['scheduled', 'checked-in', 'completed', 'cancelled'])->default('scheduled');
             $table->timestamps();
