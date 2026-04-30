@@ -10,6 +10,7 @@ use Filament\Forms\Components\CheckboxList;
 use Filament\Forms\Components\Hidden;
 use Filament\Schemas\Components\Section;
 use Filament\Schemas\Components\Grid;
+use Filament\Schemas\Components\Text;
 use Filament\Resources\Resource;
 use Filament\Schemas\Schema;
 use Filament\Actions\EditAction;
@@ -53,36 +54,44 @@ class RoleResource extends Resource
                             if ($menu->permissions->isEmpty()) continue;
 
                             $sections[] = Section::make($menu->name)
-                                ->compact()
+                                ->contained(false) // Menghapus kotak/tabel container
                                 ->schema([
                                     CheckboxList::make('permissions_menu_' . $menu->id)
-                                        ->options($menu->permissions->pluck('name', 'id'))
-                                        ->getOptionLabelFromRecordUsing(function (Permission $record) use ($menu) {
-                                            $label = $record->name;
-                                            $label = str_ireplace(['[' . $menu->name . '] ', $menu->name . ' ', ':' . $menu->name], '', $label);
-                                            return ucwords(trim($label));
+                                        ->options(function () use ($menu) {
+                                            return $menu->permissions->mapWithKeys(function (Permission $record) {
+                                                // Nama fitur (spasi) nama menu, huruf kecil semua
+                                                $label = strtolower(str_replace(':', ' ', $record->name));
+                                                return [$record->id => trim($label)];
+                                            });
                                         })
                                         ->columns(3)
-                                        ->label('')
+                                        ->hiddenLabel()
                                         ->gridDirection('row')
                                         ->afterStateHydrated(fn ($component, $record) => $record ? $component->state($record->permissions->where('menu_id', $menu->id)->pluck('id')->toArray()) : null)
                                         ->dehydrated(false)
-                                ]);
+                                ])
+                                ->columnSpanFull();
                         }
 
                         // Permissions tanpa menu
                         $generalPermissions = \App\Models\Permission::whereNull('menu_id')->get();
                         if ($generalPermissions->isNotEmpty()) {
                             $sections[] = Section::make('Lainnya')
-                                ->compact()
+                                ->contained(false)
                                 ->schema([
                                     CheckboxList::make('permissions_general')
-                                        ->options($generalPermissions->pluck('name', 'id'))
+                                        ->options(function () use ($generalPermissions) {
+                                            return $generalPermissions->mapWithKeys(function (Permission $record) {
+                                                $label = strtolower(str_replace(':', ' ', $record->name));
+                                                return [$record->id => trim($label)];
+                                            });
+                                        })
                                         ->columns(3)
-                                        ->label('')
+                                        ->hiddenLabel()
                                         ->afterStateHydrated(fn ($component, $record) => $record ? $component->state($record->permissions->whereNull('menu_id')->pluck('id')->toArray()) : null)
                                         ->dehydrated(false)
-                                ]);
+                                ])
+                                ->columnSpanFull();
                         }
 
                         // Hidden field to handle syncing
