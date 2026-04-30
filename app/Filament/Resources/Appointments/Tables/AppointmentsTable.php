@@ -2,11 +2,16 @@
 
 namespace App\Filament\Resources\Appointments\Tables;
 
+use App\Models\Appointment;
+use Filament\Actions\Action;
 use Filament\Actions\BulkActionGroup;
+use Filament\Actions\DeleteAction;
 use Filament\Actions\DeleteBulkAction;
 use Filament\Actions\EditAction;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Table;
+
+use Filament\Notifications\Notification;
 
 class AppointmentsTable
 {
@@ -15,19 +20,19 @@ class AppointmentsTable
         return $table
             ->columns([
                 TextColumn::make('visitor.name')
+                    ->label('Nama Tamu')
+                    ->placeholder('Belum Registrasi')
                     ->searchable(),
                 TextColumn::make('pic.name')
-                    ->searchable(),
-                TextColumn::make('type')
+                    ->label('PIC')
                     ->searchable(),
                 TextColumn::make('visit_date')
-                    ->date()
+                    ->label('Tanggal')
+                    ->date('d/m/Y')
                     ->sortable(),
-                TextColumn::make('expected_arrival_time')
-                    ->dateTime()
-                    ->sortable(),
-                TextColumn::make('expected_departure_time')
-                    ->dateTime()
+                TextColumn::make('visit_time')
+                    ->label('Jam')
+                    ->time('H:i')
                     ->sortable(),
                 TextColumn::make('pax')
                     ->numeric()
@@ -51,7 +56,28 @@ class AppointmentsTable
                 //
             ])
             ->recordActions([
-                EditAction::make(),
+                Action::make('copy_link')
+                    ->label('')
+                    ->icon('heroicon-o-clipboard-document-check')
+                    ->color('success')
+                    ->tooltip('Copy Invitation Link')
+                    ->action(function (Appointment $record, $livewire) {
+                        $url = route('guest.invitation', ['token' => $record->token]);
+                        $livewire->dispatch('copy-to-clipboard', text: $url);
+                        
+                        Notification::make()
+                            ->success()
+                            ->title('Link Berhasil Disalin')
+                            ->send();
+                    }),
+                EditAction::make()
+                    ->label('')
+                    ->icon('heroicon-o-pencil')
+                    ->tooltip('Edit'),
+                DeleteAction::make()
+                    ->label('')
+                    ->icon('heroicon-o-trash')
+                    ->tooltip('Delete'),
             ])
             ->toolbarActions([
                 BulkActionGroup::make([

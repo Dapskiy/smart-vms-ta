@@ -16,7 +16,8 @@ return new class extends Migration
             $table->foreignId('pic_id')->constrained('users')->cascadeOnDelete();
             $table->foreignId('visitor_id')->nullable()->constrained('visitors')->cascadeOnDelete(); // Nullable karena diisi nanti saat tamu self-service
             $table->string('purpose');
-            $table->dateTime('visit_date');
+            $table->date('visit_date');
+            $table->time('visit_time');
             $table->string('token')->unique(); // Token unik untuk link self-service
             $table->enum('status', ['scheduled', 'checked-in', 'completed', 'cancelled'])->default('scheduled');
             $table->timestamps();
