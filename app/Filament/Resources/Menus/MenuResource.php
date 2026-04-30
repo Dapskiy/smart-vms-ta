@@ -5,6 +5,7 @@ namespace App\Filament\Resources\Menus;
 use App\Filament\Resources\Menus\Pages\ManageMenus;
 use App\Models\Menu;
 use BackedEnum;
+use UnitEnum; // <--- 1. Tambahkan import UnitEnum di sini
 use Filament\Actions\BulkActionGroup;
 use Filament\Actions\DeleteAction;
 use Filament\Actions\DeleteBulkAction;
@@ -16,7 +17,9 @@ use Filament\Tables\Table;
 
 class MenuResource extends Resource
 {
-    protected static ?string $navigationGroup = 'Konfigurasi';
+    // <--- 2. Sesuaikan tipe data pada baris ini
+    protected static UnitEnum|string|null $navigationGroup = 'Konfigurasi';
+
     protected static ?int $navigationSort = 1;
 
     protected static ?string $model = Menu::class;

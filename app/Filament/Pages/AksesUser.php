@@ -2,11 +2,13 @@
 
 namespace App\Filament\Pages;
 
+use UnitEnum;
 use Filament\Pages\Page;
 
 class AksesUser extends Page
 {
-    protected static ?string $navigationGroup = 'Konfigurasi';
+    // Mengubah tipe data agar sesuai dengan aturan Filament
+    protected static UnitEnum|string|null $navigationGroup = 'Konfigurasi';
     protected static ?int $navigationSort = 5;
 
     protected string $view = 'filament.pages.akses-user';

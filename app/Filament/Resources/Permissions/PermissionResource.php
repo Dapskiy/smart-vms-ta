@@ -5,6 +5,7 @@ namespace App\Filament\Resources\Permissions;
 use App\Filament\Resources\Permissions\Pages\ManagePermissions;
 use App\Models\Permission;
 use BackedEnum;
+use UnitEnum;
 use Filament\Actions\BulkActionGroup;
 use Filament\Actions\DeleteAction;
 use Filament\Actions\DeleteBulkAction;
@@ -16,7 +17,7 @@ use Filament\Tables\Table;
 
 class PermissionResource extends Resource
 {
-    protected static ?string $navigationGroup = 'Konfigurasi';
+    protected static UnitEnum|string|null $navigationGroup = 'Konfigurasi';
     protected static ?int $navigationSort = 3;
 
     protected static ?string $model = Permission::class;
