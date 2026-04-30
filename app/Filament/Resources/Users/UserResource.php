@@ -3,50 +3,60 @@
 namespace App\Filament\Resources\Users;
 
 use App\Filament\Resources\Users\Pages\ManageUsers;
+use App\Filament\Resources\Users\Schemas\UserForm;
 use App\Models\User;
-use BackedEnum;
-use UnitEnum; // <--- Menambahkan import UnitEnum
-use Filament\Actions\BulkActionGroup;
-use Filament\Actions\DeleteAction;
-use Filament\Actions\DeleteBulkAction;
-use Filament\Actions\EditAction;
 use Filament\Resources\Resource;
 use Filament\Schemas\Schema;
-use Filament\Support\Icons\Heroicon;
+use Filament\Actions\EditAction;
+use Filament\Actions\DeleteAction;
+use Filament\Actions\BulkActionGroup;
+use Filament\Actions\DeleteBulkAction;
 use Filament\Tables\Table;
+use Filament\Tables\Columns\TextColumn;
 
 class UserResource extends Resource
 {
-    // <--- Mengubah tipe data menjadi UnitEnum|string|null
-    protected static UnitEnum|string|null $navigationGroup = 'Konfigurasi';
+    protected static \UnitEnum|string|null $navigationGroup = 'Konfigurasi';
     protected static ?int $navigationSort = 6;
-
     protected static ?string $model = User::class;
-
-    protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedRectangleStack;
+    protected static \BackedEnum|string|null $navigationIcon = 'heroicon-o-users';
+    protected static ?string $slug = 'users';
 
     public static function form(Schema $schema): Schema
     {
-        return $schema
-            ->components([
-                //
-            ]);
+        return $schema->components(UserForm::getSchema());
     }
 
     public static function table(Table $table): Table
     {
         return $table
             ->columns([
-                //
+                TextColumn::make('name')
+                    ->label('Nama')
+                    ->searchable()
+                    ->sortable(),
+                TextColumn::make('email')
+                    ->label('Email')
+                    ->searchable()
+                    ->sortable(),
+                TextColumn::make('roles.name')
+                    ->label('Role')
+                    ->badge()
+                    ->color('primary'),
+                TextColumn::make('created_at')
+                    ->label('Dibuat Pada')
+                    ->dateTime()
+                    ->sortable()
+                    ->toggleable(isToggledHiddenByDefault: true),
             ])
             ->filters([
                 //
             ])
-            ->recordActions([
+            ->actions([
                 EditAction::make(),
                 DeleteAction::make(),
             ])
-            ->toolbarActions([
+            ->bulkActions([
                 BulkActionGroup::make([
                     DeleteBulkAction::make(),
                 ]),

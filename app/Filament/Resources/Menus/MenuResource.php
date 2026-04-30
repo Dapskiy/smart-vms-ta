@@ -4,33 +4,47 @@ namespace App\Filament\Resources\Menus;
 
 use App\Filament\Resources\Menus\Pages\ManageMenus;
 use App\Models\Menu;
-use BackedEnum;
-use UnitEnum; // <--- 1. Tambahkan import UnitEnum di sini
-use Filament\Actions\BulkActionGroup;
-use Filament\Actions\DeleteAction;
-use Filament\Actions\DeleteBulkAction;
-use Filament\Actions\EditAction;
+use Filament\Forms\Components\TextInput;
+use Filament\Forms\Components\Toggle;
+use Filament\Forms\Components\Section;
 use Filament\Resources\Resource;
 use Filament\Schemas\Schema;
-use Filament\Support\Icons\Heroicon;
+use Filament\Actions\EditAction;
+use Filament\Actions\DeleteAction;
+use Filament\Actions\BulkActionGroup;
+use Filament\Actions\DeleteBulkAction;
 use Filament\Tables\Table;
+use Filament\Tables\Columns\TextColumn;
+use Filament\Tables\Columns\IconColumn;
+use Filament\Tables\Columns\ToggleColumn;
+use Illuminate\Support\Str;
 
 class MenuResource extends Resource
 {
-    // <--- 2. Sesuaikan tipe data pada baris ini
-    protected static UnitEnum|string|null $navigationGroup = 'Konfigurasi';
-
+    protected static \UnitEnum|string|null $navigationGroup = 'Konfigurasi';
     protected static ?int $navigationSort = 1;
-
     protected static ?string $model = Menu::class;
-
-    protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedRectangleStack;
+    protected static \BackedEnum|string|null $navigationIcon = 'heroicon-o-rectangle-stack';
+    protected static ?string $slug = 'menus';
 
     public static function form(Schema $schema): Schema
     {
         return $schema
             ->components([
-                //
+                TextInput::make('name')
+                    ->required()
+                    ->live(onBlur: true)
+                    ->afterStateUpdated(fn (string $state, $set) => $set('slug', Str::slug($state))),
+                TextInput::make('slug')
+                    ->required()
+                    ->unique(ignoreRecord: true),
+                TextInput::make('icon')
+                    ->default('heroicon-o-document-text'),
+                TextInput::make('sort_order')
+                    ->numeric()
+                    ->default(0),
+                Toggle::make('is_active')
+                    ->default(true),
             ]);
     }
 
@@ -38,16 +52,23 @@ class MenuResource extends Resource
     {
         return $table
             ->columns([
-                //
+                TextColumn::make('name')
+                    ->searchable()
+                    ->sortable(),
+                TextColumn::make('slug'),
+                TextColumn::make('icon'),
+                ToggleColumn::make('is_active'),
+                TextColumn::make('sort_order')
+                    ->sortable(),
             ])
             ->filters([
                 //
             ])
-            ->recordActions([
+            ->actions([
                 EditAction::make(),
                 DeleteAction::make(),
             ])
-            ->toolbarActions([
+            ->bulkActions([
                 BulkActionGroup::make([
                     DeleteBulkAction::make(),
                 ]),

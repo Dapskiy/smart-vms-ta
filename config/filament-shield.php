@@ -1,6 +1,7 @@
 <?php
 
 declare(strict_types=1);
+
 use BezhanSalleh\FilamentShield\Resources\Roles\RoleResource;
 use Filament\Pages\Dashboard;
 use Filament\Widgets\AccountWidget;
@@ -20,13 +21,13 @@ return [
     */
 
     'shield_resource' => [
-        'slug' => 'roles',
+        'slug' => 'shield-roles',
         'show_model_path' => true,
         'cluster' => null,
         'tabs' => [
-            'pages' => true,
-            'widgets' => true,
-            'resources' => true,
+            'pages' => false,
+            'widgets' => false,
+            'resources' => false,
             'custom_permissions' => false,
         ],
     ],
@@ -126,8 +127,18 @@ return [
         'merge' => true,
         'generate' => true,
         'methods' => [
-            'viewAny', 'view', 'create', 'update', 'delete', 'deleteAny', 'restore',
-            'forceDelete', 'forceDeleteAny', 'restoreAny', 'replicate', 'reorder',
+            'viewAny',
+            'view',
+            'create',
+            'update',
+            'delete',
+            'deleteAny',
+            'restore',
+            'forceDelete',
+            'forceDeleteAny',
+            'restoreAny',
+            'replicate',
+            'reorder',
         ],
         'single_parameter_methods' => [
             'viewAny',

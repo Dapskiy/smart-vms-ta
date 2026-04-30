@@ -4,6 +4,7 @@ namespace App\Filament\Widgets;
 
 use Filament\Tables;
 use Filament\Tables\Table;
+use Filament\Actions\Action;
 use Filament\Widgets\TableWidget as BaseWidget;
 use App\Models\Appointment;
 
@@ -51,7 +52,7 @@ class LatestGuestsTable extends BaseWidget
                     }),
             ])
             ->actions([
-                Tables\Actions\Action::make('Detail')
+                Action::make('Detail')
                     ->url(fn (Appointment $record): string => '#')
                     ->button()
                     ->outlined()

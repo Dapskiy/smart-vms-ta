@@ -3,7 +3,7 @@
 namespace App\Providers\Filament;
 
 use Filament\Http\Middleware\Authenticate;
-use BezhanSalleh\FilamentShield\FilamentShieldPlugin;
+// use BezhanSalleh\FilamentShield\FilamentShieldPlugin;
 use Filament\Http\Middleware\AuthenticateSession;
 use Filament\Http\Middleware\DisableBladeIconComponents;
 use Filament\Http\Middleware\DispatchServingFilamentEvent;
@@ -36,7 +36,7 @@ class AdminPanelProvider extends PanelProvider
             ->brandName('VISITA.')
             ->renderHook(
                 'panels::head.end',
-                fn (): string => \Illuminate\Support\Facades\Blade::render('
+                fn(): string => \Illuminate\Support\Facades\Blade::render('
                     <link rel="preconnect" href="https://fonts.googleapis.com">
                     <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;500;600;700;800&display=swap" rel="stylesheet">
                     <style>
@@ -65,7 +65,7 @@ class AdminPanelProvider extends PanelProvider
                 DispatchServingFilamentEvent::class,
             ])
             ->plugins([
-                FilamentShieldPlugin::make(),
+                // FilamentShieldPlugin::make() - disabled, using custom role resource instead
             ])
             ->authMiddleware([
                 Authenticate::class,
