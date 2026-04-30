@@ -15,6 +15,7 @@ return new class extends Migration
             $table->id();
             $table->foreignId('pic_id')->constrained('users')->cascadeOnDelete();
             $table->foreignId('visitor_id')->nullable()->constrained('visitors')->cascadeOnDelete(); // Nullable karena diisi nanti saat tamu self-service
+            $table->enum('type', ['appointment', 'walk-in'])->default('appointment');
             $table->string('purpose');
             $table->date('visit_date');
             $table->time('visit_time');

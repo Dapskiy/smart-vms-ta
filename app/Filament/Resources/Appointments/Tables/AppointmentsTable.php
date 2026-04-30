@@ -26,6 +26,15 @@ class AppointmentsTable
                 TextColumn::make('pic.name')
                     ->label('PIC')
                     ->searchable(),
+                TextColumn::make('type')
+                    ->label('Tipe')
+                    ->badge()
+                    ->color(fn (string $state): string => match ($state) {
+                        'appointment' => 'success',
+                        'walk-in' => 'warning',
+                        default => 'gray',
+                    })
+                    ->searchable(),
                 TextColumn::make('visit_date')
                     ->label('Tanggal')
                     ->date('d/m/Y')

@@ -18,8 +18,26 @@ class AppointmentForm
     {
         return $schema
             ->components([
-                // 1. Sembunyikan Visitor (Karena tamu belum isi form self-service)
-                Hidden::make('visitor_id'),
+                // 1. Visitor (Muncul hanya jika Walk-in, dan bisa buat baru di tempat)
+                Select::make('visitor_id')
+                    ->label('Tamu')
+                    ->relationship('visitor', 'name')
+                    ->getOptionLabelFromRecordUsing(fn ($record) => "{$record->name} ({$record->company})")
+                    ->searchable(['name', 'company'])
+                    ->preload()
+                    ->createOptionForm([
+                        TextInput::make('name')
+                            ->label('Nama Lengkap')
+                            ->required(),
+                        TextInput::make('company')
+                            ->label('Instansi / Perusahaan')
+                            ->required(),
+                        TextInput::make('phone')
+                            ->label('No. Telepon / WA')
+                            ->required(),
+                    ])
+                    ->visible(fn ($get) => $get('type') === 'walk-in' || request()->query('type') === 'walk-in')
+                    ->required(fn ($get) => $get('type') === 'walk-in' || request()->query('type') === 'walk-in'),
 
                 // 2. Otomatisasi PIC (Set default ke user yang sedang login)
                 Select::make('pic_id')
@@ -27,9 +45,8 @@ class AppointmentForm
                     ->default(Auth::id())
                     ->required(),
 
-                TextInput::make('type')
-                    ->required()
-                    ->default('appointment'),
+                Hidden::make('type')
+                    ->default('walk-in'),
 
                 Textarea::make('purpose')
                     ->required()

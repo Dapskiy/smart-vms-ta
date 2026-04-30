@@ -41,9 +41,10 @@ class GuestRegistrationForm extends Component
             'phone' => $this->phone,
         ]);
 
-        // 3. Update appointment (sambungkan dengan visitor_id)
+        // 3. Update appointment (sambungkan dengan visitor_id dan set tipe ke appointment)
         $this->appointment->update([
             'visitor_id' => $visitor->id,
+            'type' => 'appointment',
             // Status tetap 'scheduled', check-in dilakukan oleh satpam
         ]);
 
