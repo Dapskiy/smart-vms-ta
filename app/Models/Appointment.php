@@ -13,6 +13,11 @@ class Appointment extends Model
 
     protected $guarded = ['id'];
 
+    // Jaring pengaman: Paksa status default menjadi 'pending' jika kosong atau salah
+    protected $attributes = [
+        'status' => 'pending',
+    ];
+
     // Otomatis generate token saat PIC membuat appointment baru
     protected static function boot()
     {

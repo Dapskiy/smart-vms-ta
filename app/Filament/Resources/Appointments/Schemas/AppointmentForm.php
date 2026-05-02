@@ -26,7 +26,7 @@ class AppointmentForm
                 Select::make('visitor_id')
                     ->label('Tamu')
                     ->relationship('visitor', 'name')
-                    ->getOptionLabelFromRecordUsing(fn ($record) => "{$record->name} ({$record->company})")
+                    ->getOptionLabelFromRecordUsing(fn($record) => "{$record->name} ({$record->company})")
                     ->searchable(['name', 'company'])
                     ->preload()
                     ->createOptionForm([
@@ -40,8 +40,8 @@ class AppointmentForm
                             ->label('No. Telepon / WA')
                             ->required(),
                     ])
-                    ->visible(fn ($get) => $get('type') === 'walk-in' || request()->query('type') === 'walk-in')
-                    ->required(fn ($get) => $get('type') === 'walk-in' || request()->query('type') === 'walk-in'),
+                    ->visible(fn($get) => $get('type') === 'walk-in' || request()->query('type') === 'walk-in')
+                    ->required(fn($get) => $get('type') === 'walk-in' || request()->query('type') === 'walk-in'),
 
                 // 2. Otomatisasi PIC (Set default ke user yang sedang login)
                 Select::make('pic_id')
@@ -113,39 +113,39 @@ class AppointmentForm
 
                 // Vehicle Number split into 3 columns - Unified Joined Look
                 Group::make([
-                        TextInput::make('v_prefix')
-                            ->label('Nopol Kendaraan')
-                            ->placeholder('B')
-                            ->maxLength(2)
-                            ->extraInputAttributes(['style' => 'text-align: center; border-right: 0; border-top-right-radius: 0; border-bottom-right-radius: 0;'])
-                            ->formatStateUsing(fn ($record) => $record ? explode(' ', $record->vehicle_number)[0] ?? '' : ''),
-                        
-                        TextInput::make('v_number')
-                            ->hiddenLabel()
-                            ->placeholder('1234')
-                            ->maxLength(4)
-                            ->extraInputAttributes(['style' => 'text-align: center; border-left: 0; border-right: 0; border-radius: 0;'])
-                            ->formatStateUsing(fn ($record) => $record ? explode(' ', $record->vehicle_number)[1] ?? '' : ''),
-                        
-                        TextInput::make('v_suffix')
-                            ->hiddenLabel()
-                            ->placeholder('XYZ')
-                            ->maxLength(3)
-                            ->extraInputAttributes(['style' => 'text-align: center; border-left: 0; border-top-left-radius: 0; border-bottom-left-radius: 0;'])
-                            ->formatStateUsing(fn ($record) => $record ? explode(' ', $record->vehicle_number)[2] ?? '' : ''),
-                    ])
+                    TextInput::make('v_prefix')
+                        ->label('Nopol Kendaraan')
+                        ->placeholder('B')
+                        ->maxLength(2)
+                        ->extraInputAttributes(['style' => 'text-align: center; border-right: 0; border-top-right-radius: 0; border-bottom-right-radius: 0;'])
+                        ->formatStateUsing(fn($record) => $record ? explode(' ', $record->vehicle_number)[0] ?? '' : ''),
+
+                    TextInput::make('v_number')
+                        ->hiddenLabel()
+                        ->placeholder('1234')
+                        ->maxLength(4)
+                        ->extraInputAttributes(['style' => 'text-align: center; border-left: 0; border-right: 0; border-radius: 0;'])
+                        ->formatStateUsing(fn($record) => $record ? explode(' ', $record->vehicle_number)[1] ?? '' : ''),
+
+                    TextInput::make('v_suffix')
+                        ->hiddenLabel()
+                        ->placeholder('XYZ')
+                        ->maxLength(3)
+                        ->extraInputAttributes(['style' => 'text-align: center; border-left: 0; border-top-left-radius: 0; border-bottom-left-radius: 0;'])
+                        ->formatStateUsing(fn($record) => $record ? explode(' ', $record->vehicle_number)[2] ?? '' : ''),
+                ])
                     ->columns(3)
                     ->columnSpanFull()
                     ->extraAttributes(['class' => 'nopol-grid', 'style' => 'align-items: end;']),
 
                 Hidden::make('vehicle_number')
                     ->dehydrated(true)
-                    ->dehydrateStateUsing(fn ($get) => preg_replace('/\s+/', ' ', trim("{$get('v_prefix')} {$get('v_number')} {$get('v_suffix')}"))),
+                    ->dehydrateStateUsing(fn($get) => preg_replace('/\s+/', ' ', trim("{$get('v_prefix')} {$get('v_number')} {$get('v_suffix')}"))),
 
                 // 3. Sembunyikan Token & Status (Di-handle otomatis)
                 Hidden::make('token'),
                 Hidden::make('status')
-                    ->default('scheduled'),
+                    ->default('pending'), // <--- SUDAH SAYA UBAH MENJADI PENDING
             ]);
     }
 }

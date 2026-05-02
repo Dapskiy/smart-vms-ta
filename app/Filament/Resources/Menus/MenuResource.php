@@ -72,7 +72,7 @@ class MenuResource extends Resource
                 BulkActionGroup::make([
                     DeleteBulkAction::make(),
                 ]),
-            ]);
+            ]); 
     }
 
     public static function getPages(): array
