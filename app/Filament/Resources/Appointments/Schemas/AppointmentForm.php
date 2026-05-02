@@ -15,6 +15,7 @@ use Filament\Forms\Components\Placeholder;
 use Filament\Schemas\Schema;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\HtmlString;
+use Filament\Forms\Components\Repeater;
 
 class AppointmentForm
 {
@@ -22,13 +23,14 @@ class AppointmentForm
     {
         return $schema
             ->components([
-                // 1. Visitor (Muncul hanya jika Walk-in, dan bisa buat baru di tempat)
+                // 1. Visitor Utama (Ketua Rombongan)
                 Select::make('visitor_id')
-                    ->label('Tamu')
+                    ->label('Tamu (Ketua Rombongan)')
                     ->relationship('visitor', 'name')
                     ->getOptionLabelFromRecordUsing(fn($record) => "{$record->name} ({$record->company})")
                     ->searchable(['name', 'company'])
                     ->preload()
+                    ->required()
                     ->createOptionForm([
                         TextInput::make('name')
                             ->label('Nama Lengkap')
@@ -39,18 +41,30 @@ class AppointmentForm
                         TextInput::make('phone')
                             ->label('No. Telepon / WA')
                             ->required(),
-                    ])
-                    ->visible(fn($get) => $get('type') === 'walk-in' || request()->query('type') === 'walk-in')
-                    ->required(fn($get) => $get('type') === 'walk-in' || request()->query('type') === 'walk-in'),
+                    ]),
 
-                // 2. Otomatisasi PIC (Set default ke user yang sedang login)
+                // 2. Repeater untuk Anggota Rombongan (JSON Array)
+                Repeater::make('companions')
+                    ->label('Anggota Rombongan Lainnya (Opsional)')
+                    ->schema([
+                        TextInput::make('name')
+                            ->hiddenLabel()
+                            ->placeholder('Masukkan nama anggota rombongan')
+                            ->required(),
+                    ])
+                    ->addActionLabel('Tambah Anggota Rombongan')
+                    ->grid(2) // Menampilkan 2 kolom agar lebih ringkas
+                    ->columnSpanFull()
+                    ->default([]), // Set default ke array kosong agar aman saat create
+
+                // 3. Otomatisasi PIC
                 Select::make('pic_id')
                     ->relationship('pic', 'name')
                     ->default(Auth::id())
                     ->required(),
 
                 Hidden::make('type')
-                    ->default('walk-in'),
+                    ->default(fn() => in_array(request()->query('type'), ['walk_in', 'walk-in', 'walkin']) ? 'walkin' : 'appointment'),
 
                 Textarea::make('purpose')
                     ->required()
@@ -73,36 +87,31 @@ class AppointmentForm
                     ->numeric()
                     ->default(1),
 
-                // CSS Injector - Diperbaiki agar tidak merusak layout
+                // CSS Injector untuk formating Plat Nomor
                 Placeholder::make('nopol_css')
-                    ->hiddenLabel() // Menghilangkan label "Nopol css"
+                    ->hiddenLabel()
                     ->extraAttributes(['style' => 'display: none;'])
                     ->content(new HtmlString('
                         <style>
-                            /* Hilangkan gap dan padding bawaan grid/group */
                             .nopol-grid { gap: 0 !important; }
                             .nopol-grid > * { padding: 0 !important; }
                             
-                            /* Hapus radius kanan untuk prefix (B) */
                             .nopol-grid > div:nth-child(1) .fi-input-wrapper { 
                                 border-top-right-radius: 0 !important; 
                                 border-bottom-right-radius: 0 !important; 
                             }
                             
-                            /* Hapus semua radius & overlap border untuk number (1234) */
                             .nopol-grid > div:nth-child(2) .fi-input-wrapper { 
                                 border-radius: 0 !important; 
                                 margin-left: -1px; 
                             }
                             
-                            /* Hapus radius kiri & overlap border untuk suffix (XYZ) */
                             .nopol-grid > div:nth-child(3) .fi-input-wrapper { 
                                 border-top-left-radius: 0 !important; 
                                 border-bottom-left-radius: 0 !important; 
                                 margin-left: -1px; 
                             }
                             
-                            /* Tengahkan teks input dan jadikan kapital */
                             .nopol-grid input { 
                                 text-align: center !important; 
                                 text-transform: uppercase !important; 
@@ -111,7 +120,7 @@ class AppointmentForm
                         </style>
                     ')),
 
-                // Vehicle Number split into 3 columns - Unified Joined Look
+                // Vehicle Number
                 Group::make([
                     TextInput::make('v_prefix')
                         ->label('Nopol Kendaraan')
@@ -142,10 +151,10 @@ class AppointmentForm
                     ->dehydrated(true)
                     ->dehydrateStateUsing(fn($get) => preg_replace('/\s+/', ' ', trim("{$get('v_prefix')} {$get('v_number')} {$get('v_suffix')}"))),
 
-                // 3. Sembunyikan Token & Status (Di-handle otomatis)
+                // Hidden Data
                 Hidden::make('token'),
                 Hidden::make('status')
-                    ->default('pending'), // <--- SUDAH SAYA UBAH MENJADI PENDING
+                    ->default('pending'),
             ]);
     }
 }

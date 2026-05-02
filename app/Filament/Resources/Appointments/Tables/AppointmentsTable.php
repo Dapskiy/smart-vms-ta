@@ -20,16 +20,16 @@ class AppointmentsTable
         return $table
             ->columns([
                 TextColumn::make('visitor.name')
-                    ->label('Nama Tamu')
-                    ->placeholder('Belum Registrasi')
-                    ->searchable(),
+                    ->label('Nama Tamu Utama')
+                    ->searchable()
+                    ->sortable(),
                 TextColumn::make('pic.name')
                     ->label('PIC')
                     ->searchable(),
                 TextColumn::make('type')
                     ->label('Tipe')
                     ->badge()
-                    ->color(fn (string $state): string => match ($state) {
+                    ->color(fn(string $state): string => match ($state) {
                         'appointment' => 'success',
                         'walk-in' => 'warning',
                         default => 'gray',
@@ -73,7 +73,7 @@ class AppointmentsTable
                     ->action(function (Appointment $record, $livewire) {
                         $url = route('guest.invitation', ['token' => $record->token]);
                         $livewire->dispatch('copy-to-clipboard', text: $url);
-                        
+
                         Notification::make()
                             ->success()
                             ->title('Link Berhasil Disalin')

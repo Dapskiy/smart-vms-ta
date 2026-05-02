@@ -18,8 +18,9 @@ class ListAppointments extends ListRecords
                 ->modalHeading('Create New Appointment')
                 ->icon('heroicon-o-calendar-days')
                 ->color('success')
-                ->visible(fn () => auth()->user()->can('create appointment'))
+                ->visible(fn() => auth()->user()->can('create appointment'))
                 ->mutateFormDataUsing(function (array $data): array {
+                    // Aman: format standar
                     $data['type'] = 'appointment';
                     return $data;
                 }),
@@ -29,9 +30,10 @@ class ListAppointments extends ListRecords
                 ->modalHeading('Create Walk-in Registration')
                 ->icon('heroicon-o-user-plus')
                 ->color('warning')
-                ->visible(fn () => auth()->user()->can('create walk-in'))
+                ->visible(fn() => auth()->user()->can('create walk-in'))
                 ->mutateFormDataUsing(function (array $data): array {
-                    $data['type'] = 'walk-in';
+                    // UBAH DI SINI: Sesuaikan persis dengan database (tanpa strip/garis bawah)
+                    $data['type'] = 'walkin';
                     return $data;
                 }),
         ];
