@@ -3,6 +3,8 @@
     $companions = $record->companions ?? [];
     $visitDate  = $record->visit_date  ? Carbon::parse($record->visit_date)->translatedFormat('d F Y') : '-';
     $visitTime  = $record->visit_time  ? substr($record->visit_time, 0, 5) : '-';
+    
+    $checkedOutNames = $record->visitorCheckouts()->pluck('visitor_name')->toArray();
 
     $typeLabel = match($record->type) {
         'appointment' => 'Appointment',
@@ -174,6 +176,7 @@
             </thead>
             <tbody>
                 {{-- Tamu Utama --}}
+                @if(!in_array($record->visitor?->name, $checkedOutNames))
                 <tr>
                     <td class="vd-muted">1</td>
                     <td>
@@ -189,35 +192,50 @@
                     </td>
                     <td>{{ $record->visitor?->phone ?? '-' }}</td>
                     <td>
-                        <button
-                            class="vd-copy-btn"
-                            style="background: #fee2e2; border-color: #fecaca; color: #991b1b; padding: 4px 10px; font-size: 12px;"
-                            onclick="alert('Checkout untuk {{ $record->visitor?->name ?? 'pengunjung' }} — ' + new Date().toLocaleString())"
-                            title="Checkout Pengunjung">
-                            <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 4 23 10 17 10"></polyline><path d="M20.49 15a9 9 0 1 1 .12-4.49"></path></svg>
-                            Checkout
-                        </button>
+                        <form method="POST" action="{{ route('filament.admin.resources.appointments.checkout') }}" style="display:inline;">
+                            @csrf
+                            <input type="hidden" name="appointment_id" value="{{ $record->id }}">
+                            <input type="hidden" name="visitor_name" value="{{ $record->visitor?->name }}">
+                            <button
+                                type="submit"
+                                class="vd-copy-btn"
+                                style="background: #fee2e2; border-color: #fecaca; color: #991b1b; padding: 4px 10px; font-size: 12px; border: 1px solid #fecaca; cursor: pointer;"
+                                title="Checkout Pengunjung"
+                                onclick="return confirm('Checkout {{ $record->visitor?->name }}?')">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 4 23 10 17 10"></polyline><path d="M20.49 15a9 9 0 1 1 .12-4.49"></path></svg>
+                                Checkout
+                            </button>
+                        </form>
                     </td>
                 </tr>
+                @endif
 
                 {{-- Anggota Rombongan --}}
                 @foreach($companions as $i => $companion)
-                <tr>
-                    <td class="vd-muted">{{ $i + 2 }}</td>
-                    <td><span class="vd-name">{{ $companion['name'] ?? '-' }}</span></td>
-                    <td class="vd-muted">—</td>
-                    <td class="vd-muted">—</td>
-                    <td>
-                        <button
-                            class="vd-copy-btn"
-                            style="background: #fee2e2; border-color: #fecaca; color: #991b1b; padding: 4px 10px; font-size: 12px;"
-                            onclick="alert('Checkout untuk {{ $companion['name'] ?? 'pengunjung' }} — ' + new Date().toLocaleString())"
-                            title="Checkout Pengunjung">
-                            <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 4 23 10 17 10"></polyline><path d="M20.49 15a9 9 0 1 1 .12-4.49"></path></svg>
-                            Checkout
-                        </button>
-                    </td>
-                </tr>
+                    @if(!in_array($companion['name'] ?? null, $checkedOutNames))
+                    <tr>
+                        <td class="vd-muted">{{ $i + 2 }}</td>
+                        <td><span class="vd-name">{{ $companion['name'] ?? '-' }}</span></td>
+                        <td class="vd-muted">—</td>
+                        <td class="vd-muted">—</td>
+                        <td>
+                            <form method="POST" action="{{ route('filament.admin.resources.appointments.checkout') }}" style="display:inline;">
+                                @csrf
+                                <input type="hidden" name="appointment_id" value="{{ $record->id }}">
+                                <input type="hidden" name="visitor_name" value="{{ $companion['name'] }}">
+                                <button
+                                    type="submit"
+                                    class="vd-copy-btn"
+                                    style="background: #fee2e2; border-color: #fecaca; color: #991b1b; padding: 4px 10px; font-size: 12px; border: 1px solid #fecaca; cursor: pointer;"
+                                    title="Checkout Pengunjung"
+                                    onclick="return confirm('Checkout {{ $companion['name'] }}?')">
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 4 23 10 17 10"></polyline><path d="M20.49 15a9 9 0 1 1 .12-4.49"></path></svg>
+                                    Checkout
+                                </button>
+                            </form>
+                        </td>
+                    </tr>
+                    @endif
                 @endforeach
             </tbody>
         </table>

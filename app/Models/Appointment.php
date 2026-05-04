@@ -83,4 +83,48 @@ class Appointment extends Model
     {
         return $this->belongsTo(Room::class);
     }
+
+    public function visitorCheckouts()
+    {
+        return $this->hasMany(VisitorCheckout::class);
+    }
+
+    public function getRemainingVisitorsAttribute()
+    {
+        $companions = $this->companions ?? [];
+        $checkedOutNames = $this->visitorCheckouts()->pluck('visitor_name')->toArray();
+        
+        $remaining = [];
+        
+        // Add main visitor if not checked out
+        if (!in_array($this->visitor?->name, $checkedOutNames)) {
+            $remaining[] = $this->visitor?->name;
+        }
+        
+        // Add companions if not checked out
+        foreach ($companions as $companion) {
+            $name = $companion['name'] ?? null;
+            if ($name && !in_array($name, $checkedOutNames)) {
+                $remaining[] = $name;
+            }
+        }
+        
+        return $remaining;
+    }
+
+    public function getVisitorDisplayAttribute()
+    {
+        $remaining = $this->remaining_visitors;
+        
+        if (empty($remaining)) {
+            return '-';
+        }
+        
+        if (count($remaining) === 1) {
+            return $remaining[0];
+        }
+        
+        $others = count($remaining) - 1;
+        return "{$remaining[0]} + {$others} others";
+    }
 }

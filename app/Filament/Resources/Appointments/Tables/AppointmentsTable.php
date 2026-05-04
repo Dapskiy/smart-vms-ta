@@ -19,17 +19,33 @@ class AppointmentsTable
     {
         return $table
             ->columns([
-                TextColumn::make('visitor.name')
-                    ->label('Nama Tamu Utama')
-                    ->searchable()
-                    ->sortable(),
+                TextColumn::make('visitor_display')
+                    ->label('Nama Pengunjung')
+                    ->html()
+                    ->formatStateUsing(function (Appointment $record) {
+                        $remaining = $record->remaining_visitors;
+                        
+                        if (empty($remaining)) {
+                            return '<span class="text-gray-500">-</span>';
+                        }
+                        
+                        if (count($remaining) === 1) {
+                            return htmlspecialchars($remaining[0]);
+                        }
+                        
+                        $others = count($remaining) - 1;
+                        return "{$remaining[0]} <button class='text-blue-600 hover:text-blue-800 text-sm' onclick='alert(\"" . htmlspecialchars(implode(', ', $remaining)) . "\")'>+ {$others} others</button>";
+                    })
+                    ->searchable(query: function ($query, string $search) {
+                        return $query->where('visitor_id', 'like', "%{$search}%")
+                            ->orWhereJsonContains('companions', [['name' => $search]]);
+                    }),
                 TextColumn::make('pic.name')
                     ->label('PIC')
                     ->searchable(),
                 TextColumn::make('type')
                     ->label('Tipe')
                     ->badge()
-                    // PERBAIKAN 1: Tambahkan ? sebelum string agar kebal dari data kosong
                     ->color(fn(?string $state): string => match ($state) {
                         'appointment' => 'success',
                         'walkin', 'walk_in', 'walk-in' => 'warning',
@@ -47,9 +63,6 @@ class AppointmentsTable
                 TextColumn::make('checkin_time')
                     ->label('Checkin')
                     ->time('H:i')
-                    ->sortable(),
-                TextColumn::make('pax')
-                    ->numeric()
                     ->sortable(),
                 TextColumn::make('vehicle_number')
                     ->searchable(),

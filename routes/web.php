@@ -2,6 +2,7 @@
 
 use Illuminate\Support\Facades\Route;
 use App\Livewire\GuestRegistrationForm;
+use App\Http\Controllers\AppointmentCheckoutController;
 
 Route::get('/', function () {
     return view('welcome');
@@ -14,3 +15,8 @@ Route::get('/login', function () {
 
 // Route untuk menampilkan form pendaftaran tamu via Livewire
 Route::get('/invitation/{token}', GuestRegistrationForm::class)->name('guest.invitation');
+
+// Route untuk checkout individu per visitor
+Route::post('/admin/appointments/checkout', [AppointmentCheckoutController::class, 'checkout'])
+    ->middleware(['auth', 'verified'])
+    ->name('filament.admin.resources.appointments.checkout');
