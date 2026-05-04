@@ -33,8 +33,54 @@ class AppointmentsTable
                             return htmlspecialchars($remaining[0]);
                         }
                         
-                        $others = count($remaining) - 1;
-                        return "{$remaining[0]} <button class='text-blue-600 hover:text-blue-800 text-sm' onclick='alert(\"" . htmlspecialchars(implode(', ', $remaining)) . "\")'>+ {$others} others</button>";
+                        $appointmentId = $record->id;
+                        $mainName = htmlspecialchars($remaining[0]);
+                        $othersCount = count($remaining) - 1;
+                        $allNamesJson = json_encode($remaining);
+                        $allNamesList = implode('<br>', array_map('htmlspecialchars', $remaining));
+                        
+                        return <<<HTML
+<div class="visitor-list-container" data-id="$appointmentId">
+    <span class="visitor-main-name">$mainName</span>
+    <button 
+        type="button"
+        class="visitor-expand-btn"
+        data-appointment-id="$appointmentId"
+        data-others-count="$othersCount"
+        onclick="toggleVisitorList(this, event)"
+        style="background: none; border: none; padding: 0; margin-left: 4px; color: #2563eb; cursor: pointer; font-size: 0.875rem; font-weight: 500;">
+        + $othersCount others
+    </button>
+    <div class="visitor-list-expanded hidden" data-appointment-id="$appointmentId" style="margin-top: 8px; padding: 8px; background: #f9fafb; border-radius: 4px; border-left: 3px solid #2563eb;">
+        $allNamesList
+    </div>
+</div>
+
+<script>
+if (!window.toggleVisitorList) {
+    window.toggleVisitorList = function(btn, event) {
+        event.preventDefault();
+        const appointmentId = btn.getAttribute('data-appointment-id');
+        const expandedDiv = document.querySelector(`.visitor-list-expanded[data-appointment-id="\${appointmentId}"]`);
+        
+        if (expandedDiv) {
+            const isHidden = expandedDiv.classList.contains('hidden');
+            
+            if (isHidden) {
+                expandedDiv.classList.remove('hidden');
+                btn.textContent = 'show less';
+                btn.style.color = '#1d4ed8';
+            } else {
+                expandedDiv.classList.add('hidden');
+                const othersCount = btn.getAttribute('data-others-count');
+                btn.textContent = '+ ' + othersCount + ' others';
+                btn.style.color = '#2563eb';
+            }
+        }
+    };
+}
+</script>
+HTML;
                     })
                     ->searchable(query: function ($query, string $search) {
                         return $query->where('visitor_id', 'like', "%{$search}%")
