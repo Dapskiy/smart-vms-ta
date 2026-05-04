@@ -10,14 +10,85 @@ use Filament\Forms\Components\Textarea;
 use Filament\Forms\Components\Placeholder;
 use Filament\Forms\Components\Hidden;
 use Filament\Forms\Components\Repeater;
+use Filament\Forms\Components\Checkbox;
 use Filament\Schemas\Components\Group;
 use Filament\Schemas\Schema;
+use Filament\Schemas\Components\Utilities\Get;
+use Closure;
+use App\Models\Appointment;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\HtmlString;
 use Illuminate\Support\Str;
 
 class AppointmentForm
 {
+    private static $optionsCache = [];
+
+    /**
+     * Generate time options dari 07:00 sampai 18:00 dengan interval 30 menit
+     */
+    private static function generateTimeOptions(?Get $get = null): array
+    {
+        $visitDate = $get ? $get('visit_date') : null;
+        $roomId = $get ? $get('room_id') : null;
+        $currentId = $get ? $get('id') : null;
+        $cacheKey = "{$visitDate}_{$roomId}_{$currentId}";
+
+        if (isset(self::$optionsCache[$cacheKey])) {
+            return self::$optionsCache[$cacheKey];
+        }
+
+        $options = [];
+        $startTime = strtotime('07:00');
+        $endTime = strtotime('18:00');
+        $interval = 30 * 60; // 30 menit dalam detik
+
+        $bookedTimes = [];
+        if ($get) {
+            $visitDate = $get('visit_date');
+            $roomId = $get('room_id');
+            $currentId = $get('id');
+
+            if ($visitDate && $roomId) {
+                $query = Appointment::where('visit_date', $visitDate)
+                    ->where('room_id', $roomId)
+                    ->where('should_book_room', true)
+                    ->where('status', '!=', 'cancelled');
+
+                if ($currentId) {
+                    $query->where('id', '!=', $currentId);
+                }
+
+                $bookedTimes = $query->get(['room_start_time', 'room_end_time']);
+            }
+        }
+
+        for ($time = $startTime; $time <= $endTime; $time += $interval) {
+            $timeString = date('H:i', $time);
+            $label = $timeString;
+
+            $isBooked = false;
+            foreach ($bookedTimes as $booked) {
+                $start = substr($booked->room_start_time, 0, 5);
+                $end = substr($booked->room_end_time, 0, 5);
+
+                if ($timeString >= $start && $timeString < $end) {
+                    $isBooked = true;
+                    break;
+                }
+            }
+
+            if ($isBooked) {
+                $label .= ' (Booked)';
+            }
+
+            $options[$timeString] = $label;
+        }
+
+        self::$optionsCache[$cacheKey] = $options;
+        return $options;
+    }
+
     public static function configure(Schema $schema): Schema
     {
         return $schema
@@ -67,13 +138,16 @@ class AppointmentForm
                 DatePicker::make('visit_date')
                     ->label('Tanggal Kunjungan')
                     ->default(now())
-                    ->required()
-                    ->native(false),
+                    ->hidden(fn(Get $get) => $get('type') === 'walk-in')
+                    ->required(fn(Get $get) => $get('type') !== 'walk-in')
+                    ->native(false)
+                    ->live(),
 
                 TimePicker::make('visit_time')
                     ->label('Jam')
                     ->default(now()->format('H:i'))
-                    ->required()
+                    ->hidden(fn(Get $get) => $get('type') === 'appointment')
+                    ->required(fn(Get $get) => $get('type') !== 'appointment')
                     ->native(false),
 
                 TextInput::make('pax')
@@ -81,6 +155,80 @@ class AppointmentForm
                     ->numeric()
                     ->default(1)
                     ->required(),
+
+                // --- Checkbox untuk Pesan Ruangan ---
+                Checkbox::make('should_book_room')
+                    ->label('Pesan Ruang Meeting?')
+                    ->default(false)
+                    ->live(),
+
+                // --- Ruang Meeting Selection dengan Validasi Jadwal Bentrok ---
+                Select::make('room_id')
+                    ->label('Ruang Meeting')
+                    ->relationship('room', 'name', fn($query) => $query->where('is_active', true))
+                    ->searchable()
+                    ->preload()
+                    ->live()
+                    ->visible(fn(Get $get) => $get('should_book_room'))
+                    ->rules([
+                        fn($get) => function (string $attribute, $value, Closure $fail) use ($get) {
+                            // Jika checkbox tidak dicheck, skip validasi
+                            if (!$get('should_book_room')) {
+                                return;
+                            }
+
+                            // Ambil input tanggal dan waktu ruangan dari form
+                            $visitDate = $get('visit_date');
+                            $roomStartTime = $get('room_start_time');
+                            $roomEndTime = $get('room_end_time');
+
+                            // Jika ada input kosong, skip validasi
+                            if (!$visitDate || !$roomStartTime || !$roomEndTime) {
+                                return;
+                            }
+
+                            // Cek apakah ada jadwal di ruangan yang overlap dengan time range
+                            $query = Appointment::where('room_id', $value)
+                                ->where('visit_date', $visitDate)
+                                ->where('should_book_room', true)
+                                ->where('status', '!=', 'cancelled');
+
+                            // Query untuk cek time overlap
+                            // Overlap terjadi jika: new_start < existing_end AND new_end > existing_start
+                            $query->where(function ($q) use ($roomStartTime, $roomEndTime) {
+                                $q->where(function ($subQ) use ($roomStartTime, $roomEndTime) {
+                                    $subQ->where('room_start_time', '<', $roomEndTime)
+                                        ->where('room_end_time', '>', $roomStartTime);
+                                });
+                            });
+
+                            // Jika form Edit, jangan bentrok dengan data appointment yang sekarang diubah
+                            $currentId = $get('id');
+                            if ($currentId) {
+                                $query->where('id', '!=', $currentId);
+                            }
+
+                            if ($query->exists()) {
+                                $fail('Maaf, ruangan ini sudah di-booking pada jam tersebut. Silakan pilih ruangan atau waktu lain.');
+                            }
+                        },
+                    ]),
+
+                // --- Jam Mulai Ruangan ---
+                Select::make('room_start_time')
+                    ->label('Jam Mulai (Ruangan)')
+                    ->options(fn(Get $get) => self::generateTimeOptions($get))
+                    ->disableOptionWhen(fn(string $value, Get $get) => str_contains(self::generateTimeOptions($get)[$value] ?? '', '(Booked)'))
+                    ->visible(fn(Get $get) => $get('should_book_room') && $get('room_id'))
+                    ->required(fn(Get $get) => $get('should_book_room')),
+
+                // --- Jam Selesai Ruangan ---
+                Select::make('room_end_time')
+                    ->label('Jam Selesai (Ruangan)')
+                    ->options(fn(Get $get) => self::generateTimeOptions($get))
+                    ->disableOptionWhen(fn(string $value, Get $get) => str_contains(self::generateTimeOptions($get)[$value] ?? '', '(Booked)'))
+                    ->visible(fn(Get $get) => $get('should_book_room') && $get('room_id'))
+                    ->required(fn(Get $get) => $get('should_book_room')),
 
                 // --- Input Plat Nomor Kendaraan ---
                 Placeholder::make('nopol_css')
@@ -94,6 +242,13 @@ class AppointmentForm
                             .nopol-prefix .fi-input-wrapper { border-top-right-radius: 0 !important; border-bottom-right-radius: 0 !important; }
                             .nopol-number .fi-input-wrapper { border-radius: 0 !important; margin-left: -1px; }
                             .nopol-suffix .fi-input-wrapper { border-top-left-radius: 0 !important; border-bottom-left-radius: 0 !important; margin-left: -1px; }
+                            
+                            /* Fading untuk opsi yang di-booked */
+                            select option:disabled {
+                                color: #9ca3af !important; /* text-gray-400 */
+                                background-color: #f3f4f6 !important; /* bg-gray-100 */
+                                opacity: 0.6;
+                            }
                         </style>
                     ')),
 
