@@ -44,6 +44,10 @@ class AppointmentsTable
                     ->label('Jam')
                     ->time('H:i')
                     ->sortable(),
+                TextColumn::make('checkin_time')
+                    ->label('Checkin')
+                    ->time('H:i')
+                    ->sortable(),
                 TextColumn::make('pax')
                     ->numeric()
                     ->sortable(),
@@ -77,7 +81,10 @@ class AppointmentsTable
                     ->modalHeading('Konfirmasi Check-in')
                     ->modalDescription('Apakah tamu ini sudah tiba di lokasi dan ingin di-check-in?')
                     ->action(function (Appointment $record) {
-                        $record->update(['status' => 'active']);
+                        $record->update([
+                            'status' => 'active',
+                            'checkin_time' => now()->format('H:i'),
+                        ]);
 
                         Notification::make()
                             ->title('Berhasil Check-in')
@@ -97,7 +104,10 @@ class AppointmentsTable
                     ->modalHeading('Konfirmasi Check-out')
                     ->modalDescription('Apakah kunjungan sudah selesai? Data tamu ini akan dipindahkan ke halaman Summary.')
                     ->action(function (Appointment $record) {
-                        $record->update(['status' => 'completed']);
+                        $record->update([
+                            'status' => 'completed',
+                            'checkout_time' => now()->format('H:i'),
+                        ]);
 
                         Notification::make()
                             ->title('Berhasil Check-out')

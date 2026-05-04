@@ -21,6 +21,10 @@ class Appointment extends Model
     // Tambahkan baris ini agar Laravel memformat JSON menjadi Array otomatis
     protected $casts = [
         'companions' => 'array',
+        'visit_date' => 'date',
+        'visit_time' => 'datetime:H:i',
+        'checkin_time' => 'datetime:H:i',
+        'checkout_time' => 'datetime:H:i',
     ];
 
     protected static function booted(): void

@@ -68,6 +68,26 @@ class SummaryResource extends Resource
                         return $visitDate?->format('d/m/Y') ?? '-';
                     })
                     ->sortable(),
+                TextColumn::make('checkin_time')
+                    ->label('Checkin Terakhir')
+                    ->state(function (Visitor $record) {
+                        $lastAppointment = $record->appointments()
+                            ->where('status', 'completed')
+                            ->latest('visit_date')
+                            ->first();
+                        
+                        return $lastAppointment?->checkin_time ?? '-';
+                    }),
+                TextColumn::make('checkout_time')
+                    ->label('Checkout Terakhir')
+                    ->state(function (Visitor $record) {
+                        $lastAppointment = $record->appointments()
+                            ->where('status', 'completed')
+                            ->latest('visit_date')
+                            ->first();
+                        
+                        return $lastAppointment?->checkout_time ?? '-';
+                    }),
             ])
             ->filters([
                 //
