@@ -10,6 +10,12 @@ use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
 use UnitEnum;    // <--- Tambahkan import ini
 use BackedEnum;  // <--- Tambahkan import ini
+use Filament\Tables\Columns\TextColumn;
+use Filament\Actions\Action;
+use Filament\Actions\DeleteAction;
+use Filament\Actions\EditAction;
+use Filament\Actions\BulkActionGroup;
+use Filament\Actions\DeleteBulkAction;
 
 class SummaryResource extends Resource
 {
@@ -30,8 +36,36 @@ class SummaryResource extends Resource
     public static function table(Table $table): Table
     {
         return AppointmentsTable::configure($table)
-            ->actions([])
-            ->bulkActions([]);
+            ->actions([
+                // View Detail
+                Action::make('view_detail')
+                    ->label('')
+                    ->icon('heroicon-o-eye')
+                    ->tooltip('Lihat Detail')
+                    ->color('info')
+                    ->modalHeading(fn(Appointment $record) => 'Detail Visitor (' . ($record->visit_id ?? $record->token) . ')')
+                    ->modalContent(fn(Appointment $record) => view('filament.appointments.detail-modal', ['record' => $record]))
+                    ->modalWidth('4xl')
+                    ->modalSubmitAction(false)
+                    ->modalCancelActionLabel('Tutup'),
+
+                // Edit
+                EditAction::make()
+                    ->label('')
+                    ->icon('heroicon-o-pencil')
+                    ->tooltip('Edit'),
+
+                // Delete
+                DeleteAction::make()
+                    ->label('')
+                    ->icon('heroicon-o-trash')
+                    ->tooltip('Delete'),
+            ])
+            ->bulkActions([
+                BulkActionGroup::make([
+                    DeleteBulkAction::make(),
+                ]),
+            ]);
     }
 
     public static function getPages(): array

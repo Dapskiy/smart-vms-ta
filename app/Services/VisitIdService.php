@@ -27,6 +27,6 @@ class VisitIdService
             }
         }
 
-        return sprintf('VST-%s-%05d', $dateString, $nextSequence);
+        return sprintf('VST-%s-%04d', $dateString, $nextSequence);
     }
 }

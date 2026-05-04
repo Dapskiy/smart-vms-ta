@@ -128,7 +128,7 @@ class AppointmentsTable
                     ->icon('heroicon-o-eye')
                     ->tooltip('Lihat Detail')
                     ->color('info')
-                    ->modalHeading(fn(Appointment $record) => 'Detail Visitor — ' . ($record->visitor?->name ?? $record->token))
+                    ->modalHeading(fn(Appointment $record) => 'Detail Visitor (' . ($record->visit_id ?? $record->token) . ')')
                     ->modalContent(fn(Appointment $record) => view('filament.appointments.detail-modal', ['record' => $record]))
                     ->modalWidth('4xl')
                     ->modalSubmitAction(false)

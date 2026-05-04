@@ -45,8 +45,8 @@ class AppointmentInfolist
                         TextEntry::make('visitor.is_blacklisted')
                             ->label('Status Blacklist')
                             ->badge()
-                            ->formatStateUsing(fn ($state): string => $state ? 'Blacklisted' : 'Clear')
-                            ->color(fn ($state): string => $state ? 'danger' : 'success'),
+                            ->formatStateUsing(fn($state): string => $state ? 'Blacklisted' : 'Clear')
+                            ->color(fn($state): string => $state ? 'danger' : 'success'),
                     ]),
 
                 // === KANAN: Detail Kunjungan ===
@@ -61,7 +61,7 @@ class AppointmentInfolist
                         TextEntry::make('type')
                             ->label('Tipe Kunjungan')
                             ->badge()
-                            ->color(fn (?string $state): string => match ($state) {
+                            ->color(fn(?string $state): string => match ($state) {
                                 'appointment' => 'success',
                                 'walk-in'     => 'warning',
                                 default       => 'gray',
@@ -70,14 +70,14 @@ class AppointmentInfolist
                         TextEntry::make('status')
                             ->label('Status')
                             ->badge()
-                            ->formatStateUsing(fn (?string $state): string => match ($state) {
+                            ->formatStateUsing(fn(?string $state): string => match ($state) {
                                 'pending'   => 'Menunggu',
                                 'active'    => 'Di dalam',
                                 'completed' => 'Selesai',
                                 'cancelled' => 'Dibatalkan',
                                 default     => $state ?? '—',
                             })
-                            ->color(fn (?string $state): string => match ($state) {
+                            ->color(fn(?string $state): string => match ($state) {
                                 'pending'   => 'warning',
                                 'active'    => 'success',
                                 'completed' => 'gray',
@@ -130,7 +130,7 @@ class AppointmentInfolist
                         ])
                         ->columns(3),
                 ])
-                ->hidden(fn ($record) => empty($record?->companions)),
+                ->hidden(fn($record) => empty($record?->companions)),
         ]);
     }
 }
