@@ -51,10 +51,21 @@ class SummaryResource extends Resource
                 TextColumn::make('last_visit')
                     ->label('Kunjungan Terakhir')
                     ->state(function (Visitor $record) {
-                        return $record->appointments()
+                        $lastAppointment = $record->appointments()
                             ->where('status', 'completed')
                             ->latest('visit_date')
-                            ->first()?->visit_date?->format('d/m/Y') ?? '-';
+                            ->first();
+                        
+                        if (!$lastAppointment) {
+                            return '-';
+                        }
+                        
+                        $visitDate = $lastAppointment->visit_date;
+                        if (is_string($visitDate)) {
+                            return \Carbon\Carbon::parse($visitDate)->format('d/m/Y');
+                        }
+                        
+                        return $visitDate?->format('d/m/Y') ?? '-';
                     })
                     ->sortable(),
             ])
