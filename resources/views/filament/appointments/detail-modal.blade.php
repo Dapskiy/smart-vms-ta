@@ -169,6 +169,7 @@
                     <th>Nama</th>
                     <th>Identitas</th>
                     <th>No. Telepon</th>
+                    <th style="width:80px">Checkout</th>
                 </tr>
             </thead>
             <tbody>
@@ -187,6 +188,16 @@
                         @endif
                     </td>
                     <td>{{ $record->visitor?->phone ?? '-' }}</td>
+                    <td>
+                        <button
+                            class="vd-copy-btn"
+                            style="background: #fee2e2; border-color: #fecaca; color: #991b1b; padding: 4px 10px; font-size: 12px;"
+                            onclick="alert('Checkout untuk {{ $record->visitor?->name ?? 'pengunjung' }} — ' + new Date().toLocaleString())"
+                            title="Checkout Pengunjung">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 4 23 10 17 10"></polyline><path d="M20.49 15a9 9 0 1 1 .12-4.49"></path></svg>
+                            Checkout
+                        </button>
+                    </td>
                 </tr>
 
                 {{-- Anggota Rombongan --}}
@@ -196,6 +207,16 @@
                     <td><span class="vd-name">{{ $companion['name'] ?? '-' }}</span></td>
                     <td class="vd-muted">—</td>
                     <td class="vd-muted">—</td>
+                    <td>
+                        <button
+                            class="vd-copy-btn"
+                            style="background: #fee2e2; border-color: #fecaca; color: #991b1b; padding: 4px 10px; font-size: 12px;"
+                            onclick="alert('Checkout untuk {{ $companion['name'] ?? 'pengunjung' }} — ' + new Date().toLocaleString())"
+                            title="Checkout Pengunjung">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 4 23 10 17 10"></polyline><path d="M20.49 15a9 9 0 1 1 .12-4.49"></path></svg>
+                            Checkout
+                        </button>
+                    </td>
                 </tr>
                 @endforeach
             </tbody>

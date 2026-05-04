@@ -4,22 +4,23 @@ namespace App\Filament\Resources\Summaries; // Sesuaikan namespace dengan lokasi
 
 use App\Filament\Resources\Summaries\Pages; // Sesuaikan juga jika foldernya Summaries
 use App\Models\Appointment;
+use App\Models\Visitor;
 use App\Filament\Resources\Appointments\Tables\AppointmentsTable;
 use Filament\Resources\Resource;
 use Filament\Tables\Table;
-use Illuminate\Database\Eloquent\Builder;
-use UnitEnum;    // <--- Tambahkan import ini
-use BackedEnum;  // <--- Tambahkan import ini
 use Filament\Tables\Columns\TextColumn;
 use Filament\Actions\Action;
 use Filament\Actions\DeleteAction;
 use Filament\Actions\EditAction;
 use Filament\Actions\BulkActionGroup;
 use Filament\Actions\DeleteBulkAction;
+use Illuminate\Database\Eloquent\Builder;
+use UnitEnum;    // <--- Tambahkan import ini
+use BackedEnum;  // <--- Tambahkan import ini
 
 class SummaryResource extends Resource
 {
-    protected static ?string $model = Appointment::class;
+    protected static ?string $model = Visitor::class;
 
     // Perbaikan: Tipe data disesuaikan 100% dengan aturan Filament & PHP 8
     protected static string|BackedEnum|null $navigationIcon = 'heroicon-o-clipboard-document-list';
@@ -28,14 +29,38 @@ class SummaryResource extends Resource
     protected static ?string $pluralModelLabel = 'Summary Kunjungan';
     protected static ?int $navigationSort = 2;
 
-    public static function getEloquentQuery(): Builder
-    {
-        return parent::getEloquentQuery()->where('status', 'completed');
-    }
-
     public static function table(Table $table): Table
     {
-        return AppointmentsTable::configure($table)
+        return $table
+            ->columns([
+                TextColumn::make('name')
+                    ->label('Nama Pengunjung')
+                    ->searchable()
+                    ->sortable(),
+                TextColumn::make('company')
+                    ->label('Instansi')
+                    ->searchable(),
+                TextColumn::make('phone')
+                    ->label('No. Telepon')
+                    ->searchable(),
+                TextColumn::make('appointments_count')
+                    ->label('Jumlah Kunjungan')
+                    ->counts('appointments')
+                    ->numeric()
+                    ->sortable(),
+                TextColumn::make('last_visit')
+                    ->label('Kunjungan Terakhir')
+                    ->state(function (Visitor $record) {
+                        return $record->appointments()
+                            ->where('status', 'completed')
+                            ->latest('visit_date')
+                            ->first()?->visit_date?->format('d/m/Y') ?? '-';
+                    })
+                    ->sortable(),
+            ])
+            ->filters([
+                //
+            ])
             ->actions([
                 // View Detail
                 Action::make('view_detail')
@@ -43,8 +68,15 @@ class SummaryResource extends Resource
                     ->icon('heroicon-o-eye')
                     ->tooltip('Lihat Detail')
                     ->color('info')
-                    ->modalHeading(fn(Appointment $record) => 'Detail Visitor (' . ($record->visit_id ?? $record->token) . ')')
-                    ->modalContent(fn(Appointment $record) => view('filament.appointments.detail-modal', ['record' => $record]))
+                    ->modalHeading(fn(Visitor $record) => 'Detail Pengunjung: ' . $record->name)
+                    ->modalContent(function (Visitor $record) {
+                        // Tampilkan appointment terbaru yang completed
+                        $appointment = $record->appointments()
+                            ->where('status', 'completed')
+                            ->latest('visit_date')
+                            ->first();
+                        return view('filament.appointments.detail-modal', ['record' => $appointment ?? $record->appointments()->first()]);
+                    })
                     ->modalWidth('4xl')
                     ->modalSubmitAction(false)
                     ->modalCancelActionLabel('Tutup'),
