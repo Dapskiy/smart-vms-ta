@@ -13,12 +13,13 @@ use Filament\Resources\Resource;
 use Filament\Schemas\Schema;
 use Filament\Support\Icons\Heroicon;
 use Filament\Tables\Table;
+use Illuminate\Database\Eloquent\Builder; // Tambahan
 
 class AppointmentResource extends Resource
 {
     protected static ?string $model = Appointment::class;
 
-    protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedRectangleStack;
+    protected static string|BackedEnum|null $navigationIcon = 'heroicon-o-rectangle-stack';
 
     public static function form(Schema $schema): Schema
     {
@@ -42,5 +43,11 @@ class AppointmentResource extends Resource
         return [
             'index' => ListAppointments::route('/'),
         ];
+    }
+
+    // Menampilkan semua data KECUALI yang sudah completed
+    public static function getEloquentQuery(): Builder
+    {
+        return parent::getEloquentQuery()->where('status', '!=', 'completed');
     }
 }

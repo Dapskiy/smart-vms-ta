@@ -3,19 +3,18 @@
 namespace App\Filament\Resources\Appointments\Schemas;
 
 use Filament\Forms\Components\DatePicker;
-use Filament\Forms\Components\DateTimePicker;
-use Filament\Schemas\Components\Grid;
-use Filament\Schemas\Components\Group;
-use Filament\Forms\Components\Hidden;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\TimePicker;
 use Filament\Forms\Components\TextInput;
 use Filament\Forms\Components\Textarea;
 use Filament\Forms\Components\Placeholder;
+use Filament\Forms\Components\Hidden;
+use Filament\Forms\Components\Repeater;
+use Filament\Schemas\Components\Group;
 use Filament\Schemas\Schema;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\HtmlString;
-use Filament\Forms\Components\Repeater;
+use Illuminate\Support\Str;
 
 class AppointmentForm
 {
@@ -23,7 +22,7 @@ class AppointmentForm
     {
         return $schema
             ->components([
-                // 1. Visitor Utama (Ketua Rombongan)
+                // 1. Visitor Utama
                 Select::make('visitor_id')
                     ->label('Tamu (Ketua Rombongan)')
                     ->relationship('visitor', 'name')
@@ -32,62 +31,58 @@ class AppointmentForm
                     ->preload()
                     ->required()
                     ->createOptionForm([
-                        TextInput::make('name')
-                            ->label('Nama Lengkap')
-                            ->required(),
-                        TextInput::make('company')
-                            ->label('Instansi / Perusahaan')
-                            ->required(),
-                        TextInput::make('phone')
-                            ->label('No. Telepon / WA')
-                            ->required(),
+                        TextInput::make('name')->label('Nama')->required(),
+                        TextInput::make('company')->label('Instansi')->required(),
+                        TextInput::make('phone')->label('WA')->tel()->required(),
                     ]),
 
-                // 2. Repeater untuk Anggota Rombongan (JSON Array)
+                // 2. Repeater Anggota
                 Repeater::make('companions')
-                    ->label('Anggota Rombongan Lainnya (Opsional)')
+                    ->label('Anggota Rombongan (Opsional)')
                     ->schema([
                         TextInput::make('name')
                             ->hiddenLabel()
-                            ->placeholder('Masukkan nama anggota rombongan')
+                            ->placeholder('Nama anggota')
                             ->required(),
                     ])
-                    ->addActionLabel('Tambah Anggota Rombongan')
-                    ->grid(2) // Menampilkan 2 kolom agar lebih ringkas
+                    ->addActionLabel('Tambah Anggota')
+                    ->grid(2)
                     ->columnSpanFull()
-                    ->default([]), // Set default ke array kosong agar aman saat create
+                    ->default([]),
 
-                // 3. Otomatisasi PIC
+                // 3. PIC
                 Select::make('pic_id')
+                    ->label('Tujuan Kunjungan (PIC)')
                     ->relationship('pic', 'name')
                     ->default(Auth::id())
-                    ->required(),
-
-                Hidden::make('type')
-                    ->default(fn() => in_array(request()->query('type'), ['walk_in', 'walk-in', 'walkin']) ? 'walkin' : 'appointment'),
+                    ->required()
+                    ->searchable()
+                    ->preload(),
 
                 Textarea::make('purpose')
+                    ->label('Tujuan/Perihal')
                     ->required()
                     ->columnSpanFull(),
 
                 DatePicker::make('visit_date')
                     ->label('Tanggal Kunjungan')
+                    ->default(now())
                     ->required()
-                    ->native(false)
-                    ->displayFormat('d/m/Y'),
+                    ->native(false),
 
                 TimePicker::make('visit_time')
-                    ->label('Jam Kunjungan')
+                    ->label('Jam')
+                    ->default(now()->format('H:i'))
                     ->required()
-                    ->native(false)
-                    ->displayFormat('H:i'),
+                    ->native(false),
 
                 TextInput::make('pax')
-                    ->required()
+                    ->label('Total Orang')
                     ->numeric()
-                    ->default(1),
+                    ->default(1)
+                    ->required(),
 
-                // CSS Injector untuk formating Plat Nomor
+                // --- Input Plat Nomor Kendaraan ---
                 Placeholder::make('nopol_css')
                     ->hiddenLabel()
                     ->extraAttributes(['style' => 'display: none;'])
@@ -95,66 +90,64 @@ class AppointmentForm
                         <style>
                             .nopol-grid { gap: 0 !important; }
                             .nopol-grid > * { padding: 0 !important; }
-                            
-                            .nopol-grid > div:nth-child(1) .fi-input-wrapper { 
-                                border-top-right-radius: 0 !important; 
-                                border-bottom-right-radius: 0 !important; 
-                            }
-                            
-                            .nopol-grid > div:nth-child(2) .fi-input-wrapper { 
-                                border-radius: 0 !important; 
-                                margin-left: -1px; 
-                            }
-                            
-                            .nopol-grid > div:nth-child(3) .fi-input-wrapper { 
-                                border-top-left-radius: 0 !important; 
-                                border-bottom-left-radius: 0 !important; 
-                                margin-left: -1px; 
-                            }
-                            
-                            .nopol-grid input { 
-                                text-align: center !important; 
-                                text-transform: uppercase !important; 
-                                font-weight: 500;
-                            }
+                            .nopol-grid input { text-align: center !important; text-transform: uppercase !important; font-weight: 600; }
+                            .nopol-prefix .fi-input-wrapper { border-top-right-radius: 0 !important; border-bottom-right-radius: 0 !important; }
+                            .nopol-number .fi-input-wrapper { border-radius: 0 !important; margin-left: -1px; }
+                            .nopol-suffix .fi-input-wrapper { border-top-left-radius: 0 !important; border-bottom-left-radius: 0 !important; margin-left: -1px; }
                         </style>
                     ')),
 
-                // Vehicle Number
+                // --- Label untuk Plat Nomor (sebagai Placeholder) ---
+                Placeholder::make('plat_nomor_label')
+                    ->hiddenLabel()
+                    ->content(new HtmlString('<h3 class="text-base font-semibold">Plat Nomor Kendaraan</h3>'))
+                    ->columnSpanFull(),
+
+                // --- Input Plat Nomor Kendaraan ---
                 Group::make([
                     TextInput::make('v_prefix')
-                        ->label('Nopol Kendaraan')
-                        ->placeholder('B')
+                        ->placeholder('H')
                         ->maxLength(2)
-                        ->extraInputAttributes(['style' => 'text-align: center; border-right: 0; border-top-right-radius: 0; border-bottom-right-radius: 0;'])
-                        ->formatStateUsing(fn($record) => $record ? explode(' ', $record->vehicle_number)[0] ?? '' : ''),
-
+                        ->extraAttributes(['class' => 'nopol-prefix']),
                     TextInput::make('v_number')
-                        ->hiddenLabel()
                         ->placeholder('1234')
                         ->maxLength(4)
-                        ->extraInputAttributes(['style' => 'text-align: center; border-left: 0; border-right: 0; border-radius: 0;'])
-                        ->formatStateUsing(fn($record) => $record ? explode(' ', $record->vehicle_number)[1] ?? '' : ''),
-
+                        ->extraAttributes(['class' => 'nopol-number']),
                     TextInput::make('v_suffix')
-                        ->hiddenLabel()
-                        ->placeholder('XYZ')
+                        ->placeholder('AB')
                         ->maxLength(3)
-                        ->extraInputAttributes(['style' => 'text-align: center; border-left: 0; border-top-left-radius: 0; border-bottom-left-radius: 0;'])
-                        ->formatStateUsing(fn($record) => $record ? explode(' ', $record->vehicle_number)[2] ?? '' : ''),
+                        ->extraAttributes(['class' => 'nopol-suffix']),
                 ])
                     ->columns(3)
-                    ->columnSpanFull()
-                    ->extraAttributes(['class' => 'nopol-grid', 'style' => 'align-items: end;']),
+                    ->columnSpanFull(),
 
+                // --- Hidden Fields Logic ---
                 Hidden::make('vehicle_number')
                     ->dehydrated(true)
-                    ->dehydrateStateUsing(fn($get) => preg_replace('/\s+/', ' ', trim("{$get('v_prefix')} {$get('v_number')} {$get('v_suffix')}"))),
+                    ->dehydrateStateUsing(fn($get) => strtoupper(trim("{$get('v_prefix')} {$get('v_number')} {$get('v_suffix')}"))),
 
-                // Hidden Data
-                Hidden::make('token'),
+                Hidden::make('type')
+                    ->default(function () {
+                        $queryType = request()->query('type');
+                        // Handle both 'walk-in' dan 'walkin' dari query parameter
+                        if (in_array($queryType, ['walk-in', 'walkin', 'walk_in'])) {
+                            return 'walk-in';
+                        }
+                        return 'appointment';
+                    }),
+
                 Hidden::make('status')
-                    ->default('pending'),
+                    ->default(function () {
+                        $queryType = request()->query('type');
+                        // Walk-in otomatis menjadi 'active'
+                        if (in_array($queryType, ['walk-in', 'walkin', 'walk_in'])) {
+                            return 'active';
+                        }
+                        return 'pending';
+                    }),
+
+                Hidden::make('token')
+                    ->default(fn() => Str::random(10)),
             ]);
     }
 }

@@ -20,8 +20,9 @@ class ListAppointments extends ListRecords
                 ->color('success')
                 ->visible(fn() => auth()->user()->can('create appointment'))
                 ->mutateFormDataUsing(function (array $data): array {
-                    // Aman: format standar
                     $data['type'] = 'appointment';
+                    $data['status'] = 'pending'; // Appointment harus disetujui/datang dulu
+                    $data['token'] = \Illuminate\Support\Str::random(10);
                     return $data;
                 }),
 
@@ -32,8 +33,11 @@ class ListAppointments extends ListRecords
                 ->color('warning')
                 ->visible(fn() => auth()->user()->can('create walk-in'))
                 ->mutateFormDataUsing(function (array $data): array {
-                    // UBAH DI SINI: Sesuaikan persis dengan database (tanpa strip/garis bawah)
-                    $data['type'] = 'walkin';
+                    // SINKRONISASI: Harus 'walk-in' sesuai Enum di Migration
+                    $data['type'] = 'walk-in';
+                    // Walk-in otomatis langsung 'active' (sudah di lokasi)
+                    $data['status'] = 'active';
+                    $data['token'] = \Illuminate\Support\Str::random(10);
                     return $data;
                 }),
         ];
