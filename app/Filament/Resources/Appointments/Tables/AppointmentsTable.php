@@ -4,6 +4,7 @@ namespace App\Filament\Resources\Appointments\Tables;
 
 use App\Models\Appointment;
 use Filament\Tables\Columns\TextColumn;
+use Filament\Tables\Columns\ViewColumn;
 use Filament\Tables\Table;
 use Filament\Notifications\Notification;
 use Filament\Actions\Action;
@@ -19,69 +20,9 @@ class AppointmentsTable
     {
         return $table
             ->columns([
-                TextColumn::make('visitor_display')
+                ViewColumn::make('visitor_display')
                     ->label('Nama Pengunjung')
-                    ->html()
-                    ->formatStateUsing(function (Appointment $record) {
-                        $remaining = $record->remaining_visitors;
-                        
-                        if (empty($remaining)) {
-                            return '<span class="text-gray-500">-</span>';
-                        }
-                        
-                        if (count($remaining) === 1) {
-                            return htmlspecialchars($remaining[0]);
-                        }
-                        
-                        $appointmentId = $record->id;
-                        $mainName = htmlspecialchars($remaining[0]);
-                        $othersCount = count($remaining) - 1;
-                        $allNamesJson = json_encode($remaining);
-                        $allNamesList = implode('<br>', array_map('htmlspecialchars', $remaining));
-                        
-                        return <<<HTML
-<div class="visitor-list-container" data-id="$appointmentId">
-    <span class="visitor-main-name">$mainName</span>
-    <button 
-        type="button"
-        class="visitor-expand-btn"
-        data-appointment-id="$appointmentId"
-        data-others-count="$othersCount"
-        onclick="toggleVisitorList(this, event)"
-        style="background: none; border: none; padding: 0; margin-left: 4px; color: #2563eb; cursor: pointer; font-size: 0.875rem; font-weight: 500;">
-        + $othersCount others
-    </button>
-    <div class="visitor-list-expanded hidden" data-appointment-id="$appointmentId" style="margin-top: 8px; padding: 8px; background: #f9fafb; border-radius: 4px; border-left: 3px solid #2563eb;">
-        $allNamesList
-    </div>
-</div>
-
-<script>
-if (!window.toggleVisitorList) {
-    window.toggleVisitorList = function(btn, event) {
-        event.preventDefault();
-        const appointmentId = btn.getAttribute('data-appointment-id');
-        const expandedDiv = document.querySelector(`.visitor-list-expanded[data-appointment-id="\${appointmentId}"]`);
-        
-        if (expandedDiv) {
-            const isHidden = expandedDiv.classList.contains('hidden');
-            
-            if (isHidden) {
-                expandedDiv.classList.remove('hidden');
-                btn.textContent = 'show less';
-                btn.style.color = '#1d4ed8';
-            } else {
-                expandedDiv.classList.add('hidden');
-                const othersCount = btn.getAttribute('data-others-count');
-                btn.textContent = '+ ' + othersCount + ' others';
-                btn.style.color = '#2563eb';
-            }
-        }
-    };
-}
-</script>
-HTML;
-                    })
+                    ->view('components.visitor-list-column')
                     ->searchable(query: function ($query, string $search) {
                         return $query->where('visitor_id', 'like', "%{$search}%")
                             ->orWhereJsonContains('companions', [['name' => $search]]);
