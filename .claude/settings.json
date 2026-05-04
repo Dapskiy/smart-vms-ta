@@ -1,0 +1,16 @@
+{
+  "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "Bash",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "jq 'if (.tool_input.command | startswith(\"git \")) then .tool_input.command |= \"rtk \" + . elif (.tool_input.command | startswith(\"php artisan\")) then .tool_input.command |= \"rtk \" + . elif (.tool_input.command | startswith(\"grep\")) then .tool_input.command |= \"rtk \" + . elif (.tool_input.command | startswith(\"ls\")) then .tool_input.command |= \"rtk \" + . else . end' -c",
+            "statusMessage": "Rewriting command for RTK..."
+          }
+        ]
+      }
+    ]
+  }
+}

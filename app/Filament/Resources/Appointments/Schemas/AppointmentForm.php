@@ -16,6 +16,7 @@ use Filament\Schemas\Schema;
 use Filament\Schemas\Components\Utilities\Get;
 use Closure;
 use App\Models\Appointment;
+use App\Services\VisitIdService;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\HtmlString;
 use Illuminate\Support\Str;
@@ -93,6 +94,12 @@ class AppointmentForm
     {
         return $schema
             ->components([
+                // Display Visit ID
+                Placeholder::make('visit_id')
+                    ->label('ID Kunjungan')
+                    ->content(fn($record) => $record?->visit_id ?? VisitIdService::generate())
+                    ->visible(fn($record) => $record !== null),
+
                 // 1. Visitor Utama
                 Select::make('visitor_id')
                     ->label('Tamu (Ketua Rombongan)')

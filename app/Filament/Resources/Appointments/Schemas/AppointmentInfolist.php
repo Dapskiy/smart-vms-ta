@@ -53,6 +53,11 @@ class AppointmentInfolist
                 Section::make('Detail Kunjungan')
                     ->icon('heroicon-o-clipboard-document-list')
                     ->schema([
+                        TextEntry::make('visit_id')
+                            ->label('ID Kunjungan')
+                            ->copyable()
+                            ->copyMessage('ID Kunjungan berhasil disalin!'),
+
                         TextEntry::make('type')
                             ->label('Tipe Kunjungan')
                             ->badge()

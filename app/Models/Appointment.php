@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Services\VisitIdService;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -30,6 +31,11 @@ class Appointment extends Model
             // Set default token if empty
             if (empty($appointment->token)) {
                 $appointment->token = Str::random(10);
+            }
+
+            // Generate visit_id if empty
+            if (empty($appointment->visit_id)) {
+                $appointment->visit_id = VisitIdService::generate();
             }
 
             // Standarisasi type 'walk-in'
