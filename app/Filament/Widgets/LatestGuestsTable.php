@@ -56,7 +56,7 @@ class LatestGuestsTable extends BaseWidget
                     ->url(fn (Appointment $record): string => '#')
                     ->button()
                     ->outlined()
-                    ->size(\Filament\Support\Enums\ActionSize::Small),
+                    ->size('sm'),
             ])
             ->heading('Daftar Tamu')
             ->description('Hari ini');

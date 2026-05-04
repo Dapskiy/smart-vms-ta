@@ -7,6 +7,7 @@ use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Table;
 use Filament\Notifications\Notification;
 use Filament\Actions\Action;
+
 use Filament\Actions\DeleteAction;
 use Filament\Actions\EditAction;
 use Filament\Actions\BulkActionGroup;
@@ -121,13 +122,25 @@ class AppointmentsTable
                             ->send();
                     }),
 
-                // 4. Tombol Edit
+                // 4. Tombol View Detail
+                Action::make('view_detail')
+                    ->label('')
+                    ->icon('heroicon-o-eye')
+                    ->tooltip('Lihat Detail')
+                    ->color('info')
+                    ->modalHeading(fn(Appointment $record) => 'Detail Visitor — ' . ($record->visitor?->name ?? $record->token))
+                    ->modalContent(fn(Appointment $record) => view('filament.appointments.detail-modal', ['record' => $record]))
+                    ->modalWidth('4xl')
+                    ->modalSubmitAction(false)
+                    ->modalCancelActionLabel('Tutup'),
+
+                // 5. Tombol Edit
                 EditAction::make()
                     ->label('')
                     ->icon('heroicon-o-pencil')
                     ->tooltip('Edit'),
 
-                // 5. Tombol Delete
+                // 6. Tombol Delete
                 DeleteAction::make()
                     ->label('')
                     ->icon('heroicon-o-trash')
