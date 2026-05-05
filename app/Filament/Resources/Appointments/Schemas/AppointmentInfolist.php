@@ -95,7 +95,7 @@ class AppointmentInfolist
 
                         TextEntry::make('visit_time')
                             ->label('Jam Kunjungan')
-                            ->formatStateUsing(fn($state) => $state ? $state->format('H:i') : '-'),
+                            ->formatStateUsing(fn($state) => $state ? str_pad($state, 5, '0', STR_PAD_LEFT) : '-'),
 
                         TextEntry::make('pax')
                             ->label('Total Orang'),

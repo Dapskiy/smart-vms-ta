@@ -22,9 +22,9 @@ class Appointment extends Model
     protected $casts = [
         'companions' => 'array',
         'visit_date' => 'date',
-        'visit_time' => 'datetime:H:i',
-        'checkin_time' => 'datetime:H:i',
-        'checkout_time' => 'datetime:H:i',
+        'visit_time' => 'string',
+        'checkin_time' => 'string',
+        'checkout_time' => 'string',
     ];
 
     protected static function booted(): void
