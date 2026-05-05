@@ -75,8 +75,15 @@ class SummaryResource extends Resource
                             ->where('status', 'completed')
                             ->latest('visit_date')
                             ->first();
-                        
-                        return $lastAppointment?->checkin_time ?? '-';
+
+                        if (!$lastAppointment || !$lastAppointment->checkin_time) {
+                            return '-';
+                        }
+
+                        $time = $lastAppointment->checkin_time;
+                        return is_string($time)
+                            ? \Carbon\Carbon::parse($time)->format('H:i:s')
+                            : $time->format('H:i:s');
                     }),
                 TextColumn::make('checkout_time')
                     ->label('Checkout Terakhir')
@@ -85,8 +92,15 @@ class SummaryResource extends Resource
                             ->where('status', 'completed')
                             ->latest('visit_date')
                             ->first();
-                        
-                        return $lastAppointment?->checkout_time ?? '-';
+
+                        if (!$lastAppointment || !$lastAppointment->checkout_time) {
+                            return '-';
+                        }
+
+                        $time = $lastAppointment->checkout_time;
+                        return is_string($time)
+                            ? \Carbon\Carbon::parse($time)->format('H:i:s')
+                            : $time->format('H:i:s');
                     }),
             ])
             ->filters([

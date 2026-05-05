@@ -18,6 +18,7 @@ public function run(): void
     $this->call([
         ShieldSeeder::class,
         SuperAdminSeeder::class,
+        RoomSeeder::class,
     ]);
     }
 }
