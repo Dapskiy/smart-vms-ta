@@ -22,7 +22,7 @@ class Appointment extends Model
     protected $casts = [
         'companions' => 'array',
         'visit_date' => 'date',
-        'visit_time' => 'datetime:H:i',
+        'visit_time' => 'immutable_time:H:i',
         'checkin_time' => 'datetime:H:i',
         'checkout_time' => 'datetime:H:i',
     ];
@@ -93,14 +93,14 @@ class Appointment extends Model
     {
         $companions = $this->companions ?? [];
         $checkedOutNames = $this->visitorCheckouts()->pluck('visitor_name')->toArray();
-        
+
         $remaining = [];
-        
+
         // Add main visitor if not checked out
         if (!in_array($this->visitor?->name, $checkedOutNames)) {
             $remaining[] = $this->visitor?->name;
         }
-        
+
         // Add companions if not checked out
         foreach ($companions as $companion) {
             $name = $companion['name'] ?? null;
@@ -108,22 +108,22 @@ class Appointment extends Model
                 $remaining[] = $name;
             }
         }
-        
+
         return $remaining;
     }
 
     public function getVisitorDisplayAttribute()
     {
         $remaining = $this->remaining_visitors;
-        
+
         if (empty($remaining)) {
             return '-';
         }
-        
+
         if (count($remaining) === 1) {
             return $remaining[0];
         }
-        
+
         $others = count($remaining) - 1;
         return "{$remaining[0]} + {$others} others";
     }

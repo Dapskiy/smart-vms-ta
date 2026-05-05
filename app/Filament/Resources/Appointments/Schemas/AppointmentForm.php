@@ -152,9 +152,8 @@ class AppointmentForm
 
                 TimePicker::make('visit_time')
                     ->label('Jam')
-                    ->default(now()->format('H:i'))
-                    ->hidden(fn(Get $get) => $get('type') === 'appointment')
-                    ->required(fn(Get $get) => $get('type') !== 'appointment')
+                    ->default(fn() => now()->format('H:i'))
+                    ->required()
                     ->native(false),
 
                 TextInput::make('pax')
