@@ -63,26 +63,26 @@ class AppointmentInfolist
                             ->badge()
                             ->color(fn(?string $state): string => match ($state) {
                                 'appointment' => 'success',
-                                'walk-in'     => 'warning',
-                                default       => 'gray',
+                                'walk-in' => 'warning',
+                                default => 'gray',
                             }),
 
                         TextEntry::make('status')
                             ->label('Status')
                             ->badge()
                             ->formatStateUsing(fn(?string $state): string => match ($state) {
-                                'pending'   => 'Menunggu',
-                                'active'    => 'Di dalam',
+                                'pending' => 'Menunggu',
+                                'active' => 'Di dalam',
                                 'completed' => 'Selesai',
                                 'cancelled' => 'Dibatalkan',
-                                default     => $state ?? '—',
+                                default => $state ?? '—',
                             })
                             ->color(fn(?string $state): string => match ($state) {
-                                'pending'   => 'warning',
-                                'active'    => 'success',
+                                'pending' => 'warning',
+                                'active' => 'success',
                                 'completed' => 'gray',
                                 'cancelled' => 'danger',
-                                default     => 'gray',
+                                default => 'gray',
                             }),
 
                         TextEntry::make('purpose')
@@ -95,7 +95,7 @@ class AppointmentInfolist
 
                         TextEntry::make('visit_time')
                             ->label('Jam Kunjungan')
-                            ->time('H:i'),
+                            ->formatStateUsing(fn($state) => $state ? $state->format('H:i') : '-'),
 
                         TextEntry::make('pax')
                             ->label('Total Orang'),
