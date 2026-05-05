@@ -22,7 +22,7 @@ class Appointment extends Model
     protected $casts = [
         'companions' => 'array',
         'visit_date' => 'date',
-        'visit_time' => 'immutable_time:H:i',
+        'visit_time' => 'datetime:H:i',
         'checkin_time' => 'datetime:H:i',
         'checkout_time' => 'datetime:H:i',
     ];
