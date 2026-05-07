@@ -27,9 +27,18 @@ class LatestGuestsTable extends BaseWidget
                 Tables\Columns\TextColumn::make('purpose')
                     ->label('TUJUAN')
                     ->placeholder('Wawancara HR'), // Dummy fallback
-                Tables\Columns\TextColumn::make('expected_arrival_time')
+                Tables\Columns\TextColumn::make('visit_time')
                     ->label('MASUK')
-                    ->time('H:i')
+                    ->getStateUsing(function ($record) {
+                        if (!$record->visit_time) {
+                            return '-';
+                        }
+                        
+                        $time = $record->visit_time;
+                        return is_string($time)
+                            ? \Carbon\Carbon::parse($time)->format('H:i')
+                            : $time->format('H:i');
+                    })
                     ->placeholder('08:30'), // Dummy fallback
                 Tables\Columns\TextColumn::make('status')
                     ->label('STATUS')
@@ -52,11 +61,16 @@ class LatestGuestsTable extends BaseWidget
                     }),
             ])
             ->actions([
-                Action::make('Detail')
-                    ->url(fn (Appointment $record): string => '#')
-                    ->button()
-                    ->outlined()
-                    ->size('sm'),
+                Action::make('detail')
+                    ->label('')
+                    ->icon('heroicon-o-eye')
+                    ->tooltip('Lihat Detail')
+                    ->color('info')
+                    ->modalHeading(fn($record) => 'Detail Pengunjung: ' . ($record->visitor?->name ?? 'Tamu'))
+                    ->modalContent(fn($record) => view('filament.appointments.detail-modal', ['record' => $record]))
+                    ->modalWidth('4xl')
+                    ->modalSubmitAction(false)
+                    ->modalCancelActionLabel('Tutup'),
             ])
             ->heading('Daftar Tamu')
             ->description('Hari ini');
