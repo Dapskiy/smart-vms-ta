@@ -176,7 +176,6 @@
             </thead>
             <tbody>
                 {{-- Tamu Utama --}}
-                @if(!in_array($record->visitor?->name, $checkedOutNames))
                 <tr>
                     <td class="vd-muted">1</td>
                     <td>
@@ -192,50 +191,55 @@
                     </td>
                     <td>{{ $record->visitor?->phone ?? '-' }}</td>
                     <td>
-                        <form method="POST" action="{{ route('filament.admin.resources.appointments.checkout') }}" style="display:inline;">
-                            @csrf
-                            <input type="hidden" name="appointment_id" value="{{ $record->id }}">
-                            <input type="hidden" name="visitor_name" value="{{ $record->visitor?->name }}">
-                            <button
-                                type="submit"
-                                class="vd-copy-btn"
-                                style="background: #fee2e2; border-color: #fecaca; color: #991b1b; padding: 4px 10px; font-size: 12px; border: 1px solid #fecaca; cursor: pointer;"
-                                title="Checkout Pengunjung"
-                                onclick="return confirm('Checkout {{ $record->visitor?->name }}?')">
-                                <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 4 23 10 17 10"></polyline><path d="M20.49 15a9 9 0 1 1 .12-4.49"></path></svg>
-                                Checkout
-                            </button>
-                        </form>
+                        @if($record->status === 'completed' || in_array($record->visitor?->name, $checkedOutNames))
+                            {{ $record->checkout_time ? \Carbon\Carbon::parse($record->checkout_time)->format('H:i:s') : \Carbon\Carbon::parse($record->updated_at)->format('H:i:s') }}
+                        @else
+                            <form method="POST" action="{{ route('filament.admin.resources.appointments.checkout') }}" style="display:inline;">
+                                @csrf
+                                <input type="hidden" name="appointment_id" value="{{ $record->id }}">
+                                <input type="hidden" name="visitor_name" value="{{ $record->visitor?->name }}">
+                                <button
+                                    type="submit"
+                                    class="vd-copy-btn"
+                                    style="background: #fee2e2; border-color: #fecaca; color: #991b1b; padding: 4px 10px; font-size: 12px; border: 1px solid #fecaca; cursor: pointer;"
+                                    title="Checkout Pengunjung"
+                                    onclick="return confirm('Checkout {{ $record->visitor?->name }}?')">
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 4 23 10 17 10"></polyline><path d="M20.49 15a9 9 0 1 1 .12-4.49"></path></svg>
+                                    Checkout
+                                </button>
+                            </form>
+                        @endif
                     </td>
                 </tr>
-                @endif
 
                 {{-- Anggota Rombongan --}}
                 @foreach($companions as $i => $companion)
-                    @if(!in_array($companion['name'] ?? null, $checkedOutNames))
                     <tr>
                         <td class="vd-muted">{{ $i + 2 }}</td>
                         <td><span class="vd-name">{{ $companion['name'] ?? '-' }}</span></td>
                         <td class="vd-muted">—</td>
                         <td class="vd-muted">—</td>
                         <td>
-                            <form method="POST" action="{{ route('filament.admin.resources.appointments.checkout') }}" style="display:inline;">
-                                @csrf
-                                <input type="hidden" name="appointment_id" value="{{ $record->id }}">
-                                <input type="hidden" name="visitor_name" value="{{ $companion['name'] }}">
-                                <button
-                                    type="submit"
-                                    class="vd-copy-btn"
-                                    style="background: #fee2e2; border-color: #fecaca; color: #991b1b; padding: 4px 10px; font-size: 12px; border: 1px solid #fecaca; cursor: pointer;"
-                                    title="Checkout Pengunjung"
-                                    onclick="return confirm('Checkout {{ $companion['name'] }}?')">
-                                    <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 4 23 10 17 10"></polyline><path d="M20.49 15a9 9 0 1 1 .12-4.49"></path></svg>
-                                    Checkout
-                                </button>
-                            </form>
+                            @if($record->status === 'completed' || in_array($companion['name'] ?? null, $checkedOutNames))
+                                {{ $record->checkout_time ? \Carbon\Carbon::parse($record->checkout_time)->format('H:i:s') : \Carbon\Carbon::parse($record->updated_at)->format('H:i:s') }}
+                            @else
+                                <form method="POST" action="{{ route('filament.admin.resources.appointments.checkout') }}" style="display:inline;">
+                                    @csrf
+                                    <input type="hidden" name="appointment_id" value="{{ $record->id }}">
+                                    <input type="hidden" name="visitor_name" value="{{ $companion['name'] }}">
+                                    <button
+                                        type="submit"
+                                        class="vd-copy-btn"
+                                        style="background: #fee2e2; border-color: #fecaca; color: #991b1b; padding: 4px 10px; font-size: 12px; border: 1px solid #fecaca; cursor: pointer;"
+                                        title="Checkout Pengunjung"
+                                        onclick="return confirm('Checkout {{ $companion['name'] }}?')">
+                                        <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 4 23 10 17 10"></polyline><path d="M20.49 15a9 9 0 1 1 .12-4.49"></path></svg>
+                                        Checkout
+                                    </button>
+                                </form>
+                            @endif
                         </td>
                     </tr>
-                    @endif
                 @endforeach
             </tbody>
         </table>
