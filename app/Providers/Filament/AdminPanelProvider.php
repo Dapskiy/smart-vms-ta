@@ -46,6 +46,30 @@ class AdminPanelProvider extends PanelProvider
                     </style>
                 ')
             )
+            ->renderHook(
+                'panels::body.end',
+                fn(): string => \Illuminate\Support\Facades\Blade::render('
+                    <style>
+                        /* 1. Sembunyikan text bawaan (screen-reader) Filament */
+                        .fi-ta-table thead tr th:last-child span.sr-only {
+                            display: none !important;
+                        }
+                        
+                        /* 2. Paksa munculkan teks "Aksi" secara visual */
+                        .fi-ta-table thead tr th:last-child::after {
+                            content: "Aksi";
+                            display: block;
+                            font-weight: 600;
+                            font-size: 0.875rem;
+                            color: inherit;
+                            text-align: right;
+                            padding-right: 1.5rem;
+                            padding-top: 0.75rem;
+                            padding-bottom: 0.75rem;
+                        }
+                    </style>
+                ')
+            )
             ->discoverResources(in: app_path('Filament/Resources'), for: 'App\Filament\Resources')
             ->discoverPages(in: app_path('Filament/Pages'), for: 'App\Filament\Pages')
             ->pages([

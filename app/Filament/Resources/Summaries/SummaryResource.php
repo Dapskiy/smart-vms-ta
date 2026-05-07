@@ -33,75 +33,109 @@ class SummaryResource extends Resource
     {
         return $table
             ->columns([
-                TextColumn::make('name')
-                    ->label('Nama Pengunjung')
-                    ->searchable()
-                    ->sortable(),
-                TextColumn::make('company')
-                    ->label('Instansi')
-                    ->searchable(),
-                TextColumn::make('phone')
-                    ->label('No. Telepon')
-                    ->searchable(),
-                TextColumn::make('appointments_count')
-                    ->label('Jumlah Kunjungan')
-                    ->counts('appointments')
-                    ->numeric()
-                    ->sortable(),
-                TextColumn::make('last_visit')
-                    ->label('Kunjungan Terakhir')
-                    ->state(function (Visitor $record) {
+                TextColumn::make('row_number')
+                    ->label('No')
+                    ->rowIndex(),
+
+                TextColumn::make('appointments.visit_date')
+                    ->label('Tanggal Berkunjung')
+                    ->getStateUsing(function (Visitor $record) {
                         $lastAppointment = $record->appointments()
                             ->where('status', 'completed')
                             ->latest('visit_date')
                             ->first();
-                        
+
+                        if (!$lastAppointment || !$lastAppointment->visit_date) {
+                            return '-';
+                        }
+
+                        return \Carbon\Carbon::parse($lastAppointment->visit_date)->format('d M Y');
+                    })
+                    ->sortable(),
+
+                TextColumn::make('appointments.visit_time')
+                    ->label('Checkin')
+                    ->getStateUsing(function (Visitor $record) {
+                        $lastAppointment = $record->appointments()
+                            ->where('status', 'completed')
+                            ->latest('visit_date')
+                            ->first();
+
+                        if (!$lastAppointment || !$lastAppointment->visit_time) {
+                            return '-';
+                        }
+
+                        $time = $lastAppointment->visit_time;
+                        return is_string($time)
+                            ? \Carbon\Carbon::parse($time)->format('H:i')
+                            : $time->format('H:i');
+                    }),
+
+                TextColumn::make('appointments.checkout_time')
+                    ->label('Checkout')
+                    ->getStateUsing(function (Visitor $record) {
+                        $lastAppointment = $record->appointments()
+                            ->where('status', 'completed')
+                            ->latest('visit_date')
+                            ->first();
+
                         if (!$lastAppointment) {
                             return '-';
                         }
-                        
-                        $visitDate = $lastAppointment->visit_date;
-                        if (is_string($visitDate)) {
-                            return \Carbon\Carbon::parse($visitDate)->format('d/m/Y');
+
+                        if ($lastAppointment->checkout_time) {
+                            $time = $lastAppointment->checkout_time;
+                            return is_string($time)
+                                ? \Carbon\Carbon::parse($time)->format('H:i')
+                                : $time->format('H:i');
                         }
-                        
-                        return $visitDate?->format('d/m/Y') ?? '-';
-                    })
+
+                        // Fallback ke updated_at
+                        return \Carbon\Carbon::parse($lastAppointment->updated_at)->format('H:i');
+                    }),
+
+                TextColumn::make('name')
+                    ->label('Nama Visitor')
+                    ->searchable()
                     ->sortable(),
-                TextColumn::make('checkin_time')
-                    ->label('Checkin Terakhir')
-                    ->state(function (Visitor $record) {
+
+                TextColumn::make('company')
+                    ->label('Instansi')
+                    ->searchable()
+                    ->sortable(),
+
+                TextColumn::make('appointments.pic')
+                    ->label('PIC')
+                    ->getStateUsing(function (Visitor $record) {
                         $lastAppointment = $record->appointments()
                             ->where('status', 'completed')
                             ->latest('visit_date')
                             ->first();
 
-                        if (!$lastAppointment || !$lastAppointment->checkin_time) {
+                        if (!$lastAppointment || !$lastAppointment->pic) {
                             return '-';
                         }
 
-                        $time = $lastAppointment->checkin_time;
-                        return is_string($time)
-                            ? \Carbon\Carbon::parse($time)->format('H:i:s')
-                            : $time->format('H:i:s');
-                    }),
-                TextColumn::make('checkout_time')
-                    ->label('Checkout Terakhir')
-                    ->state(function (Visitor $record) {
+                        return $lastAppointment->pic->name ?? '-';
+                    })
+                    ->searchable()
+                    ->sortable(),
+
+                TextColumn::make('appointments.purpose')
+                    ->label('Keperluan')
+                    ->getStateUsing(function (Visitor $record) {
                         $lastAppointment = $record->appointments()
                             ->where('status', 'completed')
                             ->latest('visit_date')
                             ->first();
 
-                        if (!$lastAppointment || !$lastAppointment->checkout_time) {
+                        if (!$lastAppointment || !$lastAppointment->purpose) {
                             return '-';
                         }
 
-                        $time = $lastAppointment->checkout_time;
-                        return is_string($time)
-                            ? \Carbon\Carbon::parse($time)->format('H:i:s')
-                            : $time->format('H:i:s');
-                    }),
+                        return \Illuminate\Support\Str::limit($lastAppointment->purpose, 50, '...');
+                    })
+                    ->wrap(),
             ])
             ->filters([
                 //
