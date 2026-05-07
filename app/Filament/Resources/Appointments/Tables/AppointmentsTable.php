@@ -8,6 +8,7 @@ use Filament\Tables\Columns\ViewColumn;
 use Filament\Tables\Table;
 use Filament\Notifications\Notification;
 use Filament\Actions\Action;
+use Carbon\Carbon;
 
 use Filament\Actions\DeleteAction;
 use Filament\Actions\EditAction;
@@ -75,12 +76,50 @@ class AppointmentsTable
                     ->label('Check In')
                     ->icon('heroicon-o-arrow-right-end-on-rectangle')
                     ->color('success')
-                    // PERBAIKAN 2: Tambahkan ? pada Appointment dan ?-> pada pemanggilan status
                     ->visible(fn(?Appointment $record) => $record?->status === 'pending')
                     ->requiresConfirmation()
                     ->modalHeading('Konfirmasi Check-in')
                     ->modalDescription('Apakah tamu ini sudah tiba di lokasi dan ingin di-check-in?')
                     ->action(function (Appointment $record) {
+                        // Hanya validasi untuk tipe 'appointment' (bukan walk-in)
+                        if ($record->type === 'appointment') {
+                            $now = Carbon::now();
+
+                            // Ambil jadwal terjadwal: visit_date + visit_time (atau jam mulai ruangan jika booking)
+                            $scheduledDate = Carbon::parse($record->visit_date);
+                            $scheduledTime = $record->should_book_room
+                                ? $record->room_start_time
+                                : $record->visit_time;
+
+                            // Gabungkan tanggal dan jam menjadi satu DateTime
+                            $scheduledDateTime = $scheduledDate->setTimeFromTimeString($scheduledTime);
+
+                            // Hitung window check-in: maksimal 1 jam sebelum jadwal
+                            $checkInStart = $scheduledDateTime->copy()->subHour();
+
+                            // Validasi 1: Harus pada tanggal yang sama (visit_date)
+                            if ($now->toDateString() !== $scheduledDate->toDateString()) {
+                                Notification::make()
+                                    ->title('Belum Waktunya Check-in!')
+                                    ->body("Check-in hanya bisa dilakukan pada tanggal kunjungan ({$scheduledDate->format('d/m/Y')}).")
+                                    ->danger()
+                                    ->send();
+                                return;
+                            }
+
+                            // Validasi 2: Harus dalam jendela H-1 jam
+                            if ($now->isBefore($checkInStart)) {
+                                $remainingTime = $now->diffInMinutes($checkInStart);
+                                Notification::make()
+                                    ->title('Belum Waktunya Check-in!')
+                                    ->body("Check-in dapat dilakukan maksimal 1 jam sebelum jadwal. Waktu check-in dimulai pukul {$checkInStart->format('H:i')} ({$remainingTime} menit lagi).")
+                                    ->danger()
+                                    ->send();
+                                return;
+                            }
+                        }
+
+                        // Jika semua validasi lolos, proses check-in
                         $record->update([
                             'status' => 'active',
                             'checkin_time' => now()->format('H:i'),
@@ -98,7 +137,6 @@ class AppointmentsTable
                     ->label('Check Out')
                     ->icon('heroicon-o-arrow-left-start-on-rectangle')
                     ->color('danger')
-                    // PERBAIKAN 3: Sama seperti di atas, gunakan parameter nullable
                     ->visible(fn(?Appointment $record) => $record?->status === 'active')
                     ->requiresConfirmation()
                     ->modalHeading('Konfirmasi Check-out')

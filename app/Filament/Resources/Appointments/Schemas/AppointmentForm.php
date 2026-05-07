@@ -152,8 +152,8 @@ class AppointmentForm
 
                 TimePicker::make('visit_time')
                     ->label('Jam')
-                    ->default(fn() => now()->format('H:i'))
-                    ->required()
+                    ->hidden(fn(Get $get) => $get('should_book_room') === true)
+                    ->required(fn(Get $get) => !$get('should_book_room'))
                     ->native(false),
 
                 TextInput::make('pax')
