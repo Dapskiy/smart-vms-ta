@@ -15,8 +15,8 @@ use Filament\Actions\EditAction;
 use Filament\Actions\BulkActionGroup;
 use Filament\Actions\DeleteBulkAction;
 use Illuminate\Database\Eloquent\Builder;
-use UnitEnum;    // <--- Tambahkan import ini
-use BackedEnum;  // <--- Tambahkan import ini
+use UnitEnum;    
+use BackedEnum;  
 
 class SummaryResource extends Resource
 {
@@ -206,8 +206,27 @@ class SummaryResource extends Resource
 
     public static function getEloquentQuery(): Builder
     {
-        return parent::getEloquentQuery()->whereHas('appointments', function (Builder $query) {
+        $query = parent::getEloquentQuery()->whereHas('appointments', function (Builder $query) {
             $query->where('status', 'completed');
         });
+
+        if (request()->filled('date_range')) {
+            $dateRange = request('date_range');
+            $dates = explode(' - ', $dateRange);
+            if (count($dates) == 2) {
+                try {
+                    $from = \Carbon\Carbon::createFromFormat('d/m/Y', trim($dates[0]))->startOfDay();
+                    $to = \Carbon\Carbon::createFromFormat('d/m/Y', trim($dates[1]))->endOfDay();
+
+                    $query->whereHas('appointments', function ($q) use ($from, $to) {
+                        $q->whereBetween('visit_date', [$from, $to]);
+                    });
+                } catch (\Exception $e) {
+                    // Silently ignore format errors
+                }
+            }
+        }
+
+        return $query;
     }
 }
