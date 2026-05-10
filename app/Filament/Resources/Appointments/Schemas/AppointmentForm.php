@@ -131,11 +131,30 @@ class AppointmentForm
                 // 3. PIC
                 Select::make('pic_id')
                     ->label('Tujuan Kunjungan (PIC)')
-                    ->relationship('pic', 'name')
-                    ->default(Auth::id())
+                    ->relationship('pic', 'name', fn($query) => $query->where('is_available', true))
+                    ->getOptionLabelFromRecordUsing(fn ($record) => $record->department ? "{$record->name} - {$record->department}" : $record->name)
                     ->required()
                     ->searchable()
-                    ->preload(),
+                    ->preload()
+                    ->rules([
+                        fn($get) => function (string $attribute, $value, Closure $fail) use ($get) {
+                            $visitDate = $get('visit_date');
+                            if (!$visitDate) return;
+
+                            $query = Appointment::where('pic_id', $value)
+                                ->where('visit_date', $visitDate)
+                                ->whereNotIn('status', ['cancelled', 'completed']);
+
+                            $currentId = $get('id');
+                            if ($currentId) {
+                                $query->where('id', '!=', $currentId);
+                            }
+
+                            if ($query->exists()) {
+                                $fail('PIC ini sudah memiliki jadwal pada tanggal tersebut.');
+                            }
+                        },
+                    ]),
 
                 Textarea::make('purpose')
                     ->label('Tujuan/Perihal')

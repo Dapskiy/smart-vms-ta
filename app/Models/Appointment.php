@@ -71,7 +71,7 @@ class Appointment extends Model
 
     public function pic(): BelongsTo
     {
-        return $this->belongsTo(User::class, 'pic_id');
+        return $this->belongsTo(Pic::class, 'pic_id');
     }
 
     public function visitor(): BelongsTo

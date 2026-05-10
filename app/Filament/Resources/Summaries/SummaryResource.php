@@ -203,4 +203,11 @@ class SummaryResource extends Resource
     {
         return auth()->user()->can('viewany summary');
     }
+
+    public static function getEloquentQuery(): Builder
+    {
+        return parent::getEloquentQuery()->whereHas('appointments', function (Builder $query) {
+            $query->where('status', 'completed');
+        });
+    }
 }
