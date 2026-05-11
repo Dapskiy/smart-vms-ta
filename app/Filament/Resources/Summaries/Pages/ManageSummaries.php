@@ -39,8 +39,6 @@ class ManageSummaries extends ManageRecords
                 ->label('Export Excel')
                 ->color('success')
                 ->icon('heroicon-o-document-arrow-down'),
-            CreateAction::make()
-                ->label('New Visitor'),
         ];
     }
 }
