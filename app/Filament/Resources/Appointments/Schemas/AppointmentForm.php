@@ -132,14 +132,15 @@ class AppointmentForm
                 Select::make('pic_id')
                     ->label('Tujuan Kunjungan (PIC)')
                     ->relationship('pic', 'name', fn($query) => $query->where('is_available', true))
-                    ->getOptionLabelFromRecordUsing(fn ($record) => $record->department ? "{$record->name} - {$record->department}" : $record->name)
+                    ->getOptionLabelFromRecordUsing(fn($record) => $record->department ? "{$record->name} - {$record->department}" : $record->name)
                     ->required()
                     ->searchable()
                     ->preload()
                     ->rules([
                         fn($get) => function (string $attribute, $value, Closure $fail) use ($get) {
                             $visitDate = $get('visit_date');
-                            if (!$visitDate) return;
+                            if (!$visitDate)
+                                return;
 
                             $query = Appointment::where('pic_id', $value)
                                 ->where('visit_date', $visitDate)
@@ -173,7 +174,11 @@ class AppointmentForm
                     ->label('Jam')
                     ->hidden(fn(Get $get) => $get('should_book_room') === true)
                     ->required(fn(Get $get) => !$get('should_book_room'))
-                    ->native(false),
+                    ->native(false)
+                    // NOTES: Default value akan diatur oleh ->mountUsing() di ListAppointments
+                    // Untuk Appointment: kosong (user isi manual)
+                    // Untuk Walk-in: otomatis jam sekarang
+                    ->default(null),
 
                 TextInput::make('pax')
                     ->label('Total Orang')

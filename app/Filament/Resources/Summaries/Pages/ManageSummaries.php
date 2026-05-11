@@ -3,12 +3,10 @@
 namespace App\Filament\Resources\Summaries\Pages;
 
 use App\Filament\Resources\Summaries\SummaryResource;
-use Filament\Actions\CreateAction;
 use Filament\Actions\Action;
-use Malzariey\FilamentDaterangepickerFilter\Fields\DateRangePicker;
+use Filament\Forms\Components\DatePicker;
 use Filament\Resources\Pages\ManageRecords;
-use pxlrbt\FilamentExcel\Actions\Pages\ExportAction;
-use pxlrbt\FilamentExcel\Exports\ExcelExport;
+use Filament\Notifications\Notification;
 
 class ManageSummaries extends ManageRecords
 {
@@ -22,23 +20,57 @@ class ManageSummaries extends ManageRecords
                 ->icon('heroicon-o-calendar')
                 ->color('warning')
                 ->form([
-                    DateRangePicker::make('date_range')
-                        ->label('Pilih Rentang Tanggal')
-                        ->default(request('date_range'))
+                    DatePicker::make('start_date')
+                        ->label('Dari Tanggal')
+                        ->default(request('start_date') ? date_create(request('start_date'))->format('Y-m-d') : null)
+                        ->native(false)
                         ->autofocus(),
+                    DatePicker::make('end_date')
+                        ->label('Sampai Tanggal')
+                        ->default(request('end_date') ? date_create(request('end_date'))->format('Y-m-d') : null)
+                        ->native(false),
                 ])
                 ->action(function (array $data) {
-                    return redirect(request()->url() . '?date_range=' . urlencode($data['date_range'] ?? ''));
+                    $startDate = $data['start_date'] ?? null;
+                    $endDate = $data['end_date'] ?? null;
+
+                    // Validasi: end_date tidak boleh lebih awal dari start_date
+                    if ($startDate && $endDate && strtotime($endDate) < strtotime($startDate)) {
+                        Notification::make()
+                            ->title('Tanggal akhir tidak boleh lebih awal dari tanggal awal!')
+                            ->warning()
+                            ->send();
+                        return;
+                    }
+
+                    // Buat URL dengan parameter start_date dan end_date
+                    $baseUrl = request()->url();
+                    $params = [];
+
+                    if ($startDate) {
+                        $params['start_date'] = $startDate;
+                    }
+                    if ($endDate) {
+                        $params['end_date'] = $endDate;
+                    }
+
+                    $queryString = http_build_query($params);
+                    $redirectUrl = $baseUrl . ($queryString ? '?' . $queryString : '');
+
+                    return redirect($redirectUrl);
                 }),
-            ExportAction::make()
-                ->exports([
-                    ExcelExport::make()
-                        ->fromTable()
-                        ->withFilename('Data-Visitor-' . date('Y-m-d')),
-                ])
-                ->label('Export Excel')
+
+            Action::make('export')
+                ->label('Export Data')
+                ->icon('heroicon-o-document-arrow-down')
                 ->color('success')
-                ->icon('heroicon-o-document-arrow-down'),
+                ->action(function () {
+                    Notification::make()
+                        ->title('Fitur Export sedang dalam perbaikan')
+                        ->warning()
+                        ->send();
+                }),
         ];
     }
 }
+

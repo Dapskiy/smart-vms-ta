@@ -15,8 +15,8 @@ use Filament\Actions\EditAction;
 use Filament\Actions\BulkActionGroup;
 use Filament\Actions\DeleteBulkAction;
 use Illuminate\Database\Eloquent\Builder;
-use UnitEnum;    
-use BackedEnum;  
+use UnitEnum;
+use BackedEnum;
 
 class SummaryResource extends Resource
 {
@@ -24,10 +24,10 @@ class SummaryResource extends Resource
 
     // Perbaikan: Tipe data disesuaikan 100% dengan aturan Filament & PHP 8
     protected static string|BackedEnum|null $navigationIcon = 'heroicon-o-clipboard-document-list';
-    protected static UnitEnum|string|null $navigationGroup = 'Appointments';
+    protected static UnitEnum|string|null $navigationGroup = null; // Keluarkan dari grup "Appointments"
     protected static ?string $navigationLabel = 'Summary';
     protected static ?string $pluralModelLabel = 'Summary Kunjungan';
-    protected static ?int $navigationSort = 2;
+    protected static ?int $navigationSort = 3; // Positioning di bawah Pics
 
     public static function table(Table $table): Table
     {
