@@ -22,7 +22,6 @@ class SummaryResource extends Resource
 {
     protected static ?string $model = Visitor::class;
 
-    // Perbaikan: Tipe data disesuaikan 100% dengan aturan Filament & PHP 8
     protected static string|BackedEnum|null $navigationIcon = 'heroicon-o-clipboard-document-list';
     protected static UnitEnum|string|null $navigationGroup = null; // Keluarkan dari grup "Appointments"
     protected static ?string $navigationLabel = 'Summary';
@@ -194,7 +193,6 @@ class SummaryResource extends Resource
     // Override izin melihat menu di sidebar dan daftar tabel
     public static function canViewAny(): bool
     {
-        // Sesuaikan nama string ini dengan Permission Name yang Anda buat di Langkah 1
         return auth()->user()->can('viewany summary');
     }
 
@@ -210,25 +208,45 @@ class SummaryResource extends Resource
             $query->whereIn('status', ['completed', 'checkout', 'inactive']);
         });
 
-        if (request()->filled('start_date') && request()->filled('end_date')) {
-            $from = \Carbon\Carbon::parse(request('start_date'))->startOfDay();
-            $to = \Carbon\Carbon::parse(request('end_date'))->endOfDay();
+        $type = request('type', empty(request()->all()) ? 'range' : request('type'));
+
+        if ($type === 'range') {
+            if (request()->filled('start_date') && request()->filled('end_date')) {
+                $from = \Carbon\Carbon::parse(request('start_date'))->startOfDay();
+                $to = \Carbon\Carbon::parse(request('end_date'))->endOfDay();
+                
+                $query->whereHas('appointments', function ($q) use ($from, $to) {
+                    $q->whereIn('status', ['completed', 'checkout', 'inactive'])
+                      ->whereBetween('updated_at', [$from, $to]);
+                });
+            } elseif (request()->filled('start_date')) {
+                $from = \Carbon\Carbon::parse(request('start_date'))->startOfDay();
+                $query->whereHas('appointments', function ($q) use ($from) {
+                    $q->whereIn('status', ['completed', 'checkout', 'inactive'])
+                      ->where('updated_at', '>=', $from);
+                });
+            } elseif (request()->filled('end_date')) {
+                $to = \Carbon\Carbon::parse(request('end_date'))->endOfDay();
+                $query->whereHas('appointments', function ($q) use ($to) {
+                    $q->whereIn('status', ['completed', 'checkout', 'inactive'])
+                      ->where('updated_at', '<=', $to);
+                });
+            }
+        } elseif ($type === 'month' && request()->filled('month') && request()->filled('year')) {
+            $month = request('month');
+            $year = request('year');
             
-            $query->whereHas('appointments', function ($q) use ($from, $to) {
+            $query->whereHas('appointments', function ($q) use ($month, $year) {
                 $q->whereIn('status', ['completed', 'checkout', 'inactive'])
-                  ->whereBetween('visit_date', [$from, $to]);
+                  ->whereMonth('updated_at', $month)
+                  ->whereYear('updated_at', $year);
             });
-        } elseif (request()->filled('start_date')) {
-            $from = \Carbon\Carbon::parse(request('start_date'))->startOfDay();
-            $query->whereHas('appointments', function ($q) use ($from) {
+        } elseif ($type === 'year' && request()->filled('year')) {
+            $year = request('year');
+            
+            $query->whereHas('appointments', function ($q) use ($year) {
                 $q->whereIn('status', ['completed', 'checkout', 'inactive'])
-                  ->whereDate('visit_date', '>=', $from);
-            });
-        } elseif (request()->filled('end_date')) {
-            $to = \Carbon\Carbon::parse(request('end_date'))->endOfDay();
-            $query->whereHas('appointments', function ($q) use ($to) {
-                $q->whereIn('status', ['completed', 'checkout', 'inactive'])
-                  ->whereDate('visit_date', '<=', $to);
+                  ->whereYear('updated_at', $year);
             });
         }
 
