@@ -41,7 +41,7 @@ class SummaryResource extends Resource
                     ->label('Tanggal Berkunjung')
                     ->getStateUsing(function (Visitor $record) {
                         $lastAppointment = $record->appointments()
-                            ->where('status', 'completed')
+                            ->whereIn('status', ['completed', 'checkout', 'inactive'])
                             ->latest('visit_date')
                             ->first();
 
@@ -57,7 +57,7 @@ class SummaryResource extends Resource
                     ->label('Checkin')
                     ->getStateUsing(function (Visitor $record) {
                         $lastAppointment = $record->appointments()
-                            ->where('status', 'completed')
+                            ->whereIn('status', ['completed', 'checkout', 'inactive'])
                             ->latest('visit_date')
                             ->first();
 
@@ -75,7 +75,7 @@ class SummaryResource extends Resource
                     ->label('Checkout')
                     ->getStateUsing(function (Visitor $record) {
                         $lastAppointment = $record->appointments()
-                            ->where('status', 'completed')
+                            ->whereIn('status', ['completed', 'checkout', 'inactive'])
                             ->latest('visit_date')
                             ->first();
 
@@ -108,7 +108,7 @@ class SummaryResource extends Resource
                     ->label('PIC')
                     ->getStateUsing(function (Visitor $record) {
                         $lastAppointment = $record->appointments()
-                            ->where('status', 'completed')
+                            ->whereIn('status', ['completed', 'checkout', 'inactive'])
                             ->latest('visit_date')
                             ->first();
 
@@ -125,7 +125,7 @@ class SummaryResource extends Resource
                     ->label('Keperluan')
                     ->getStateUsing(function (Visitor $record) {
                         $lastAppointment = $record->appointments()
-                            ->where('status', 'completed')
+                            ->whereIn('status', ['completed', 'checkout', 'inactive'])
                             ->latest('visit_date')
                             ->first();
 
@@ -149,9 +149,9 @@ class SummaryResource extends Resource
                     ->color('info')
                     ->modalHeading(fn(Visitor $record) => 'Detail Pengunjung: ' . $record->name)
                     ->modalContent(function (Visitor $record) {
-                        // Tampilkan appointment terbaru yang completed
+                        // Tampilkan appointment terbaru yang completed / checkout
                         $appointment = $record->appointments()
-                            ->where('status', 'completed')
+                            ->whereIn('status', ['completed', 'checkout', 'inactive'])
                             ->latest('visit_date')
                             ->first();
                         return view('filament.appointments.detail-modal', ['record' => $appointment ?? $record->appointments()->first()]);
@@ -207,7 +207,7 @@ class SummaryResource extends Resource
     public static function getEloquentQuery(): Builder
     {
         $query = parent::getEloquentQuery()->whereHas('appointments', function (Builder $query) {
-            $query->where('status', 'completed');
+            $query->whereIn('status', ['completed', 'checkout', 'inactive']);
         });
 
         if (request()->filled('start_date') && request()->filled('end_date')) {
@@ -215,17 +215,20 @@ class SummaryResource extends Resource
             $to = \Carbon\Carbon::parse(request('end_date'))->endOfDay();
             
             $query->whereHas('appointments', function ($q) use ($from, $to) {
-                $q->whereBetween('visit_date', [$from, $to]);
+                $q->whereIn('status', ['completed', 'checkout', 'inactive'])
+                  ->whereBetween('visit_date', [$from, $to]);
             });
         } elseif (request()->filled('start_date')) {
             $from = \Carbon\Carbon::parse(request('start_date'))->startOfDay();
             $query->whereHas('appointments', function ($q) use ($from) {
-                $q->whereDate('visit_date', '>=', $from);
+                $q->whereIn('status', ['completed', 'checkout', 'inactive'])
+                  ->whereDate('visit_date', '>=', $from);
             });
         } elseif (request()->filled('end_date')) {
             $to = \Carbon\Carbon::parse(request('end_date'))->endOfDay();
             $query->whereHas('appointments', function ($q) use ($to) {
-                $q->whereDate('visit_date', '<=', $to);
+                $q->whereIn('status', ['completed', 'checkout', 'inactive'])
+                  ->whereDate('visit_date', '<=', $to);
             });
         }
 

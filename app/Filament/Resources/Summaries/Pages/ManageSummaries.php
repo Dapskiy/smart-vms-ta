@@ -14,6 +14,30 @@ class ManageSummaries extends ManageRecords
 
     protected function getHeaderActions(): array
     {
+        // Menentukan nama file dinamis berdasarkan filter tanggal
+        $startDate = request('start_date');
+        $endDate = request('end_date');
+        $fileName = 'Summary Visitor Keseluruhan';
+
+        if ($startDate && $endDate) {
+            $start = \Carbon\Carbon::parse($startDate);
+            $end = \Carbon\Carbon::parse($endDate);
+
+            if ($start->format('Y-m') === $end->format('Y-m')) {
+                // Jika hanya 1 bulan sama
+                $fileName = "Summary Visitor " . $start->translatedFormat('F Y');
+            } else {
+                // Jika ada rentang tanggal berbeda bulan/hari
+                $fileName = "Summary Visitor " . $start->translatedFormat('d F Y') . " - " . $end->translatedFormat('d F Y');
+            }
+        } elseif ($startDate) {
+            $start = \Carbon\Carbon::parse($startDate);
+            $fileName = "Summary Visitor Sejak " . $start->translatedFormat('d F Y');
+        } elseif ($endDate) {
+            $end = \Carbon\Carbon::parse($endDate);
+            $fileName = "Summary Visitor Sampai " . $end->translatedFormat('d F Y');
+        }
+
         return [
             Action::make('filter_date')
                 ->label('Filter Tanggal')
@@ -63,20 +87,20 @@ class ManageSummaries extends ManageRecords
             \pxlrbt\FilamentExcel\Actions\Pages\ExportAction::make()
                 ->exports([
                     \App\Filament\Exports\SummaryExcelExport::make()
-                        ->withFilename('Data-Visitor-' . date('Y-m-d'))
+                        ->withFilename($fileName)
                         ->withColumns([
                             \pxlrbt\FilamentExcel\Columns\Column::make('name')->heading('Nama Visitor'),
                             \pxlrbt\FilamentExcel\Columns\Column::make('company')->heading('Instansi'),
                             \pxlrbt\FilamentExcel\Columns\Column::make('visit_date')->heading('Tanggal Berkunjung')->formatStateUsing(function ($record) {
-                                $lastAppointment = $record->appointments()->where('status', 'completed')->latest('visit_date')->first();
+                                $lastAppointment = $record->appointments()->whereIn('status', ['completed', 'checkout', 'inactive'])->latest('visit_date')->first();
                                 return $lastAppointment && $lastAppointment->visit_date ? \Carbon\Carbon::parse($lastAppointment->visit_date)->format('d M Y') : '-';
                             }),
                             \pxlrbt\FilamentExcel\Columns\Column::make('visit_time')->heading('Checkin')->formatStateUsing(function ($record) {
-                                $lastAppointment = $record->appointments()->where('status', 'completed')->latest('visit_date')->first();
+                                $lastAppointment = $record->appointments()->whereIn('status', ['completed', 'checkout', 'inactive'])->latest('visit_date')->first();
                                 return $lastAppointment && $lastAppointment->visit_time ? \Carbon\Carbon::parse($lastAppointment->visit_time)->format('H:i') : '-';
                             }),
                             \pxlrbt\FilamentExcel\Columns\Column::make('checkout_time')->heading('Checkout')->formatStateUsing(function ($record) {
-                                $lastAppointment = $record->appointments()->where('status', 'completed')->latest('visit_date')->first();
+                                $lastAppointment = $record->appointments()->whereIn('status', ['completed', 'checkout', 'inactive'])->latest('visit_date')->first();
                                 if (!$lastAppointment) return '-';
                                 if ($lastAppointment->checkout_time) {
                                     return \Carbon\Carbon::parse($lastAppointment->checkout_time)->format('H:i');
@@ -84,11 +108,11 @@ class ManageSummaries extends ManageRecords
                                 return \Carbon\Carbon::parse($lastAppointment->updated_at)->format('H:i');
                             }),
                             \pxlrbt\FilamentExcel\Columns\Column::make('pic')->heading('PIC')->formatStateUsing(function ($record) {
-                                $lastAppointment = $record->appointments()->where('status', 'completed')->latest('visit_date')->first();
+                                $lastAppointment = $record->appointments()->whereIn('status', ['completed', 'checkout', 'inactive'])->latest('visit_date')->first();
                                 return $lastAppointment && $lastAppointment->pic ? $lastAppointment->pic->name : '-';
                             }),
                             \pxlrbt\FilamentExcel\Columns\Column::make('purpose')->heading('Keperluan')->formatStateUsing(function ($record) {
-                                $lastAppointment = $record->appointments()->where('status', 'completed')->latest('visit_date')->first();
+                                $lastAppointment = $record->appointments()->whereIn('status', ['completed', 'checkout', 'inactive'])->latest('visit_date')->first();
                                 return $lastAppointment ? $lastAppointment->purpose : '-';
                             }),
                         ]),
@@ -99,4 +123,3 @@ class ManageSummaries extends ManageRecords
         ];
     }
 }
-
