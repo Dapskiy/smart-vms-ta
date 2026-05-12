@@ -60,16 +60,42 @@ class ManageSummaries extends ManageRecords
                     return redirect($redirectUrl);
                 }),
 
-            Action::make('export')
+            \pxlrbt\FilamentExcel\Actions\Pages\ExportAction::make()
+                ->exports([
+                    \App\Filament\Exports\SummaryExcelExport::make()
+                        ->withFilename('Data-Visitor-' . date('Y-m-d'))
+                        ->withColumns([
+                            \pxlrbt\FilamentExcel\Columns\Column::make('name')->heading('Nama Visitor'),
+                            \pxlrbt\FilamentExcel\Columns\Column::make('company')->heading('Instansi'),
+                            \pxlrbt\FilamentExcel\Columns\Column::make('visit_date')->heading('Tanggal Berkunjung')->formatStateUsing(function ($record) {
+                                $lastAppointment = $record->appointments()->where('status', 'completed')->latest('visit_date')->first();
+                                return $lastAppointment && $lastAppointment->visit_date ? \Carbon\Carbon::parse($lastAppointment->visit_date)->format('d M Y') : '-';
+                            }),
+                            \pxlrbt\FilamentExcel\Columns\Column::make('visit_time')->heading('Checkin')->formatStateUsing(function ($record) {
+                                $lastAppointment = $record->appointments()->where('status', 'completed')->latest('visit_date')->first();
+                                return $lastAppointment && $lastAppointment->visit_time ? \Carbon\Carbon::parse($lastAppointment->visit_time)->format('H:i') : '-';
+                            }),
+                            \pxlrbt\FilamentExcel\Columns\Column::make('checkout_time')->heading('Checkout')->formatStateUsing(function ($record) {
+                                $lastAppointment = $record->appointments()->where('status', 'completed')->latest('visit_date')->first();
+                                if (!$lastAppointment) return '-';
+                                if ($lastAppointment->checkout_time) {
+                                    return \Carbon\Carbon::parse($lastAppointment->checkout_time)->format('H:i');
+                                }
+                                return \Carbon\Carbon::parse($lastAppointment->updated_at)->format('H:i');
+                            }),
+                            \pxlrbt\FilamentExcel\Columns\Column::make('pic')->heading('PIC')->formatStateUsing(function ($record) {
+                                $lastAppointment = $record->appointments()->where('status', 'completed')->latest('visit_date')->first();
+                                return $lastAppointment && $lastAppointment->pic ? $lastAppointment->pic->name : '-';
+                            }),
+                            \pxlrbt\FilamentExcel\Columns\Column::make('purpose')->heading('Keperluan')->formatStateUsing(function ($record) {
+                                $lastAppointment = $record->appointments()->where('status', 'completed')->latest('visit_date')->first();
+                                return $lastAppointment ? $lastAppointment->purpose : '-';
+                            }),
+                        ]),
+                ])
                 ->label('Export Data')
-                ->icon('heroicon-o-document-arrow-down')
                 ->color('success')
-                ->action(function () {
-                    Notification::make()
-                        ->title('Fitur Export sedang dalam perbaikan')
-                        ->warning()
-                        ->send();
-                }),
+                ->icon('heroicon-o-document-arrow-down'),
         ];
     }
 }

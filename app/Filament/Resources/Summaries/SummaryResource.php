@@ -210,21 +210,23 @@ class SummaryResource extends Resource
             $query->where('status', 'completed');
         });
 
-        if (request()->filled('date_range')) {
-            $dateRange = request('date_range');
-            $dates = explode(' - ', $dateRange);
-            if (count($dates) == 2) {
-                try {
-                    $from = \Carbon\Carbon::createFromFormat('d/m/Y', trim($dates[0]))->startOfDay();
-                    $to = \Carbon\Carbon::createFromFormat('d/m/Y', trim($dates[1]))->endOfDay();
-
-                    $query->whereHas('appointments', function ($q) use ($from, $to) {
-                        $q->whereBetween('visit_date', [$from, $to]);
-                    });
-                } catch (\Exception $e) {
-                    // Silently ignore format errors
-                }
-            }
+        if (request()->filled('start_date') && request()->filled('end_date')) {
+            $from = \Carbon\Carbon::parse(request('start_date'))->startOfDay();
+            $to = \Carbon\Carbon::parse(request('end_date'))->endOfDay();
+            
+            $query->whereHas('appointments', function ($q) use ($from, $to) {
+                $q->whereBetween('visit_date', [$from, $to]);
+            });
+        } elseif (request()->filled('start_date')) {
+            $from = \Carbon\Carbon::parse(request('start_date'))->startOfDay();
+            $query->whereHas('appointments', function ($q) use ($from) {
+                $q->whereDate('visit_date', '>=', $from);
+            });
+        } elseif (request()->filled('end_date')) {
+            $to = \Carbon\Carbon::parse(request('end_date'))->endOfDay();
+            $query->whereHas('appointments', function ($q) use ($to) {
+                $q->whereDate('visit_date', '<=', $to);
+            });
         }
 
         return $query;
