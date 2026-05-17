@@ -157,11 +157,7 @@ class AppointmentForm
                         },
                     ]),
 
-                Textarea::make('purpose')
-                    ->label('Tujuan/Perihal')
-                    ->required()
-                    ->columnSpanFull(),
-
+                // 4. Tanggal Kunjungan
                 DatePicker::make('visit_date')
                     ->label('Tanggal Kunjungan')
                     ->default(now())
@@ -170,6 +166,7 @@ class AppointmentForm
                     ->native(false)
                     ->live(),
 
+                // 5. Jam Kunjungan
                 TimePicker::make('visit_time')
                     ->label('Jam')
                     ->hidden(fn(Get $get) => $get('should_book_room') === true)
@@ -180,19 +177,26 @@ class AppointmentForm
                     // Untuk Walk-in: otomatis jam sekarang
                     ->default(null),
 
+                // 6. Total Orang
                 TextInput::make('pax')
                     ->label('Total Orang')
                     ->numeric()
                     ->default(1)
                     ->required(),
 
-                // --- Checkbox untuk Pesan Ruangan ---
+                // 7. Tujuan/Perihal
+                Textarea::make('purpose')
+                    ->label('Tujuan/Perihal')
+                    ->required()
+                    ->columnSpanFull(),
+
+                // 8. Checkbox Pesan Ruangan
                 Checkbox::make('should_book_room')
                     ->label('Pesan Ruang Meeting?')
                     ->default(false)
                     ->live(),
 
-                // --- Ruang Meeting Selection dengan Validasi Jadwal Bentrok ---
+                // 9. Pilih Ruangan
                 Select::make('room_id')
                     ->label('Ruang Meeting')
                     ->relationship('room', 'name')
@@ -202,29 +206,24 @@ class AppointmentForm
                     ->visible(fn(Get $get) => $get('should_book_room'))
                     ->rules([
                         fn($get) => function (string $attribute, $value, Closure $fail) use ($get) {
-                            // Jika checkbox tidak dicheck, skip validasi
                             if (!$get('should_book_room')) {
                                 return;
                             }
 
-                            // Ambil input tanggal dan waktu ruangan dari form
-                            $visitDate = $get('visit_date');
+                            $visitDate     = $get('visit_date');
                             $roomStartTime = $get('room_start_time');
-                            $roomEndTime = $get('room_end_time');
+                            $roomEndTime   = $get('room_end_time');
 
-                            // Jika ada input kosong, skip validasi
                             if (!$visitDate || !$roomStartTime || !$roomEndTime) {
                                 return;
                             }
 
-                            // Cek apakah ada jadwal di ruangan yang overlap dengan time range
                             $query = Appointment::where('room_id', $value)
                                 ->where('visit_date', $visitDate)
                                 ->where('should_book_room', true)
                                 ->where('status', '!=', 'cancelled');
 
-                            // Query untuk cek time overlap
-                            // Overlap terjadi jika: new_start < existing_end AND new_end > existing_start
+                            // Overlap: new_start < existing_end AND new_end > existing_start
                             $query->where(function ($q) use ($roomStartTime, $roomEndTime) {
                                 $q->where(function ($subQ) use ($roomStartTime, $roomEndTime) {
                                     $subQ->where('room_start_time', '<', $roomEndTime)
@@ -232,7 +231,6 @@ class AppointmentForm
                                 });
                             });
 
-                            // Jika form Edit, jangan bentrok dengan data appointment yang sekarang diubah
                             $currentId = $get('id');
                             if ($currentId) {
                                 $query->where('id', '!=', $currentId);
@@ -244,7 +242,7 @@ class AppointmentForm
                         },
                     ]),
 
-                // --- Jam Mulai Ruangan ---
+                // 10. Jam Mulai Ruangan
                 Select::make('room_start_time')
                     ->label('Jam Mulai (Ruangan)')
                     ->options(fn(Get $get) => self::generateTimeOptions($get))
@@ -252,7 +250,7 @@ class AppointmentForm
                     ->visible(fn(Get $get) => $get('should_book_room') && $get('room_id'))
                     ->required(fn(Get $get) => $get('should_book_room')),
 
-                // --- Jam Selesai Ruangan ---
+                // 11. Jam Selesai Ruangan
                 Select::make('room_end_time')
                     ->label('Jam Selesai (Ruangan)')
                     ->options(fn(Get $get) => self::generateTimeOptions($get))
@@ -260,7 +258,7 @@ class AppointmentForm
                     ->visible(fn(Get $get) => $get('should_book_room') && $get('room_id'))
                     ->required(fn(Get $get) => $get('should_book_room')),
 
-                // --- Input Plat Nomor Kendaraan ---
+                // 12. CSS Injector Plat Nomor
                 Placeholder::make('nopol_css')
                     ->hiddenLabel()
                     ->extraAttributes(['style' => 'display: none;'])
@@ -272,23 +270,23 @@ class AppointmentForm
                             .nopol-prefix .fi-input-wrapper { border-top-right-radius: 0 !important; border-bottom-right-radius: 0 !important; }
                             .nopol-number .fi-input-wrapper { border-radius: 0 !important; margin-left: -1px; }
                             .nopol-suffix .fi-input-wrapper { border-top-left-radius: 0 !important; border-bottom-left-radius: 0 !important; margin-left: -1px; }
-                            
+
                             /* Fading untuk opsi yang di-booked */
                             select option:disabled {
-                                color: #9ca3af !important; /* text-gray-400 */
-                                background-color: #f3f4f6 !important; /* bg-gray-100 */
+                                color: #9ca3af !important;
+                                background-color: #f3f4f6 !important;
                                 opacity: 0.6;
                             }
                         </style>
                     ')),
 
-                // --- Label untuk Plat Nomor (sebagai Placeholder) ---
+                // 13. Label Plat Nomor
                 Placeholder::make('plat_nomor_label')
                     ->hiddenLabel()
                     ->content(new HtmlString('<h3 class="text-base font-semibold">Plat Nomor Kendaraan</h3>'))
                     ->columnSpanFull(),
 
-                // --- Input Plat Nomor Kendaraan ---
+                // 14. Input Plat Nomor
                 Group::make([
                     TextInput::make('v_prefix')
                         ->placeholder('H')
@@ -306,7 +304,7 @@ class AppointmentForm
                     ->columns(3)
                     ->columnSpanFull(),
 
-                // --- Hidden Fields Logic ---
+                // --- Hidden Fields ---
                 Hidden::make('vehicle_number')
                     ->dehydrated(true)
                     ->dehydrateStateUsing(fn($get) => strtoupper(trim("{$get('v_prefix')} {$get('v_number')} {$get('v_suffix')}"))),

@@ -136,6 +136,7 @@ class SummaryResource extends Resource
                     })
                     ->wrap(),
             ])
+            ->defaultSort('created_at', 'desc')
             ->filters([
                 //
             ])

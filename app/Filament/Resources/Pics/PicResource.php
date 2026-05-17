@@ -20,6 +20,10 @@ class PicResource extends Resource
 
     protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedRectangleStack;
 
+    protected static ?string $modelLabel = 'PIC';
+
+    protected static ?string $pluralModelLabel = 'Daftar PIC';
+
     protected static ?string $recordTitleAttribute = 'name';
 
     public static function form(Schema $schema): Schema

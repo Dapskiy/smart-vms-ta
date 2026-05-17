@@ -10,6 +10,8 @@ class EditPic extends EditRecord
 {
     protected static string $resource = PicResource::class;
 
+    protected static ?string $title = 'Edit Data PIC';
+
     protected function getHeaderActions(): array
     {
         return [

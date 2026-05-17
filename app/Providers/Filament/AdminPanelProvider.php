@@ -30,21 +30,23 @@ class AdminPanelProvider extends PanelProvider
             ->path('admin')
             ->login()
             ->colors([
-                'primary' => '#1a56db',
+                'primary' => Color::Indigo,
+                'danger'  => Color::Rose,
             ])
-            ->font('DM Sans')
-            ->brandName('VISITA.')
+            ->font('Poppins')
+            ->brandName('VISITA Enterprise')
             ->renderHook(
-                'panels::head.end',
-                fn(): string => \Illuminate\Support\Facades\Blade::render('
-                    <link rel="preconnect" href="https://fonts.googleapis.com">
-                    <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+                \Filament\View\PanelsRenderHook::HEAD_END,
+                fn(): string => \Illuminate\Support\Facades\Blade::render("
+                    @vite('resources/css/app.css')
+                    <link rel=\"preconnect\" href=\"https://fonts.googleapis.com\">
+                    <link href=\"https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800&display=swap\" rel=\"stylesheet\">
                     <style>
-                        h1, h2, h3, h4, h5, h6, .fi-logo { font-family: "Syne", sans-serif !important; letter-spacing: -0.5px; }
-                        .fi-logo { font-size: 22px !important; font-weight: 800 !important; color: #0d0d0d !important; }
-                        .dark .fi-logo { color: #ffffff !important; }
+                        h1, h2, h3, h4, h5, h6, .fi-logo { font-family: 'Poppins', sans-serif !important; letter-spacing: -0.3px; }
+                        .fi-logo { font-size: 20px !important; font-weight: 700 !important; color: #312e81 !important; }
+                        .dark .fi-logo { color: #a5b4fc !important; }
                     </style>
-                ')
+                ")
             )
             ->renderHook(
                 'panels::body.end',
