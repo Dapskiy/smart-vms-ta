@@ -26,7 +26,7 @@ class SummaryResource extends Resource
     protected static UnitEnum|string|null $navigationGroup = null; // Keluarkan dari grup "Appointments"
     protected static ?string $navigationLabel = 'Summary';
     protected static ?string $pluralModelLabel = 'Summary Kunjungan';
-    protected static ?int $navigationSort = 3; // Positioning di bawah Pics
+    protected static ?int $navigationSort = 4; // Positioning di bawah Room Master
 
     public static function table(Table $table): Table
     {

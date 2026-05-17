@@ -102,7 +102,7 @@
                     'Tanggal'         => $visitDate,
                     'Jam Kunjungan'   => $visitTime,
                     'Instansi'        => $record->visitor?->company ?? '-',
-                    'Nopol Kendaraan' => $record->vehicle_number ?? '-',
+                    'Nopol Kendaraan' => $record->vehicle_number ?: '-',
                 ] as $label => $value)
                 <div class="vd-row">
                     <span class="vd-dt">{{ $label }}</span>

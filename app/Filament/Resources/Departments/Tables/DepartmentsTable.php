@@ -1,36 +1,35 @@
 <?php
 
-namespace App\Filament\Resources\Pics\Tables;
+namespace App\Filament\Resources\Departments\Tables;
 
 use Filament\Actions\BulkActionGroup;
+use Filament\Actions\DeleteAction;
 use Filament\Actions\DeleteBulkAction;
 use Filament\Actions\EditAction;
+use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Table;
 
-use Filament\Tables\Columns\IconColumn;
-use Filament\Tables\Columns\TextColumn;
-
-class PicsTable
+class DepartmentsTable
 {
     public static function configure(Table $table): Table
     {
         return $table
             ->columns([
                 TextColumn::make('name')
-                    ->searchable(),
-                TextColumn::make('department.name')
-                    ->label('Department')
-                    ->searchable(),
-                TextColumn::make('phone')
-                    ->searchable(),
-                IconColumn::make('is_available')
-                    ->boolean(),
+                    ->label('Nama Department')
+                    ->searchable()
+                    ->sortable(),
+
+                TextColumn::make('description')
+                    ->label('Deskripsi')
+                    ->limit(60),
             ])
             ->filters([
                 //
             ])
             ->recordActions([
                 EditAction::make(),
+                DeleteAction::make(),
             ])
             ->toolbarActions([
                 BulkActionGroup::make([

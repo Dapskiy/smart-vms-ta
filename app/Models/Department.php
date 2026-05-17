@@ -6,21 +6,17 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
-class Room extends Model
+class Department extends Model
 {
     use HasFactory;
 
     protected $fillable = [
         'name',
-        'location',
         'description',
     ];
 
-    /**
-     * Relasi ke Appointment
-     */
-    public function appointments(): HasMany
+    public function pics(): HasMany
     {
-        return $this->hasMany(Appointment::class);
+        return $this->hasMany(Pic::class);
     }
 }

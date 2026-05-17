@@ -3,12 +3,25 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class Pic extends Model
 {
-    protected $guarded = ['id'];
+    protected $fillable = [
+        'name',
+        'department_id',
+        'phone',
+        'email',
+        'is_available',
+    ];
 
-    public function appointments()
+    public function department(): BelongsTo
+    {
+        return $this->belongsTo(Department::class);
+    }
+
+    public function appointments(): HasMany
     {
         return $this->hasMany(Appointment::class, 'pic_id');
     }

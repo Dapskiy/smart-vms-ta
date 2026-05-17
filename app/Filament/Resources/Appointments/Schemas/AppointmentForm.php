@@ -41,7 +41,7 @@ class AppointmentForm
 
         $options = [];
         $startTime = strtotime('07:00');
-        $endTime = strtotime('18:00');
+        $endTime = strtotime('23:00');
         $interval = 30 * 60; // 30 menit dalam detik
 
         $bookedTimes = [];
@@ -132,7 +132,7 @@ class AppointmentForm
                 Select::make('pic_id')
                     ->label('Tujuan Kunjungan (PIC)')
                     ->relationship('pic', 'name', fn($query) => $query->where('is_available', true))
-                    ->getOptionLabelFromRecordUsing(fn($record) => $record->department ? "{$record->name} - {$record->department}" : $record->name)
+                    ->getOptionLabelFromRecordUsing(fn($record) => $record->department ? "{$record->name} - {$record->department->name}" : $record->name)
                     ->required()
                     ->searchable()
                     ->preload()
@@ -195,7 +195,7 @@ class AppointmentForm
                 // --- Ruang Meeting Selection dengan Validasi Jadwal Bentrok ---
                 Select::make('room_id')
                     ->label('Ruang Meeting')
-                    ->relationship('room', 'name', fn($query) => $query->where('is_active', true))
+                    ->relationship('room', 'name')
                     ->searchable()
                     ->preload()
                     ->live()
