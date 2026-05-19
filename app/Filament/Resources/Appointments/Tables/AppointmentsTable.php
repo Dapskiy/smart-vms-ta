@@ -72,77 +72,135 @@ class AppointmentsTable
                 //
             ])
             ->actions([
-                // 1. Tombol Check-In
-                Action::make('check_in')
-                    ->label('Check In')
-                    ->icon('heroicon-o-arrow-right-end-on-rectangle')
-                    ->color('success')
-                    ->visible(fn(?Appointment $record) => $record?->status === 'pending')
-                    ->modalHeading('Verifikasi Wajah & Check-in')
+                // ─────────────────────────────────────────────────────────────
+                // 1a. Tombol "Daftarkan Wajah"
+                //     Muncul HANYA jika visitor belum punya face_features.
+                //     Membuka modal face-scan untuk merekam wajah, LALU check-in.
+                // ─────────────────────────────────────────────────────────────
+                Action::make('register_face')
+                    ->label('Daftarkan Wajah')
+                    ->icon('heroicon-o-camera')
+                    ->color('warning')
+                    ->visible(fn(?Appointment $record): bool =>
+                        $record?->status === 'pending' &&
+                        empty($record?->visitor?->face_features)
+                    )
+                    ->modalHeading('Daftarkan Wajah & Check-in')
                     ->modalWidth('lg')
                     ->modalSubmitAction(false)
                     ->modalCancelAction(false)
-                    ->modalContent(fn (Appointment $record) => view('filament.appointments.face-scan', ['record' => $record]))
+                    ->modalContent(fn(Appointment $record) =>
+                        view('filament.appointments.face-scan', ['record' => $record])
+                    )
                     ->action(function (Appointment $record, array $arguments) {
-                        // Hanya validasi untuk tipe 'appointment' (bukan walk-in)
+                        // Validasi waktu untuk tipe appointment
                         if ($record->type === 'appointment') {
                             $now = Carbon::now();
-
-                            // Ambil jadwal terjadwal: visit_date + visit_time (atau jam mulai ruangan jika booking)
                             $scheduledDate = Carbon::parse($record->visit_date);
                             $scheduledTime = $record->should_book_room
                                 ? $record->room_start_time
                                 : $record->visit_time;
-
-                            // Gabungkan tanggal dan jam menjadi satu DateTime
                             $scheduledDateTime = $scheduledDate->setTimeFromTimeString($scheduledTime);
-
-                            // Hitung window check-in: maksimal 1 jam sebelum jadwal
                             $checkInStart = $scheduledDateTime->copy()->subHour();
 
-                            // Validasi 1: Harus pada tanggal yang sama (visit_date)
                             if ($now->toDateString() !== $scheduledDate->toDateString()) {
                                 Notification::make()
                                     ->title('Belum Waktunya Check-in!')
                                     ->body("Check-in hanya bisa dilakukan pada tanggal kunjungan ({$scheduledDate->format('d/m/Y')}).")
-                                    ->danger()
-                                    ->send();
+                                    ->danger()->send();
                                 return;
                             }
 
-                            // Validasi 2: Harus dalam jendela H-1 jam
                             if ($now->isBefore($checkInStart)) {
-                                $remainingTime = $now->diffInMinutes($checkInStart);
+                                $remaining = $now->diffInMinutes($checkInStart);
                                 Notification::make()
                                     ->title('Belum Waktunya Check-in!')
-                                    ->body("Check-in dapat dilakukan maksimal 1 jam sebelum jadwal. Waktu check-in dimulai pukul {$checkInStart->format('H:i')} ({$remainingTime} menit lagi).")
-                                    ->danger()
-                                    ->send();
+                                    ->body("Check-in dimulai pukul {$checkInStart->format('H:i')} ({$remaining} menit lagi).")
+                                    ->danger()->send();
                                 return;
                             }
                         }
 
-                        // Jika ada face_features dari input (tamu baru direkam), simpan ke visitor
+                        // Simpan face features baru ke visitor
                         if (!empty($arguments['face_features'])) {
                             $record->visitor->update([
                                 'face_features' => $arguments['face_features']
                             ]);
                         }
 
-                        // Jika semua validasi lolos, proses check-in
+                        // Proses check-in (admin = manual)
                         $record->update([
-                            'status' => 'active',
+                            'status'      => 'active',
+                            'checkin_time' => now()->format('H:i'),
+                        ]);
+
+                        Notification::make()
+                            ->title('Wajah Terdaftar & Check-in Berhasil')
+                            ->body("Wajah {$record->visitor->name} telah direkam. Tamu memasuki area.")
+                            ->success()->send();
+                    }),
+
+                // ─────────────────────────────────────────────────────────────
+                // 1b. Tombol "Check In" (tanpa face scan)
+                //     Muncul HANYA jika visitor sudah punya face_features.
+                //     Admin langsung klik — tidak perlu rekognisi wajah.
+                // ─────────────────────────────────────────────────────────────
+                Action::make('check_in')
+                    ->label('Check In')
+                    ->icon('heroicon-o-arrow-right-end-on-rectangle')
+                    ->color('success')
+                    ->visible(fn(?Appointment $record): bool =>
+                        $record?->status === 'pending' &&
+                        !empty($record?->visitor?->face_features)
+                    )
+                    ->requiresConfirmation()
+                    ->modalHeading('Konfirmasi Check-in')
+                    ->modalDescription(fn(Appointment $record) =>
+                        "Check-in tamu {$record->visitor?->name}? Waktu check-in akan dicatat sekarang."
+                    )
+                    ->action(function (Appointment $record) {
+                        // Validasi waktu untuk tipe appointment
+                        if ($record->type === 'appointment') {
+                            $now = Carbon::now();
+                            $scheduledDate = Carbon::parse($record->visit_date);
+                            $scheduledTime = $record->should_book_room
+                                ? $record->room_start_time
+                                : $record->visit_time;
+                            $scheduledDateTime = $scheduledDate->setTimeFromTimeString($scheduledTime);
+                            $checkInStart = $scheduledDateTime->copy()->subHour();
+
+                            if ($now->toDateString() !== $scheduledDate->toDateString()) {
+                                Notification::make()
+                                    ->title('Belum Waktunya Check-in!')
+                                    ->body("Check-in hanya bisa dilakukan pada tanggal kunjungan ({$scheduledDate->format('d/m/Y')}).")
+                                    ->danger()->send();
+                                return;
+                            }
+
+                            if ($now->isBefore($checkInStart)) {
+                                $remaining = $now->diffInMinutes($checkInStart);
+                                Notification::make()
+                                    ->title('Belum Waktunya Check-in!')
+                                    ->body("Check-in dimulai pukul {$checkInStart->format('H:i')} ({$remaining} menit lagi).")
+                                    ->danger()->send();
+                                return;
+                            }
+                        }
+
+                        $record->update([
+                            'status'      => 'active',
                             'checkin_time' => now()->format('H:i'),
                         ]);
 
                         Notification::make()
                             ->title('Berhasil Check-in')
                             ->body("Tamu {$record->visitor->name} telah memasuki area.")
-                            ->success()
-                            ->send();
+                            ->success()->send();
                     }),
 
-                // 2. Tombol Check-Out
+                // ─────────────────────────────────────────────────────────────
+                // 2. Tombol Check-Out (admin — langsung, tanpa face scan)
+                // ─────────────────────────────────────────────────────────────
                 Action::make('check_out')
                     ->label('Check Out')
                     ->icon('heroicon-o-arrow-left-start-on-rectangle')
@@ -153,15 +211,15 @@ class AppointmentsTable
                     ->modalDescription('Apakah kunjungan sudah selesai? Data tamu ini akan dipindahkan ke halaman Summary.')
                     ->action(function (Appointment $record) {
                         $record->update([
-                            'status' => 'completed',
-                            'checkout_time' => now()->format('H:i'),
+                            'status'          => 'completed',
+                            'checkout_time'   => now()->format('H:i'),
+                            'checkout_method' => 'manual', // Admin yang menjalankan
                         ]);
 
                         Notification::make()
                             ->title('Berhasil Check-out')
                             ->body("Kunjungan {$record->visitor->name} telah selesai.")
-                            ->success()
-                            ->send();
+                            ->success()->send();
                     }),
 
                 // 3. Tombol Copy Link
