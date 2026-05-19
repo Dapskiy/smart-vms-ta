@@ -78,10 +78,12 @@ class AppointmentsTable
                     ->icon('heroicon-o-arrow-right-end-on-rectangle')
                     ->color('success')
                     ->visible(fn(?Appointment $record) => $record?->status === 'pending')
-                    ->requiresConfirmation()
-                    ->modalHeading('Konfirmasi Check-in')
-                    ->modalDescription('Apakah tamu ini sudah tiba di lokasi dan ingin di-check-in?')
-                    ->action(function (Appointment $record) {
+                    ->modalHeading('Verifikasi Wajah & Check-in')
+                    ->modalWidth('lg')
+                    ->modalSubmitAction(false)
+                    ->modalCancelAction(false)
+                    ->modalContent(fn (Appointment $record) => view('filament.appointments.face-scan', ['record' => $record]))
+                    ->action(function (Appointment $record, array $arguments) {
                         // Hanya validasi untuk tipe 'appointment' (bukan walk-in)
                         if ($record->type === 'appointment') {
                             $now = Carbon::now();
@@ -118,6 +120,13 @@ class AppointmentsTable
                                     ->send();
                                 return;
                             }
+                        }
+
+                        // Jika ada face_features dari input (tamu baru direkam), simpan ke visitor
+                        if (!empty($arguments['face_features'])) {
+                            $record->visitor->update([
+                                'face_features' => $arguments['face_features']
+                            ]);
                         }
 
                         // Jika semua validasi lolos, proses check-in
