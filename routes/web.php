@@ -3,6 +3,7 @@
 use Illuminate\Support\Facades\Route;
 use App\Livewire\GuestRegistrationForm;
 use App\Http\Controllers\AppointmentCheckoutController;
+use App\Http\Controllers\Guest\FaceCheckinController;
 
 Route::get('/', function () {
     return view('welcome');
@@ -20,3 +21,7 @@ Route::get('/invitation/{token}', GuestRegistrationForm::class)->name('guest.inv
 Route::post('/admin/appointments/checkout', [AppointmentCheckoutController::class, 'checkout'])
     ->middleware(['auth', 'verified'])
     ->name('filament.admin.resources.appointments.checkout');
+
+// Route untuk face check-in dari kiosk publik (no auth)
+Route::post('/kiosk/face-checkin', [FaceCheckinController::class, 'checkin'])
+    ->name('kiosk.face.checkin');
