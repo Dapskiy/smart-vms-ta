@@ -493,6 +493,25 @@
             background: rgba(244, 63, 94, 0.18);
         }
 
+        .card-checkout::after {
+            background: radial-gradient(circle at top right, rgba(16, 185, 129, 0.18), transparent 70%);
+        }
+        .card-checkout:hover {
+            border-color: rgba(16, 185, 129, 0.55);
+            box-shadow: var(--shadow-card), 0 0 50px rgba(16, 185, 129, 0.15);
+            background: var(--bg-card-hover);
+            transform: translateY(-4px) scale(1.012);
+        }
+        .card-checkout .card-icon-wrap {
+            background: linear-gradient(135deg, rgba(16, 185, 129, 0.2), rgba(16, 185, 129, 0.08));
+            border: 1px solid rgba(16, 185, 129, 0.28);
+            box-shadow: 0 0 20px rgba(16, 185, 129, 0.12);
+        }
+        .card-checkout .card-icon-wrap svg { color: #10b981; }
+        .card-checkout .card-cta { color: #10b981; }
+        .card-checkout .ripple { background: rgba(16, 185, 129, 0.18); }
+
+
         @keyframes ripple-expand {
             to {
                 transform: scale(4);
@@ -743,10 +762,9 @@
             <!-- Action cards -->
             <div class="cards-row">
 
-                <!-- Card 1: Sudah Ada Janji -->
+                <!-- Card 1: Sudah Ada Janji (Check-In) -->
                 <div class="checkin-card card-appointment" onclick="handleCheckin('appointment')" role="button" tabindex="0" aria-label="Check-in dengan janji temu">
                     <div class="card-icon-wrap">
-                        <!-- QR Code icon -->
                         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" xmlns="http://www.w3.org/2000/svg">
                             <rect x="3" y="3" width="7" height="7" rx="1"/>
                             <rect x="14" y="3" width="7" height="7" rx="1"/>
@@ -768,10 +786,31 @@
                     </div>
                 </div>
 
-                <!-- Card 2: Tamu Baru / Walk-in -->
+                <!-- Card 2: Check-Out Mandiri -->
+                <div class="checkin-card card-checkout" onclick="openCheckoutFaceScan()" role="button" tabindex="0" aria-label="Check-out mandiri via wajah">
+                    <div class="card-icon-wrap">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M17 16l4-4m0 0l-4-4m4 4H7"/>
+                            <path d="M3 12a9 9 0 1 0 18 0 9 9 0 0 0-18 0" opacity=".3"/>
+                        </svg>
+                    </div>
+
+                    <div class="card-body">
+                        <div class="card-title">Check-Out</div>
+                        <div class="card-sub">Selesai berkunjung? Scan wajah<br>untuk check-out mandiri</div>
+                    </div>
+
+                    <div class="card-cta">
+                        MULAI CHECK-OUT
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M5 12h14M12 5l7 7-7 7"/>
+                        </svg>
+                    </div>
+                </div>
+
+                <!-- Card 3: Tamu Baru / Walk-in -->
                 <div class="checkin-card card-walkin" onclick="handleCheckin('walkin')" role="button" tabindex="0" aria-label="Registrasi tamu baru walk-in">
                     <div class="card-icon-wrap">
-                        <!-- User Plus icon -->
                         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" xmlns="http://www.w3.org/2000/svg">
                             <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/>
                             <circle cx="9" cy="7" r="4"/>
@@ -1308,6 +1347,229 @@
         @keyframes kp-bounce-r  { 0%,100%{transform:translateX(0);}50%{transform:translateX(6px);} }
         @keyframes kp-bounce-l  { 0%,100%{transform:translateX(0);}50%{transform:translateX(-6px);} }
     </style>
+
+
+    <!-- ===== MODAL: CHECKOUT FACE SCAN ===== -->
+    <div id="modal-checkout-face" class="modal-overlay">
+        <div class="modal-box face-modal-box">
+            <button class="modal-close" onclick="closeCheckoutFaceScan()">✕</button>
+            <div class="modal-title" style="margin-bottom:0.2rem;">Check-Out Mandiri</div>
+            <p class="modal-sub" style="margin-bottom:1rem;">Scan wajah untuk check-out — tengok kanan lalu kiri</p>
+            <div id="co-face-loading" style="display:flex;flex-direction:column;align-items:center;justify-content:center;height:280px;gap:1rem;">
+                <svg style="width:2.5rem;height:2.5rem;color:#10b981;animation:kp-spin 1s linear infinite;" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="3" stroke-dasharray="40" stroke-dashoffset="10"/></svg>
+                <span style="color:#8899bb;font-size:0.85rem;">Memuat model AI...</span>
+            </div>
+            <div id="co-face-camera-wrap" style="display:none;flex-direction:column;align-items:center;gap:0.75rem;">
+                <div style="position:relative;width:260px;height:260px;">
+                    <svg id="co-ring-svg" style="position:absolute;inset:0;width:100%;height:100%;z-index:3;pointer-events:none;" viewBox="0 0 260 260">
+                        <circle class="co-ring-base" cx="130" cy="130" r="124" fill="none" stroke="#10b98144" stroke-width="3"/>
+                        <circle class="co-ring-arc" cx="130" cy="130" r="124" fill="none" stroke="#10b981" stroke-width="4" stroke-linecap="round" stroke-dasharray="100 680" style="animation:kp-spin-ring 1.6s linear infinite;transform-origin:center;"/>
+                    </svg>
+                    <div style="position:absolute;inset:5px;border-radius:50%;overflow:hidden;background:#000;">
+                        <video id="co-face-video" autoplay muted playsinline style="width:100%;height:100%;object-fit:cover;transform:scaleX(-1);"></video>
+                        <div id="co-face-grid" style="position:absolute;inset:0;pointer-events:none;transition:opacity 0.5s;">
+                            <svg style="width:100%;height:100%;" viewBox="0 0 250 250">
+                                <defs>
+                                    <path id="co-face-path" d="M125,22 C162,22 192,52 192,95 C204,95 204,118 192,120 C184,155 155,188 125,193 C95,188 66,155 58,120 C46,118 46,95 58,95 C58,52 88,22 125,22 Z"/>
+                                    <mask id="co-face-mask"><rect width="250" height="250" fill="white"/><use href="#co-face-path" fill="black"/></mask>
+                                </defs>
+                                <rect width="250" height="250" fill="rgba(0,0,0,0.55)" mask="url(#co-face-mask)"/>
+                                <use href="#co-face-path" fill="none" stroke="#34d399" stroke-width="2.5" stroke-dasharray="10 6" style="animation:kp-pulse 1.4s ease-in-out infinite;"/>
+                            </svg>
+                        </div>
+                        <div style="position:absolute;top:10px;left:0;right:0;display:flex;justify-content:center;z-index:10;">
+                            <span id="co-face-msg" style="background:#10b981;color:#fff;padding:0.35rem 0.9rem;border-radius:999px;font-size:0.72rem;font-weight:600;text-align:center;max-width:90%;transition:background 0.3s;"></span>
+                        </div>
+                    </div>
+                </div>
+                <div style="display:flex;align-items:center;justify-content:center;gap:1.5rem;min-height:48px;">
+                    <div id="co-arrow-right" style="display:none;flex-direction:column;align-items:center;gap:4px;animation:kp-bounce-r 0.8s ease-in-out infinite;">
+                        <svg style="width:2rem;height:2rem;color:#34d399;" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M13 7l5 5m0 0l-5 5m5-5H6"/></svg>
+                        <span style="font-size:0.7rem;color:#34d399;font-weight:600;">Kanan</span>
+                    </div>
+                    <div id="co-arrow-left" style="display:none;flex-direction:column;align-items:center;gap:4px;animation:kp-bounce-l 0.8s ease-in-out infinite;">
+                        <svg style="width:2rem;height:2rem;color:#34d399;" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M11 17l-5-5m0 0l5-5m-5 5h12"/></svg>
+                        <span style="font-size:0.7rem;color:#34d399;font-weight:600;">Kiri</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ===== MODAL: CHECKOUT SUCCESS POPUP ===== -->
+    <div id="modal-checkout-success" class="modal-overlay">
+        <div class="modal-box success-box">
+            <div class="success-icon" style="background:rgba(16,185,129,0.15);border-color:#10b981;">
+                <svg fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24" style="width:2.5rem;height:2.5rem;color:#10b981;"><path stroke-linecap="round" stroke-linejoin="round" d="M17 16l4-4m0 0l-4-4m4 4H7M13 3a9 9 0 1 1 0 18"/></svg>
+            </div>
+            <div class="success-heading">Check-Out Berhasil! 👋</div>
+            <p class="success-sub">Terima kasih telah berkunjung. Sampai jumpa!</p>
+            <div class="info-grid">
+                <div class="info-item"><label>Nama Tamu</label><span id="co-si-name">-</span></div>
+                <div class="info-item"><label>PIC / Host</label><span id="co-si-pic">-</span></div>
+                <div class="info-item"><label>Ruangan</label><span id="co-si-room">-</span></div>
+                <div class="info-item"><label>Tanggal</label><span id="co-si-date">-</span></div>
+                <div class="info-item"><label>Jam Check-in</label><span id="co-si-checkin">-</span></div>
+                <div class="info-item"><label>Jam Check-out</label><span id="co-si-checkout">-</span></div>
+            </div>
+            <div class="countdown-bar-wrap"><div id="co-countdown-bar" class="countdown-bar" style="width:100%;background:#10b981;"></div></div>
+            <p id="co-countdown-text" class="countdown-text"></p>
+            <button class="btn-ok" onclick="closeCheckoutSuccess()" style="background:linear-gradient(135deg,#10b981,#059669);">OK, Selesai</button>
+        </div>
+    </div>
+
+<script>
+        /* -------------------------------------------------------
+           CHECKOUT FACE SCAN
+        ------------------------------------------------------- */
+        let coScanStream    = null;
+        let coScanActive    = false;
+        let coLivenessStep  = 'straight';
+        let coNoFace        = 0;
+        let coFaceInPlace   = false;
+
+        async function openCheckoutFaceScan() {
+            document.getElementById('modal-checkout-face').classList.add('active');
+            setCoMsg('Memuat Model AI...', 'info');
+
+            if (typeof faceapi === 'undefined') {
+                await loadScript('/js/face-api.min.js?v=' + Date.now());
+            }
+            await Promise.all([
+                faceapi.nets.tinyFaceDetector.loadFromUri('/models'),
+                faceapi.nets.faceLandmark68Net.loadFromUri('/models'),
+                faceapi.nets.faceRecognitionNet.loadFromUri('/models'),
+            ]);
+
+            const video = document.getElementById('co-face-video');
+            try {
+                coScanStream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'user', width: { ideal: 640 } } });
+                video.srcObject = coScanStream;
+                video.onloadedmetadata = () => {
+                    video.play();
+                    document.getElementById('co-face-loading').style.display = 'none';
+                    document.getElementById('co-face-camera-wrap').style.display = 'flex';
+                    coLivenessStep = 'straight'; coFaceInPlace = false; coScanActive = true;
+                    coScanLoop(video);
+                };
+            } catch(e) { setCoMsg('Kamera tidak dapat diakses.', 'error'); }
+        }
+
+        function closeCheckoutFaceScan() {
+            coScanActive = false;
+            if (coScanStream) { coScanStream.getTracks().forEach(t => t.stop()); coScanStream = null; }
+            document.getElementById('modal-checkout-face').classList.remove('active');
+            document.getElementById('co-face-loading').style.display = 'flex';
+            document.getElementById('co-face-camera-wrap').style.display = 'none';
+        }
+
+        async function coScanLoop(video) {
+            if (!coScanActive) return;
+            try {
+                const det = await faceapi.detectSingleFace(video, new faceapi.TinyFaceDetectorOptions())
+                    .withFaceLandmarks().withFaceDescriptor();
+                updateCoRing('green');
+                if (!det) {
+                    coNoFace++; coFaceInPlace = false;
+                    coGridVisible(false);
+                    if (coNoFace > 3) setCoMsg('Wajah tidak terdeteksi. Masukkan ke lingkaran.', 'error');
+                    setTimeout(() => coScanLoop(video), 200); return;
+                }
+                coNoFace = 0;
+                const box = det.alignedRect.box;
+                const ratio = box.width / video.videoWidth;
+                const offX = Math.abs((box.x + box.width/2) - video.videoWidth/2) / video.videoWidth;
+                const offY = Math.abs((box.y + box.height/2) - video.videoHeight/2) / video.videoHeight;
+                if (ratio < 0.28) { coFaceInPlace=false; coGridVisible(false); updateCoRing('red'); setCoMsg('Terlalu jauh — maju sedikit.', 'error'); setTimeout(()=>coScanLoop(video),200); return; }
+                if (ratio > 0.65) { coFaceInPlace=false; coGridVisible(false); updateCoRing('red'); setCoMsg('Terlalu dekat — mundur sedikit.', 'error'); setTimeout(()=>coScanLoop(video),200); return; }
+                if (offX > 0.20 || offY > 0.20) {
+                    coFaceInPlace=false; coGridVisible(false); updateCoRing('red');
+                    setCoMsg('Posisikan wajah di tengah lingkaran.', 'error');
+                    setTimeout(()=>coScanLoop(video),200); return;
+                }
+                coFaceInPlace = true; coGridVisible(true); updateCoRing('green');
+                if (coLivenessStep !== 'passed') {
+                    const pts = det.landmarks.positions;
+                    const nr = (pts[30].x - pts[0].x) / (pts[16].x - pts[0].x);
+                    if (coLivenessStep === 'straight') {
+                        setCoMsg('Tengok ke kanan ➡', 'info'); coShowArrow('right');
+                        if (nr < 0.38) coLivenessStep = 'right';
+                    } else if (coLivenessStep === 'right') {
+                        setCoMsg('⬅ Tengok ke kiri', 'info'); coShowArrow('left');
+                        if (nr > 0.62) {
+                            coLivenessStep = 'passed';
+                            setCoMsg('Verifikasi OK! Memproses...', 'success'); coShowArrow('none');
+                            coScanActive = false; submitCoDescriptor(det.descriptor); return;
+                        }
+                    }
+                    setTimeout(()=>coScanLoop(video),100); return;
+                }
+            } catch(e) { console.error(e); setTimeout(()=>coScanLoop(video),500); }
+        }
+
+        async function submitCoDescriptor(descriptor) {
+            try {
+                const res = await fetch('/kiosk/face-checkout', {
+                    method: 'POST',
+                    headers: { 'Content-Type':'application/json', 'X-CSRF-TOKEN': document.querySelector('meta[name=csrf-token]').content },
+                    body: JSON.stringify({ descriptor: Array.from(descriptor) })
+                });
+                const data = await res.json();
+                if (data.success) {
+                    closeCheckoutFaceScan();
+                    showCoSuccess(data.data);
+                } else {
+                    setCoMsg(data.message || 'Tidak ditemukan sesi aktif.', 'error');
+                    setTimeout(() => { coScanActive=true; coLivenessStep='straight'; coFaceInPlace=false; coScanLoop(document.getElementById('co-face-video')); }, 3000);
+                }
+            } catch(e) {
+                setCoMsg('Koneksi gagal. Coba lagi.', 'error');
+                setTimeout(() => { coScanActive=true; coLivenessStep='straight'; coFaceInPlace=false; coScanLoop(document.getElementById('co-face-video')); }, 3000);
+            }
+        }
+
+        let coTimer = null, coSecs = 60;
+        function showCoSuccess(d) {
+            document.getElementById('co-si-name').textContent    = d.visitor_name  || '-';
+            document.getElementById('co-si-pic').textContent     = d.pic_name      || '-';
+            document.getElementById('co-si-room').textContent    = d.room_name     || '-';
+            document.getElementById('co-si-date').textContent    = d.visit_date    || '-';
+            document.getElementById('co-si-checkin').textContent  = d.checkin_time  || '-';
+            document.getElementById('co-si-checkout').textContent = d.checkout_time || '-';
+            document.getElementById('modal-checkout-success').classList.add('active');
+            coSecs = 60; updateCoCountdown();
+            coTimer = setInterval(() => { coSecs--; updateCoCountdown(); if(coSecs<=0) closeCheckoutSuccess(); }, 1000);
+        }
+        function updateCoCountdown() {
+            document.getElementById('co-countdown-bar').style.width = (coSecs/60*100)+'%';
+            document.getElementById('co-countdown-text').textContent = 'Layar kembali otomatis dalam '+coSecs+' detik';
+        }
+        function closeCheckoutSuccess() {
+            clearInterval(coTimer);
+            document.getElementById('modal-checkout-success').classList.remove('active');
+        }
+
+        function setCoMsg(msg, type) {
+            const el = document.getElementById('co-face-msg'); if(!el) return;
+            el.textContent = msg;
+            el.style.background = type==='error'?'#ef4444':type==='success'?'#10b981':'#6366f1';
+        }
+        function updateCoRing(color) {
+            const map = {red:'#ef4444',green:'#10b981',blue:'#6366f1'};
+            const arc = document.querySelector('#co-ring-svg .co-ring-arc');
+            const base = document.querySelector('#co-ring-svg .co-ring-base');
+            if(arc) arc.setAttribute('stroke', map[color]);
+            if(base) base.setAttribute('stroke', map[color]+'44');
+        }
+        function coGridVisible(hide) {
+            const g = document.getElementById('co-face-grid'); if(g) g.style.opacity = hide?'0':'1';
+        }
+        function coShowArrow(dir) {
+            document.getElementById('co-arrow-right').style.display = dir==='right'?'flex':'none';
+            document.getElementById('co-arrow-left').style.display  = dir==='left' ?'flex':'none';
+        }
+
+</script>
 
 </body>
 </html>
