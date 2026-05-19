@@ -8,6 +8,11 @@
         message: '',
         messageType: 'info',
         referenceFeatures: @js(json_decode($record->visitor->face_features ?? 'null')),
+        
+        // Auto-scan states
+        autoScanActive: false,
+        livenessStep: 'straight', // 'straight' -> 'right' -> 'passed'
+        consecutiveNoFace: 0,
 
         async init() {
             this.video = this.$refs.video;
@@ -40,6 +45,11 @@
                 
                 this.isLoading = false;
                 this.isReady = true;
+                this.message = 'Kamera siap. Mulai pemindaian otomatis...';
+                this.messageType = 'info';
+                
+                // Mulai auto-scan
+                this.startAutoScan();
             } catch (error) {
                 console.error(error);
                 this.loadingText = 'Kamera Gagal Diakses';
@@ -67,11 +77,14 @@
             }
         },
 
-        async scanFace() {
-            if (this.isScanning) return;
+        startAutoScan() {
+            this.autoScanActive = true;
             this.isScanning = true;
-            this.message = 'Sedang memindai...';
-            this.messageType = 'info';
+            this.scanLoop();
+        },
+
+        async scanLoop() {
+            if (!this.autoScanActive) return;
 
             try {
                 const detection = await faceapi.detectSingleFace(this.video, new faceapi.TinyFaceDetectorOptions())
@@ -79,48 +92,105 @@
                     .withFaceDescriptor();
 
                 if (!detection) {
-                    this.message = 'Wajah tidak terdeteksi! Coba lagi.';
+                    this.consecutiveNoFace++;
+                    if (this.consecutiveNoFace > 3) {
+                        this.message = 'Wajah tidak terdeteksi. Posisikan wajah di dalam bingkai.';
+                        this.messageType = 'error';
+                    }
+                    setTimeout(() => this.scanLoop(), 200);
+                    return;
+                }
+                
+                this.consecutiveNoFace = 0;
+
+                // Distance Check
+                const boxWidth = detection.alignedRect.box.width;
+                const videoWidth = this.video.videoWidth;
+                const ratio = boxWidth / videoWidth;
+
+                if (ratio < 0.28) {
+                    this.message = 'Wajah terlalu jauh. Silakan maju sedikit.';
                     this.messageType = 'error';
-                    this.isScanning = false;
+                    setTimeout(() => this.scanLoop(), 200);
+                    return;
+                }
+                if (ratio > 0.65) {
+                    this.message = 'Wajah terlalu dekat. Silakan mundur sedikit.';
+                    this.messageType = 'error';
+                    setTimeout(() => this.scanLoop(), 200);
                     return;
                 }
 
-                if (this.referenceFeatures) {
-                    const refDescriptor = new Float32Array(this.referenceFeatures);
-                    const distance = faceapi.euclideanDistance(refDescriptor, detection.descriptor);
+                // Liveness Detection (Head Yaw / Nengok)
+                if (this.livenessStep !== 'passed') {
+                    const leftEdge = detection.landmarks.positions[0].x;
+                    const rightEdge = detection.landmarks.positions[16].x;
+                    const noseTip = detection.landmarks.positions[30].x;
                     
-                    if (distance < 0.5) {
-                        this.message = 'Wajah Cocok! Menyelesaikan check-in...';
+                    // Ratio hidung: 0.5 = tengah. < 0.4 = nengok kanan. > 0.6 = nengok kiri.
+                    const noseRatio = (noseTip - leftEdge) / (rightEdge - leftEdge);
+
+                    if (this.livenessStep === 'straight') {
+                        this.message = 'Jarak pas! Silakan TENGOK KE KANAN perlahan.';
+                        this.messageType = 'info';
+                        if (noseRatio < 0.38) {
+                            this.livenessStep = 'right';
+                        }
+                    } else if (this.livenessStep === 'right') {
+                        this.message = 'Bagus! Sekarang TENGOK KE KIRI perlahan.';
                         this.messageType = 'success';
-                        this.stopVideo();
-                        this.$wire.callMountedTableAction();
-                    } else {
-                        this.message = 'Wajah tidak cocok dengan tamu terdaftar! (' + distance.toFixed(2) + ')';
-                        this.messageType = 'error';
+                        if (noseRatio > 0.62) {
+                            this.livenessStep = 'passed';
+                            this.message = 'Verifikasi berhasil! Memproses wajah...';
+                            this.messageType = 'success';
+                        }
                     }
-                } else {
-                    this.message = 'Menyimpan profil wajah...';
-                    this.messageType = 'success';
-                    this.stopVideo();
-                    const descriptorArray = Array.from(detection.descriptor);
-                    
-                    // Execute submit with arguments directly
-                    this.$wire.callMountedTableAction({ face_features: JSON.stringify(descriptorArray) });
+
+                    setTimeout(() => this.scanLoop(), 100);
+                    return;
                 }
+
+                // Liveness Passed, proceed to match!
+                this.autoScanActive = false;
+                this.processCheckIn(detection);
+                
             } catch (error) {
                 console.error(error);
-                this.message = 'Terjadi kesalahan sistem.';
-                this.messageType = 'error';
+                setTimeout(() => this.scanLoop(), 500); // retry on error
             }
-            
-            if(this.messageType === 'error') {
-               setTimeout(() => {
-                    this.isScanning = false;
-               }, 2500);
+        },
+
+        processCheckIn(detection) {
+            if (this.referenceFeatures) {
+                const refDescriptor = new Float32Array(this.referenceFeatures);
+                const distance = faceapi.euclideanDistance(refDescriptor, detection.descriptor);
+                
+                if (distance < 0.5) {
+                    this.message = 'Wajah Cocok! Menyelesaikan check-in...';
+                    this.messageType = 'success';
+                    this.stopVideo();
+                    this.$wire.callMountedTableAction();
+                } else {
+                    this.message = 'Wajah tidak cocok dengan tamu terdaftar! (' + distance.toFixed(2) + ')';
+                    this.messageType = 'error';
+                    
+                    // Restart auto scan after 3 seconds
+                    setTimeout(() => {
+                        this.livenessStep = 'straight';
+                        this.startAutoScan();
+                    }, 3000);
+                }
+            } else {
+                this.message = 'Menyimpan profil wajah...';
+                this.messageType = 'success';
+                this.stopVideo();
+                const descriptorArray = Array.from(detection.descriptor);
+                this.$wire.callMountedTableAction({ face_features: JSON.stringify(descriptorArray) });
             }
         },
         
         stopVideo() {
+            this.autoScanActive = false;
             if (this.video && this.video.srcObject) {
                 this.video.srcObject.getTracks().forEach(track => track.stop());
             }
@@ -142,28 +212,82 @@
         </div>
     </div>
     
-    <div class="relative rounded-lg overflow-hidden border-2 border-gray-200 dark:border-gray-700 w-full max-w-md aspect-video bg-black shadow-inner z-10">
+    <div class="relative rounded-2xl overflow-hidden border-2 border-gray-200 dark:border-gray-800 w-full max-w-sm aspect-[3/4] bg-black shadow-inner z-10 mx-auto">
         <video x-ref="video" autoplay muted playsinline class="w-full h-full object-cover transform scale-x-[-1]"></video>
-        <!-- Overlay box -->
-        <div class="absolute inset-0 pointer-events-none flex items-center justify-center">
-            <div class="w-48 h-64 border-2 border-dashed border-white/70 rounded-3xl" :class="isScanning ? 'border-primary-500 animate-pulse' : ''"></div>
+        
+        <!-- Mask Overlay (SVG Face Shape) -->
+        <div class="absolute inset-0 pointer-events-none z-20">
+            <svg class="w-full h-full" viewBox="0 0 100 133" preserveAspectRatio="xMidYMid slice">
+                <defs>
+                    <!-- Custom Face Silhouette Path -->
+                    <path id="face-shape" d="M 50,20 C 70,20 85,35 85,60 C 93,60 93,75 85,75 C 80,100 60,115 50,120 C 40,115 20,100 15,75 C 7,75 7,60 15,60 C 15,35 30,20 50,20 Z" />
+                    
+                    <mask id="face-mask">
+                        <rect width="100%" height="100%" fill="white" />
+                        <use href="#face-shape" fill="black" />
+                    </mask>
+                    
+                    <clipPath id="face-clip">
+                        <use href="#face-shape" />
+                    </clipPath>
+                </defs>
+                
+                <!-- Darkened Background -->
+                <rect width="100%" height="100%" fill="rgba(0,0,0,0.65)" mask="url(#face-mask)" />
+                
+                <!-- Face Border -->
+                <use href="#face-shape" 
+                     fill="transparent" 
+                     stroke-width="1.5" 
+                     stroke-dasharray="6" 
+                     class="transition-all duration-300"
+                     :stroke="isScanning ? '#10b981' : 'rgba(255,255,255,0.8)'" />
+                     
+                <!-- Scanning Laser -->
+                <g x-show="isScanning" clip-path="url(#face-clip)" style="color: #10b981;">
+                    <rect x="0" y="20" width="100" height="1.5" fill="currentColor" style="animation: svgScan 2s ease-in-out infinite; box-shadow: 0 0 10px #10b981;" />
+                    <rect x="0" y="10" width="100" height="10" fill="url(#laser-gradient)" style="animation: svgScan 2s ease-in-out infinite;" />
+                </g>
+                <defs>
+                    <linearGradient id="laser-gradient" x1="0" y1="1" x2="0" y2="0">
+                        <stop offset="0%" stop-color="#10b981" stop-opacity="0.5" />
+                        <stop offset="100%" stop-color="#10b981" stop-opacity="0" />
+                    </linearGradient>
+                </defs>
+            </svg>
+            
+            <style>
+                @keyframes svgScan {
+                    0%, 100% { transform: translateY(0); opacity: 0; }
+                    10%, 90% { opacity: 1; }
+                    50% { transform: translateY(100px); }
+                }
+            </style>
         </div>
-        <!-- Error Message on Video (Added z-50) -->
-        <div x-show="message" class="absolute inset-x-0 bottom-4 flex justify-center z-50 px-4">
-            <span x-text="message" :class="messageType === 'success' ? 'bg-success-500' : (messageType === 'error' ? 'bg-danger-500' : 'bg-primary-500')" class="px-4 py-2 rounded-lg text-white text-sm font-semibold shadow-xl backdrop-blur-md bg-opacity-90 text-center"></span>
+
+        <!-- Debug Info Overlay -->
+        <div class="absolute top-2 left-2 z-50 text-[10px] text-white/70 pointer-events-none font-mono">
+            <span x-text="'Scan: ' + isScanning + ' | Step: ' + livenessStep"></span>
+        </div>
+
+        <!-- Error Message on Video -->
+        <div x-show="message" class="absolute inset-x-0 top-6 flex justify-center z-50 px-4 transition-all">
+            <span x-text="message" :class="messageType === 'success' ? 'bg-success-500' : (messageType === 'error' ? 'bg-danger-500' : 'bg-primary-500')" class="px-5 py-2.5 rounded-xl text-white text-sm font-semibold shadow-2xl backdrop-blur-md bg-opacity-90 text-center border border-white/20"></span>
         </div>
     </div>
     
-    <div class="mt-6 text-center w-full max-w-md">
-        <button x-show="isReady" @click="scanFace" :disabled="isScanning" class="w-full fi-btn relative grid-flow-col items-center justify-center font-semibold outline-none transition duration-75 focus-visible:ring-2 rounded-lg fi-color-custom fi-btn-color-primary fi-color-primary fi-size-lg fi-btn-size-lg gap-1.5 px-4 py-3 text-base inline-grid shadow-sm bg-custom-600 text-white hover:bg-custom-500 focus-visible:ring-custom-500/50 dark:bg-custom-500 dark:hover:bg-custom-400 dark:focus-visible:ring-custom-400/50" style="--c-400:var(--primary-400);--c-500:var(--primary-500);--c-600:var(--primary-600);">
-            <x-heroicon-o-camera class="w-5 h-5" />
-            <span x-text="isScanning ? 'Mendeteksi Wajah...' : 'Pindai Wajah & Check-in'"></span>
-        </button>
+    <div class="mt-4 text-center w-full max-w-md">
         <p x-show="!isReady && !isLoading" class="mt-3 text-sm text-danger-500 font-medium">
             Tidak dapat melanjutkan tanpa akses kamera.
         </p>
-        <p x-show="isReady" class="mt-3 text-xs text-gray-500 dark:text-gray-400">
-            Arahkan wajah Anda ke dalam kotak putus-putus.
-        </p>
+        <div x-show="isReady" class="bg-primary-50 dark:bg-primary-900/20 rounded-lg p-3 border border-primary-100 dark:border-primary-800">
+            <p class="text-sm text-primary-700 dark:text-primary-400 font-medium">
+                <span x-show="livenessStep !== 'passed'">Proses pemindaian berjalan otomatis.</span>
+                <span x-show="livenessStep === 'passed'">Memproses data wajah Anda...</span>
+            </p>
+            <p class="mt-1 text-xs text-gray-500 dark:text-gray-400">
+                Posisikan wajah Anda lalu ikuti instruksi di layar (nengok kanan & kiri).
+            </p>
+        </div>
     </div>
 </div>
