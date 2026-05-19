@@ -19,7 +19,7 @@ class ListAppointments extends ListRecords
                 ->modalHeading('Create New Appointment')
                 ->icon('heroicon-o-calendar-days')
                 ->color('success')
-                ->visible(fn() => auth()->user()->can('create appointment'))
+                ->visible(fn() => auth()->user()->can('Create:Appointment'))
                 // FILAMENT V4: Gunakan Schema bukan Form
                 ->mountUsing(function (Schema $schema): void {
                     // Untuk Appointment: visit_time KOSONG (user harus isi manual)
@@ -39,7 +39,7 @@ class ListAppointments extends ListRecords
                 ->modalHeading('Create Walk-in Registration')
                 ->icon('heroicon-o-user-plus')
                 ->color('warning')
-                ->visible(fn() => auth()->user()->can('create walk-in'))
+                ->visible(fn() => auth()->user()->can('Create:Appointment'))
                 // FILAMENT V4: Gunakan Schema bukan Form
                 ->mountUsing(function (Schema $schema): void {
                     // Untuk Walk-in: visit_time OTOMATIS terisi jam saat ini

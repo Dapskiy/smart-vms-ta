@@ -1,1799 +1,834 @@
 <!DOCTYPE html>
 <html lang="id">
 <head>
-    <meta charset="utf-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>VISITA — Sistem Manajemen Tamu Cerdas</title>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>VISITA — Selamat Datang</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;500;600;700;800&family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;1,9..40,300&display=swap" rel="stylesheet">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+
     <style>
-        *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+        /* ============================================================
+           RESET & BASE
+        ============================================================ */
+        *, *::before, *::after {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
 
         :root {
-            --ink: #0d0d0d;
-            --ink-muted: #5a5a5a;
-            --ink-faint: #a0a0a0;
-            --paper: #f7f5f0;
-            --paper-warm: #ede9e0;
-            --accent: #1a56db;
-            --accent-glow: rgba(26, 86, 219, 0.12);
-            --gold: #c8a84b;
-            --red: #d13e2a;
-            --surface: #ffffff;
-            --border: rgba(13,13,13,0.10);
-            --border-strong: rgba(13,13,13,0.20);
-            --radius: 16px;
-            --radius-sm: 8px;
-            --radius-pill: 100px;
+            --bg-void:        #050a18;
+            --bg-deep:        #080f22;
+            --bg-surface:     #0d1730;
+            --bg-card:        #101d38;
+            --bg-card-hover:  #14234a;
+
+            --accent-primary: #6366f1;   /* indigo */
+            --accent-glow:    #818cf8;
+            --accent-rose:    #f43f5e;
+            --accent-gold:    #fbbf24;
+
+            --text-primary:   #f0f4ff;
+            --text-secondary: #8899bb;
+            --text-muted:     #445577;
+
+            --border-subtle:  rgba(99, 102, 241, 0.15);
+            --border-card:    rgba(99, 102, 241, 0.25);
+            --border-glow:    rgba(99, 102, 241, 0.6);
+
+            --shadow-card:    0 8px 48px rgba(0, 0, 0, 0.5);
+            --shadow-glow:    0 0 60px rgba(99, 102, 241, 0.18);
         }
 
-        html { scroll-behavior: smooth; }
-
-        body {
-            font-family: 'DM Sans', sans-serif;
-            background: var(--paper);
-            color: var(--ink);
-            overflow-x: hidden;
-            line-height: 1.6;
+        html, body {
+            width: 100vw;
+            height: 100vh;
+            overflow: hidden;
+            font-family: 'Poppins', sans-serif;
+            background-color: var(--bg-void);
+            color: var(--text-primary);
+            user-select: none;
+            -webkit-user-select: none;
+            -webkit-tap-highlight-color: transparent;
+            cursor: default;
         }
 
-        /* NOISE TEXTURE */
-        body::before {
-            content: '';
+        /* ============================================================
+           BACKGROUND — CANVAS PARTICLES + GRADIENT MESH
+        ============================================================ */
+        #particle-canvas {
             position: fixed;
             inset: 0;
-            background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.04'/%3E%3C/svg%3E");
+            z-index: 0;
             pointer-events: none;
-            z-index: 9999;
-            opacity: 0.5;
         }
 
-        /* NAV */
-        nav {
+        .bg-mesh {
             position: fixed;
-            top: 0; left: 0; right: 0;
-            z-index: 100;
-            padding: 20px 48px;
+            inset: 0;
+            z-index: 1;
+            pointer-events: none;
+            background:
+                radial-gradient(ellipse 80% 50% at 15% 20%, rgba(99, 102, 241, 0.12) 0%, transparent 60%),
+                radial-gradient(ellipse 60% 40% at 85% 75%, rgba(244, 63, 94, 0.07) 0%, transparent 55%),
+                radial-gradient(ellipse 50% 60% at 50% 50%, rgba(14, 25, 55, 0.6) 0%, transparent 80%);
+        }
+
+        /* Horizontal scan line shimmer */
+        .bg-scanline {
+            position: fixed;
+            inset: 0;
+            z-index: 2;
+            pointer-events: none;
+            background: repeating-linear-gradient(
+                0deg,
+                transparent,
+                transparent 3px,
+                rgba(99, 102, 241, 0.012) 3px,
+                rgba(99, 102, 241, 0.012) 4px
+            );
+        }
+
+        /* ============================================================
+           LAYOUT WRAPPER
+        ============================================================ */
+        .kiosk-shell {
+            position: relative;
+            z-index: 10;
+            width: 100vw;
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+            padding: 2vh 3vw;
+        }
+
+        /* ============================================================
+           HEADER
+        ============================================================ */
+        .kiosk-header {
             display: flex;
             align-items: center;
             justify-content: space-between;
-            background: rgba(247, 245, 240, 0.85);
-            backdrop-filter: blur(20px);
-            border-bottom: 1px solid var(--border);
-            transition: all 0.3s;
+            flex-shrink: 0;
+            padding: 0 0.5vw;
+            height: 9vh;
         }
 
-        .nav-logo {
-            font-family: 'Syne', sans-serif;
-            font-size: 22px;
-            font-weight: 800;
-            letter-spacing: -0.5px;
-            color: var(--ink);
-            text-decoration: none;
-        }
-        .nav-logo span { color: var(--accent); }
-
-        .nav-links {
+        /* --- Logo --- */
+        .logo-wrap {
             display: flex;
             align-items: center;
-            gap: 36px;
-            list-style: none;
+            gap: 0.75rem;
         }
-        .nav-links a {
-            text-decoration: none;
-            color: var(--ink-muted);
-            font-size: 14px;
-            font-weight: 400;
-            transition: color 0.2s;
-        }
-        .nav-links a:hover { color: var(--ink); }
 
-        .nav-cta {
+        .logo-icon {
+            width: 3.2rem;
+            height: 3.2rem;
+            border-radius: 0.75rem;
+            background: linear-gradient(135deg, var(--accent-primary), #4f46e5);
             display: flex;
-            align-items: center;
-            gap: 12px;
-        }
-
-        .btn {
-            display: inline-flex;
-            align-items: center;
-            gap: 8px;
-            padding: 10px 22px;
-            border-radius: var(--radius-pill);
-            font-family: 'DM Sans', sans-serif;
-            font-size: 14px;
-            font-weight: 500;
-            text-decoration: none;
-            cursor: pointer;
-            transition: all 0.2s;
-            border: none;
-        }
-        .btn-ghost {
-            background: transparent;
-            color: var(--ink);
-            border: 1px solid var(--border-strong);
-        }
-        .btn-ghost:hover { background: var(--paper-warm); }
-        .btn-primary {
-            background: var(--ink);
-            color: #fff;
-        }
-        .btn-primary:hover { background: #222; transform: translateY(-1px); }
-        .btn-accent {
-            background: var(--accent);
-            color: #fff;
-        }
-        .btn-accent:hover { background: #1446c0; transform: translateY(-2px); }
-
-        /* HERO */
-        .hero {
-            min-height: 100vh;
-            display: flex;
-            flex-direction: column;
             align-items: center;
             justify-content: center;
-            text-align: center;
-            padding: 120px 24px 80px;
-            position: relative;
-            overflow: hidden;
+            box-shadow: 0 0 24px rgba(99, 102, 241, 0.5);
+            flex-shrink: 0;
         }
 
-        .hero-grid-bg {
-            position: absolute;
-            inset: 0;
-            background-image:
-                linear-gradient(var(--border) 1px, transparent 1px),
-                linear-gradient(90deg, var(--border) 1px, transparent 1px);
-            background-size: 60px 60px;
-            mask-image: radial-gradient(ellipse 80% 60% at 50% 0%, black 30%, transparent 100%);
-            opacity: 0.5;
+        .logo-icon svg {
+            width: 1.6rem;
+            height: 1.6rem;
+            fill: #fff;
         }
 
-        .hero-blob {
-            position: absolute;
-            width: 600px;
-            height: 600px;
-            border-radius: 50%;
-            filter: blur(80px);
-            opacity: 0.25;
-            pointer-events: none;
-        }
-        .hero-blob-1 { background: var(--accent); top: -200px; left: -100px; }
-        .hero-blob-2 { background: var(--gold); bottom: -200px; right: -100px; opacity: 0.15; }
-
-        .hero-badge {
-            display: inline-flex;
-            align-items: center;
-            gap: 8px;
-            padding: 6px 16px;
-            background: var(--surface);
-            border: 1px solid var(--border-strong);
-            border-radius: var(--radius-pill);
-            font-size: 12px;
-            font-weight: 500;
-            color: var(--ink-muted);
-            margin-bottom: 32px;
-            letter-spacing: 0.02em;
-            animation: fadeUp 0.6s ease both;
-        }
-        .hero-badge-dot {
-            width: 6px; height: 6px;
-            border-radius: 50%;
-            background: var(--accent);
-            animation: pulse 2s ease infinite;
-        }
-
-        @keyframes pulse {
-            0%, 100% { opacity: 1; transform: scale(1); }
-            50% { opacity: 0.5; transform: scale(0.8); }
-        }
-
-        .hero h1 {
-            font-family: 'Syne', sans-serif;
-            font-size: clamp(48px, 8vw, 96px);
+        .logo-text {
+            font-size: clamp(1.5rem, 2.5vw, 2rem);
             font-weight: 800;
-            line-height: 1.0;
-            letter-spacing: -3px;
-            color: var(--ink);
-            max-width: 900px;
-            margin-bottom: 24px;
-            animation: fadeUp 0.7s 0.1s ease both;
-        }
-        .hero h1 em {
-            font-style: normal;
-            color: var(--accent);
-            position: relative;
-        }
-        .hero h1 em::after {
-            content: '';
-            position: absolute;
-            bottom: 4px; left: 0; right: 0;
-            height: 4px;
-            background: var(--accent);
-            border-radius: 2px;
-            opacity: 0.3;
+            letter-spacing: -0.02em;
+            color: var(--text-primary);
+            line-height: 1;
         }
 
-        .hero-sub {
-            font-size: 18px;
-            color: var(--ink-muted);
-            max-width: 540px;
-            line-height: 1.7;
-            margin-bottom: 48px;
-            font-weight: 300;
-            animation: fadeUp 0.7s 0.2s ease both;
+        .logo-dot {
+            color: var(--accent-primary);
+            text-shadow: 0 0 12px var(--accent-primary);
         }
 
-        .hero-actions {
-            display: flex;
-            align-items: center;
-            gap: 14px;
-            margin-bottom: 80px;
-            animation: fadeUp 0.7s 0.3s ease both;
-        }
-
-        .hero-stats {
-            display: flex;
-            align-items: center;
-            gap: 48px;
-            animation: fadeUp 0.7s 0.4s ease both;
-        }
-        .hero-stat {
-            text-align: center;
-        }
-        .hero-stat-num {
-            font-family: 'Syne', sans-serif;
-            font-size: 28px;
-            font-weight: 700;
-            color: var(--ink);
-        }
-        .hero-stat-label {
-            font-size: 12px;
-            color: var(--ink-faint);
-            letter-spacing: 0.05em;
+        .logo-tagline {
+            font-size: 0.65rem;
+            font-weight: 400;
+            letter-spacing: 0.18em;
             text-transform: uppercase;
-            margin-top: 2px;
-        }
-        .hero-stat-divider {
-            width: 1px;
-            height: 36px;
-            background: var(--border-strong);
+            color: var(--text-secondary);
+            margin-top: 0.2rem;
         }
 
-        @keyframes fadeUp {
-            from { opacity: 0; transform: translateY(20px); }
-            to { opacity: 1; transform: translateY(0); }
+        /* --- Clock / Date --- */
+        .header-clock {
+            text-align: right;
         }
 
-        /* DASHBOARD PREVIEW */
-        .preview-section {
-            padding: 0 48px 100px;
-            position: relative;
+        .clock-time {
+            font-size: clamp(2rem, 3.5vw, 2.8rem);
+            font-weight: 700;
+            letter-spacing: -0.02em;
+            color: var(--text-primary);
+            line-height: 1;
+            font-variant-numeric: tabular-nums;
         }
 
-        .dashboard-mockup {
-            max-width: 1100px;
-            margin: 0 auto;
-            background: var(--surface);
-            border-radius: 24px;
-            border: 1px solid var(--border-strong);
-            overflow: hidden;
-            box-shadow: 0 40px 100px rgba(0,0,0,0.12), 0 0 0 1px var(--border);
-            animation: fadeUp 0.8s 0.5s ease both;
+        .clock-colon {
+            animation: blink 1s step-end infinite;
         }
 
-        .mockup-bar {
-            background: #f0ede8;
-            border-bottom: 1px solid var(--border);
-            padding: 14px 20px;
-            display: flex;
-            align-items: center;
-            gap: 12px;
-        }
-        .mockup-dots { display: flex; gap: 6px; }
-        .mockup-dot {
-            width: 10px; height: 10px;
-            border-radius: 50%;
-        }
-        .mockup-dot:nth-child(1) { background: #f47474; }
-        .mockup-dot:nth-child(2) { background: #f4c474; }
-        .mockup-dot:nth-child(3) { background: #74c474; }
-        .mockup-url {
-            flex: 1;
-            background: var(--surface);
-            border: 1px solid var(--border);
-            border-radius: 6px;
-            padding: 4px 12px;
-            font-size: 12px;
-            color: var(--ink-faint);
-            max-width: 360px;
+        @keyframes blink {
+            0%, 100% { opacity: 1; }
+            50%       { opacity: 0.2; }
         }
 
-        .mockup-body {
-            display: grid;
-            grid-template-columns: 220px 1fr;
-            min-height: 480px;
+        .clock-date {
+            font-size: clamp(0.7rem, 1.1vw, 0.9rem);
+            font-weight: 400;
+            color: var(--text-secondary);
+            margin-top: 0.2rem;
+            letter-spacing: 0.05em;
         }
 
-        .mockup-sidebar {
-            background: #f9f7f4;
-            border-right: 1px solid var(--border);
-            padding: 24px 0;
-        }
-        .sidebar-logo {
-            padding: 0 24px 24px;
-            font-family: 'Syne', sans-serif;
-            font-size: 16px;
-            font-weight: 800;
-            color: var(--ink);
-            border-bottom: 1px solid var(--border);
-            margin-bottom: 12px;
-        }
-        .sidebar-logo span { color: var(--accent); }
-
-        .sidebar-nav-item {
-            display: flex;
-            align-items: center;
-            gap: 10px;
-            padding: 10px 24px;
-            font-size: 13px;
-            color: var(--ink-muted);
-            cursor: pointer;
-            transition: all 0.15s;
-            border-radius: 0;
-        }
-        .sidebar-nav-item.active {
-            background: var(--accent-glow);
-            color: var(--accent);
-            font-weight: 500;
-            border-right: 2px solid var(--accent);
-        }
-        .sidebar-nav-icon {
-            width: 16px; height: 16px;
+        /* --- Divider line --- */
+        .header-divider {
+            height: 1px;
+            background: linear-gradient(90deg,
+                transparent 0%,
+                var(--border-subtle) 20%,
+                var(--accent-primary) 50%,
+                var(--border-subtle) 80%,
+                transparent 100%
+            );
+            flex-shrink: 0;
+            margin: 0 0.5vw;
             opacity: 0.6;
         }
-        .sidebar-nav-item.active .sidebar-nav-icon { opacity: 1; }
 
-        .mockup-main {
-            padding: 28px;
+        /* ============================================================
+           MAIN
+        ============================================================ */
+        .kiosk-main {
+            flex: 1;
             display: flex;
             flex-direction: column;
-            gap: 20px;
+            align-items: center;
+            justify-content: center;
+            gap: 4vh;
+            padding: 2vh 0;
         }
 
-        .mockup-header {
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-        }
-        .mockup-title {
-            font-family: 'Syne', sans-serif;
-            font-size: 18px;
-            font-weight: 700;
-            color: var(--ink);
-        }
-        .mockup-date {
-            font-size: 12px;
-            color: var(--ink-faint);
+        /* --- Welcome text --- */
+        .welcome-block {
+            text-align: center;
         }
 
-        .kpi-grid {
-            display: grid;
-            grid-template-columns: repeat(4, 1fr);
-            gap: 14px;
-        }
-        .kpi-card {
-            background: var(--paper);
-            border: 1px solid var(--border);
-            border-radius: 12px;
-            padding: 16px;
-        }
-        .kpi-label {
-            font-size: 11px;
-            color: var(--ink-faint);
-            text-transform: uppercase;
-            letter-spacing: 0.08em;
-            margin-bottom: 8px;
-        }
-        .kpi-value {
-            font-family: 'Syne', sans-serif;
-            font-size: 22px;
-            font-weight: 700;
-            color: var(--ink);
-        }
-        .kpi-delta {
-            font-size: 11px;
-            color: #2a9d4f;
-            margin-top: 4px;
-            display: flex;
-            align-items: center;
-            gap: 3px;
-        }
-        .kpi-delta.down { color: var(--red); }
-
-        .visitor-table {
-            border: 1px solid var(--border);
-            border-radius: 12px;
-            overflow: hidden;
-        }
-        .table-header {
-            display: grid;
-            grid-template-columns: 2fr 1.5fr 1fr 1fr 80px;
-            padding: 10px 16px;
-            background: var(--paper);
-            border-bottom: 1px solid var(--border);
-        }
-        .table-header span {
-            font-size: 11px;
-            font-weight: 500;
-            color: var(--ink-faint);
-            text-transform: uppercase;
-            letter-spacing: 0.06em;
-        }
-        .table-row {
-            display: grid;
-            grid-template-columns: 2fr 1.5fr 1fr 1fr 80px;
-            padding: 10px 16px;
-            border-bottom: 1px solid var(--border);
-            align-items: center;
-            font-size: 12px;
-            transition: background 0.15s;
-        }
-        .table-row:last-child { border-bottom: none; }
-        .table-row:hover { background: var(--paper); }
-        .visitor-name {
-            display: flex;
-            align-items: center;
-            gap: 8px;
-        }
-        .visitor-avatar {
-            width: 26px; height: 26px;
-            border-radius: 50%;
-            display: flex; align-items: center; justify-content: center;
-            font-size: 10px;
-            font-weight: 600;
-            color: #fff;
-            flex-shrink: 0;
-        }
-        .badge {
+        .welcome-label {
             display: inline-flex;
             align-items: center;
-            padding: 2px 8px;
-            border-radius: 100px;
-            font-size: 10px;
-            font-weight: 500;
-        }
-        .badge-green { background: #e6f9ee; color: #1a7a3e; }
-        .badge-amber { background: #fef6e6; color: #8a5c00; }
-        .badge-blue { background: #e6eeff; color: #1a40a0; }
-        .badge-red { background: #fde8e8; color: #a02020; }
-
-        /* AI AVATAR SECTION */
-        .ai-section {
-            padding: 80px 48px;
-            position: relative;
-            overflow: hidden;
+            gap: 0.5rem;
+            font-size: clamp(0.65rem, 0.9vw, 0.78rem);
+            font-weight: 600;
+            letter-spacing: 0.22em;
+            text-transform: uppercase;
+            color: var(--accent-primary);
+            background: rgba(99, 102, 241, 0.1);
+            border: 1px solid rgba(99, 102, 241, 0.3);
+            border-radius: 999px;
+            padding: 0.35rem 1rem;
+            margin-bottom: 1.2rem;
         }
 
-        .ai-section-inner {
-            max-width: 1100px;
-            margin: 0 auto;
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 80px;
-            align-items: center;
+        .welcome-label::before {
+            content: '';
+            width: 6px;
+            height: 6px;
+            border-radius: 50%;
+            background: var(--accent-primary);
+            box-shadow: 0 0 8px var(--accent-primary);
+            animation: pulse-dot 2s ease-in-out infinite;
         }
 
-        .ai-visual {
-            position: relative;
+        @keyframes pulse-dot {
+            0%, 100% { opacity: 1; transform: scale(1); }
+            50%       { opacity: 0.5; transform: scale(0.7); }
+        }
+
+        .welcome-heading {
+            font-size: clamp(2rem, 4.5vw, 3.8rem);
+            font-weight: 800;
+            letter-spacing: -0.03em;
+            line-height: 1.1;
+            color: var(--text-primary);
+        }
+
+        .welcome-heading .highlight {
+            background: linear-gradient(90deg, var(--accent-glow), var(--accent-primary));
+            -webkit-background-clip: text;
+            background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .welcome-sub {
+            margin-top: 0.8rem;
+            font-size: clamp(0.9rem, 1.6vw, 1.25rem);
+            font-weight: 400;
+            color: var(--text-secondary);
+            letter-spacing: 0.02em;
+        }
+
+        /* --- Cards row --- */
+        .cards-row {
             display: flex;
-            align-items: center;
+            gap: clamp(1.5rem, 3vw, 2.5rem);
+            width: 100%;
+            max-width: 1000px;
             justify-content: center;
         }
 
-        .ai-avatar-container {
+        .checkin-card {
+            flex: 1;
+            max-width: 440px;
+            min-height: 28vh;
+            background: var(--bg-card);
+            border: 1px solid var(--border-card);
+            border-radius: 1.5rem;
+            padding: clamp(1.5rem, 3vh, 2.5rem) clamp(1.5rem, 2.5vw, 2.5rem);
+            display: flex;
+            flex-direction: column;
+            align-items: flex-start;
+            gap: 1rem;
             position: relative;
-            width: 320px;
-            height: 320px;
+            overflow: hidden;
+            cursor: pointer;
+            transition:
+                transform 0.18s cubic-bezier(0.34, 1.56, 0.64, 1),
+                border-color 0.25s ease,
+                box-shadow 0.25s ease,
+                background 0.25s ease;
+            box-shadow: var(--shadow-card);
         }
 
-        .ai-orbit {
+        /* Card shimmer stripe */
+        .checkin-card::before {
+            content: '';
             position: absolute;
-            border: 1px dashed var(--border-strong);
-            border-radius: 50%;
-            animation: spin linear infinite;
-        }
-        .ai-orbit-1 { inset: 0; animation-duration: 20s; }
-        .ai-orbit-2 { inset: 30px; animation-duration: 15s; animation-direction: reverse; }
-        .ai-orbit-3 { inset: 60px; animation-duration: 30s; }
-
-        @keyframes spin {
-            from { transform: rotate(0deg); }
-            to { transform: rotate(360deg); }
+            top: 0;
+            left: -60%;
+            width: 40%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.04), transparent);
+            transform: skewX(-15deg);
+            transition: left 0.5s ease;
         }
 
-        .ai-orbit-dot {
+        .checkin-card:hover::before {
+            left: 130%;
+        }
+
+        /* Corner glow accent */
+        .checkin-card::after {
+            content: '';
             position: absolute;
-            width: 8px; height: 8px;
+            top: 0;
+            right: 0;
+            width: 120px;
+            height: 120px;
+            border-radius: 0 1.5rem 0 0;
+            opacity: 0;
+            transition: opacity 0.3s ease;
+        }
+
+        .card-appointment::after {
+            background: radial-gradient(circle at top right, rgba(99, 102, 241, 0.2), transparent 70%);
+        }
+
+        .card-walkin::after {
+            background: radial-gradient(circle at top right, rgba(244, 63, 94, 0.18), transparent 70%);
+        }
+
+        .checkin-card:hover::after {
+            opacity: 1;
+        }
+
+        /* Hover states */
+        .card-appointment:hover {
+            border-color: var(--border-glow);
+            box-shadow: var(--shadow-card), var(--shadow-glow);
+            background: var(--bg-card-hover);
+            transform: translateY(-4px) scale(1.012);
+        }
+
+        .card-walkin:hover {
+            border-color: rgba(244, 63, 94, 0.55);
+            box-shadow: var(--shadow-card), 0 0 50px rgba(244, 63, 94, 0.15);
+            background: var(--bg-card-hover);
+            transform: translateY(-4px) scale(1.012);
+        }
+
+        /* Active / Touch press */
+        .checkin-card:active {
+            transform: scale(0.96) !important;
+            transition: transform 0.08s ease;
+        }
+
+        /* Card icon bubble */
+        .card-icon-wrap {
+            width: clamp(3.5rem, 5vw, 4.5rem);
+            height: clamp(3.5rem, 5vw, 4.5rem);
+            border-radius: 1rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+        }
+
+        .card-appointment .card-icon-wrap {
+            background: linear-gradient(135deg, rgba(99, 102, 241, 0.25), rgba(99, 102, 241, 0.1));
+            border: 1px solid rgba(99, 102, 241, 0.3);
+            box-shadow: 0 0 20px rgba(99, 102, 241, 0.15);
+        }
+
+        .card-walkin .card-icon-wrap {
+            background: linear-gradient(135deg, rgba(244, 63, 94, 0.2), rgba(244, 63, 94, 0.08));
+            border: 1px solid rgba(244, 63, 94, 0.28);
+            box-shadow: 0 0 20px rgba(244, 63, 94, 0.12);
+        }
+
+        .card-icon-wrap svg {
+            width: clamp(1.6rem, 2.5vw, 2.2rem);
+            height: clamp(1.6rem, 2.5vw, 2.2rem);
+        }
+
+        .card-appointment .card-icon-wrap svg { color: var(--accent-glow); }
+        .card-walkin    .card-icon-wrap svg { color: #fb7185; }
+
+        /* Card text */
+        .card-body {
+            flex: 1;
+        }
+
+        .card-title {
+            font-size: clamp(1.1rem, 2vw, 1.6rem);
+            font-weight: 700;
+            letter-spacing: -0.02em;
+            color: var(--text-primary);
+            line-height: 1.2;
+        }
+
+        .card-sub {
+            margin-top: 0.4rem;
+            font-size: clamp(0.75rem, 1.1vw, 0.95rem);
+            font-weight: 400;
+            color: var(--text-secondary);
+            line-height: 1.4;
+        }
+
+        /* Card CTA arrow */
+        .card-cta {
+            margin-top: auto;
+            display: flex;
+            align-items: center;
+            gap: 0.4rem;
+            font-size: clamp(0.7rem, 1vw, 0.85rem);
+            font-weight: 600;
+            letter-spacing: 0.06em;
+            transition: gap 0.2s ease;
+        }
+
+        .card-appointment .card-cta { color: var(--accent-glow); }
+        .card-walkin    .card-cta { color: #fb7185; }
+
+        .checkin-card:hover .card-cta { gap: 0.7rem; }
+
+        .card-cta svg {
+            width: 1rem;
+            height: 1rem;
+            transition: transform 0.2s ease;
+        }
+
+        .checkin-card:hover .card-cta svg { transform: translateX(3px); }
+
+        /* ============================================================
+           FOOTER
+        ============================================================ */
+        .kiosk-footer {
+            flex-shrink: 0;
+            text-align: center;
+            padding: 1.2vh 0 0.5vh;
+        }
+
+        .footer-copy {
+            font-size: clamp(0.6rem, 0.85vw, 0.75rem);
+            color: var(--text-muted);
+            letter-spacing: 0.1em;
+        }
+
+        .footer-copy strong {
+            color: var(--text-secondary);
+            font-weight: 600;
+        }
+
+        /* ============================================================
+           RIPPLE EFFECT (touch feedback)
+        ============================================================ */
+        .ripple {
+            position: absolute;
             border-radius: 50%;
-            background: var(--accent);
-            top: -4px;
+            transform: scale(0);
+            animation: ripple-expand 0.55s linear;
+            pointer-events: none;
+        }
+
+        .card-appointment .ripple {
+            background: rgba(99, 102, 241, 0.2);
+        }
+
+        .card-walkin .ripple {
+            background: rgba(244, 63, 94, 0.18);
+        }
+
+        @keyframes ripple-expand {
+            to {
+                transform: scale(4);
+                opacity: 0;
+            }
+        }
+
+        /* ============================================================
+           ENTRY ANIMATIONS
+        ============================================================ */
+        @keyframes fadeUp {
+            from { opacity: 0; transform: translateY(28px); }
+            to   { opacity: 1; transform: translateY(0); }
+        }
+
+        .kiosk-header   { animation: fadeUp 0.6s ease both; animation-delay: 0.05s; }
+        .welcome-block  { animation: fadeUp 0.6s ease both; animation-delay: 0.2s; }
+        .checkin-card:nth-child(1) { animation: fadeUp 0.6s ease both; animation-delay: 0.35s; }
+        .checkin-card:nth-child(2) { animation: fadeUp 0.6s ease both; animation-delay: 0.48s; }
+        .kiosk-footer   { animation: fadeUp 0.6s ease both; animation-delay: 0.55s; }
+
+        /* ============================================================
+           STATUS BAR (online indicator)
+        ============================================================ */
+        .status-bar {
+            position: fixed;
+            bottom: 1.2rem;
             left: 50%;
             transform: translateX(-50%);
+            display: flex;
+            align-items: center;
+            gap: 0.4rem;
+            font-size: 0.65rem;
+            color: var(--text-muted);
+            letter-spacing: 0.12em;
+            z-index: 20;
         }
 
-        .ai-core {
-            position: absolute;
-            inset: 90px;
+        .status-dot {
+            width: 6px;
+            height: 6px;
             border-radius: 50%;
-            background: linear-gradient(135deg, #1a56db, #0d3a9e);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            box-shadow: 0 0 60px rgba(26, 86, 219, 0.4), 0 0 120px rgba(26, 86, 219, 0.15);
+            background: #22c55e;
+            box-shadow: 0 0 8px #22c55e;
+            animation: pulse-dot 2.5s ease-in-out infinite;
         }
 
-        .ai-face {
-            width: 100%;
-            height: 100%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            flex-direction: column;
-            gap: 6px;
-        }
-
-        .ai-eyes {
-            display: flex;
-            gap: 16px;
-        }
-        .ai-eye {
-            width: 10px; height: 10px;
-            border-radius: 50%;
-            background: rgba(255,255,255,0.9);
-            animation: blink 4s ease infinite;
-        }
-        @keyframes blink {
-            0%, 90%, 100% { transform: scaleY(1); }
-            95% { transform: scaleY(0.1); }
-        }
-
-        .ai-mouth {
-            width: 28px;
-            height: 2px;
-            background: rgba(255,255,255,0.6);
-            border-radius: 2px;
-        }
-
-        .ai-pulse-ring {
-            position: absolute;
-            inset: 80px;
-            border-radius: 50%;
-            border: 2px solid var(--accent);
-            animation: aiPulse 2s ease infinite;
-        }
-        @keyframes aiPulse {
-            0% { transform: scale(1); opacity: 0.8; }
-            100% { transform: scale(1.3); opacity: 0; }
-        }
-
-        /* Floating AI chips */
-        .ai-chip {
-            position: absolute;
-            background: var(--surface);
-            border: 1px solid var(--border-strong);
-            border-radius: 12px;
-            padding: 10px 14px;
-            display: flex;
-            align-items: center;
-            gap: 8px;
-            font-size: 12px;
-            font-weight: 500;
-            color: var(--ink);
-            box-shadow: 0 8px 24px rgba(0,0,0,0.08);
-            white-space: nowrap;
-        }
-        .ai-chip-dot {
-            width: 6px; height: 6px;
-            border-radius: 50%;
-        }
-        .ai-chip-1 { top: 10px; right: -20px; animation: floatChip 3s ease-in-out infinite; }
-        .ai-chip-2 { bottom: 30px; left: -30px; animation: floatChip 3s 1s ease-in-out infinite; }
-        .ai-chip-3 { bottom: 80px; right: -10px; animation: floatChip 3s 0.5s ease-in-out infinite; }
-
-        @keyframes floatChip {
-            0%, 100% { transform: translateY(0); }
-            50% { transform: translateY(-6px); }
-        }
-
-        /* Chat widget */
-        .ai-chat-widget {
-            position: absolute;
-            top: -20px;
-            left: -40px;
-            width: 220px;
-            background: var(--surface);
-            border: 1px solid var(--border-strong);
-            border-radius: 16px;
-            padding: 14px;
-            box-shadow: 0 16px 40px rgba(0,0,0,0.10);
-            animation: floatChip 4s 0.3s ease-in-out infinite;
-        }
-        .chat-widget-header {
-            display: flex;
-            align-items: center;
-            gap: 8px;
-            margin-bottom: 10px;
-        }
-        .chat-widget-avatar {
-            width: 24px; height: 24px;
-            border-radius: 50%;
-            background: linear-gradient(135deg, #1a56db, #0d3a9e);
-            display: flex; align-items: center; justify-content: center;
-        }
-        .chat-widget-name {
-            font-size: 11px;
-            font-weight: 600;
-            color: var(--ink);
-        }
-        .chat-widget-status {
-            font-size: 10px;
-            color: #2a9d4f;
-        }
-        .chat-bubble {
-            background: var(--paper);
-            border-radius: 8px;
-            padding: 8px 10px;
-            font-size: 11px;
-            color: var(--ink-muted);
-            line-height: 1.5;
-        }
-        .chat-bubble.user {
-            background: var(--accent);
-            color: #fff;
-            margin-top: 6px;
-        }
-
-        .ai-content h2 {
-            font-family: 'Syne', sans-serif;
-            font-size: clamp(32px, 4vw, 48px);
-            font-weight: 800;
-            letter-spacing: -1.5px;
-            line-height: 1.1;
-            margin-bottom: 20px;
-            color: var(--ink);
-        }
-
-        .ai-content p {
-            font-size: 16px;
-            color: var(--ink-muted);
-            font-weight: 300;
-            line-height: 1.8;
-            margin-bottom: 32px;
-        }
-
-        .ai-features {
-            display: flex;
-            flex-direction: column;
-            gap: 16px;
-        }
-        .ai-feature {
-            display: flex;
-            gap: 14px;
-            align-items: flex-start;
-        }
-        .ai-feature-icon {
-            width: 36px; height: 36px;
-            border-radius: 10px;
-            background: var(--accent-glow);
-            border: 1px solid rgba(26, 86, 219, 0.2);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            flex-shrink: 0;
-        }
-        .ai-feature-text h4 {
-            font-size: 14px;
-            font-weight: 600;
-            color: var(--ink);
-            margin-bottom: 2px;
-        }
-        .ai-feature-text p {
-            font-size: 13px;
-            color: var(--ink-muted);
-            margin: 0;
-            line-height: 1.5;
-            font-weight: 400;
-        }
-
-        /* FEATURES */
-        .features-section {
-            padding: 100px 48px;
-            background: var(--surface);
-            position: relative;
-        }
-
-        .features-section::before {
-            content: '';
-            position: absolute;
-            top: 0; left: 0; right: 0;
-            height: 1px;
-            background: linear-gradient(90deg, transparent, var(--border-strong) 30%, var(--border-strong) 70%, transparent);
-        }
-
-        .section-label {
-            display: inline-flex;
-            align-items: center;
-            gap: 8px;
-            font-size: 11px;
-            font-weight: 600;
-            text-transform: uppercase;
-            letter-spacing: 0.1em;
-            color: var(--accent);
-            margin-bottom: 16px;
-        }
-        .section-label::before {
-            content: '';
-            width: 16px; height: 1px;
-            background: var(--accent);
-        }
-
-        .section-title {
-            font-family: 'Syne', sans-serif;
-            font-size: clamp(28px, 4vw, 44px);
-            font-weight: 800;
-            letter-spacing: -1.5px;
-            line-height: 1.1;
-            color: var(--ink);
-            max-width: 600px;
-            margin-bottom: 16px;
-        }
-        .section-sub {
-            font-size: 16px;
-            color: var(--ink-muted);
-            font-weight: 300;
-            max-width: 500px;
-            line-height: 1.7;
-            margin-bottom: 60px;
-        }
-
-        .features-grid {
-            max-width: 1100px;
-            margin: 0 auto;
-            display: grid;
-            grid-template-columns: repeat(3, 1fr);
-            gap: 24px;
-        }
-
-        .feature-card {
-            background: var(--paper);
-            border: 1px solid var(--border);
-            border-radius: 20px;
-            padding: 32px;
-            transition: all 0.25s;
-            cursor: default;
-            position: relative;
-            overflow: hidden;
-        }
-        .feature-card::before {
-            content: '';
-            position: absolute;
-            top: 0; left: 0; right: 0;
-            height: 2px;
-            background: linear-gradient(90deg, transparent, var(--accent), transparent);
-            opacity: 0;
-            transition: opacity 0.25s;
-        }
-        .feature-card:hover { transform: translateY(-4px); box-shadow: 0 20px 60px rgba(0,0,0,0.08); }
-        .feature-card:hover::before { opacity: 1; }
-
-        .feature-number {
-            font-family: 'Syne', sans-serif;
-            font-size: 64px;
-            font-weight: 800;
-            color: var(--border-strong);
-            line-height: 1;
-            margin-bottom: 20px;
-            letter-spacing: -3px;
-        }
-
-        .feature-icon-box {
-            width: 48px; height: 48px;
-            border-radius: 14px;
-            background: var(--surface);
-            border: 1px solid var(--border-strong);
-            display: flex; align-items: center; justify-content: center;
-            margin-bottom: 20px;
-        }
-
-        .feature-card h3 {
-            font-family: 'Syne', sans-serif;
-            font-size: 20px;
-            font-weight: 700;
-            letter-spacing: -0.5px;
-            color: var(--ink);
-            margin-bottom: 10px;
-        }
-        .feature-card p {
-            font-size: 14px;
-            color: var(--ink-muted);
-            line-height: 1.7;
-            font-weight: 300;
-        }
-
-        /* HOW IT WORKS */
-        .how-section {
-            padding: 100px 48px;
-            position: relative;
-            overflow: hidden;
-        }
-
-        .how-section-inner {
-            max-width: 1100px;
-            margin: 0 auto;
-        }
-
-        .steps-grid {
-            display: grid;
-            grid-template-columns: repeat(4, 1fr);
-            gap: 0;
-            position: relative;
-            margin-top: 60px;
-        }
-
-        .steps-grid::before {
-            content: '';
-            position: absolute;
-            top: 28px;
-            left: 10%;
-            right: 10%;
-            height: 1px;
-            background: var(--border-strong);
-            z-index: 0;
-        }
-
-        .step {
-            text-align: center;
-            padding: 0 16px;
-            position: relative;
-            z-index: 1;
-        }
-
-        .step-circle {
-            width: 56px; height: 56px;
-            border-radius: 50%;
-            background: var(--surface);
-            border: 2px solid var(--border-strong);
-            display: flex; align-items: center; justify-content: center;
-            margin: 0 auto 24px;
-            font-family: 'Syne', sans-serif;
-            font-size: 18px;
-            font-weight: 800;
-            color: var(--ink-muted);
-            transition: all 0.2s;
-        }
-        .step:hover .step-circle {
-            background: var(--accent);
-            border-color: var(--accent);
-            color: #fff;
-        }
-
-        .step h4 {
-            font-family: 'Syne', sans-serif;
-            font-size: 16px;
-            font-weight: 700;
-            color: var(--ink);
-            margin-bottom: 8px;
-        }
-        .step p {
-            font-size: 13px;
-            color: var(--ink-muted);
-            line-height: 1.6;
-            font-weight: 300;
-        }
-
-        /* TESTIMONIALS */
-        .testimonials-section {
-            padding: 100px 48px;
-            background: var(--ink);
-            color: #fff;
-            position: relative;
-            overflow: hidden;
-        }
-
-        .testimonials-section .section-label { color: var(--gold); }
-        .testimonials-section .section-label::before { background: var(--gold); }
-        .testimonials-section .section-title { color: #fff; }
-
-        .testimonials-grid {
-            max-width: 1100px;
-            margin: 0 auto;
-            display: grid;
-            grid-template-columns: repeat(3, 1fr);
-            gap: 24px;
-        }
-
-        .testimonial-card {
-            background: rgba(255,255,255,0.05);
-            border: 1px solid rgba(255,255,255,0.10);
-            border-radius: 20px;
-            padding: 32px;
-            transition: all 0.2s;
-        }
-        .testimonial-card:hover {
-            background: rgba(255,255,255,0.08);
-            transform: translateY(-2px);
-        }
-
-        .stars {
-            display: flex;
-            gap: 3px;
-            margin-bottom: 20px;
-        }
-        .star {
-            width: 12px; height: 12px;
-            color: var(--gold);
-            font-size: 14px;
-        }
-
-        .testimonial-text {
-            font-size: 15px;
-            line-height: 1.7;
-            color: rgba(255,255,255,0.8);
-            font-weight: 300;
-            margin-bottom: 24px;
-            font-style: italic;
-        }
-
-        .testimonial-author {
-            display: flex;
-            align-items: center;
-            gap: 12px;
-        }
-        .author-avatar {
-            width: 36px; height: 36px;
-            border-radius: 50%;
-            display: flex; align-items: center; justify-content: center;
-            font-size: 13px;
-            font-weight: 700;
-            color: #fff;
-        }
-        .author-name {
-            font-size: 14px;
-            font-weight: 600;
-            color: #fff;
-        }
-        .author-role {
-            font-size: 12px;
-            color: rgba(255,255,255,0.4);
-        }
-
-        /* PRICING */
-        .pricing-section {
-            padding: 100px 48px;
-            background: var(--surface);
-            position: relative;
-        }
-
-        .pricing-section::before {
-            content: '';
-            position: absolute;
-            top: 0; left: 0; right: 0;
-            height: 1px;
-            background: linear-gradient(90deg, transparent, var(--border-strong) 30%, var(--border-strong) 70%, transparent);
-        }
-
-        .pricing-grid {
-            max-width: 900px;
-            margin: 0 auto;
-            display: grid;
-            grid-template-columns: repeat(3, 1fr);
-            gap: 20px;
-        }
-
-        .pricing-card {
-            border-radius: 20px;
-            padding: 32px;
-            border: 1px solid var(--border-strong);
-            background: var(--paper);
-            transition: all 0.25s;
-        }
-        .pricing-card.featured {
-            background: var(--ink);
-            border-color: var(--ink);
-            color: #fff;
-            transform: scale(1.02);
-        }
-        .pricing-card:hover:not(.featured) {
-            border-color: var(--accent);
-            transform: translateY(-4px);
-        }
-
-        .pricing-tier {
-            font-size: 11px;
-            font-weight: 700;
-            text-transform: uppercase;
-            letter-spacing: 0.1em;
-            color: var(--ink-faint);
-            margin-bottom: 16px;
-        }
-        .pricing-card.featured .pricing-tier { color: rgba(255,255,255,0.5); }
-
-        .pricing-price {
-            font-family: 'Syne', sans-serif;
-            font-size: 40px;
-            font-weight: 800;
-            letter-spacing: -2px;
-            color: var(--ink);
-            margin-bottom: 4px;
-        }
-        .pricing-card.featured .pricing-price { color: #fff; }
-
-        .pricing-period {
-            font-size: 13px;
-            color: var(--ink-faint);
-            margin-bottom: 24px;
-        }
-        .pricing-card.featured .pricing-period { color: rgba(255,255,255,0.4); }
-
-        .pricing-divider {
-            height: 1px;
-            background: var(--border);
-            margin-bottom: 24px;
-        }
-        .pricing-card.featured .pricing-divider { background: rgba(255,255,255,0.12); }
-
-        .pricing-features {
-            list-style: none;
-            display: flex;
-            flex-direction: column;
-            gap: 12px;
-            margin-bottom: 28px;
-        }
-        .pricing-feature {
-            display: flex;
-            align-items: center;
-            gap: 10px;
-            font-size: 13px;
-            color: var(--ink-muted);
-        }
-        .pricing-card.featured .pricing-feature { color: rgba(255,255,255,0.7); }
-        .pricing-check {
-            width: 16px; height: 16px;
-            border-radius: 50%;
-            background: var(--accent-glow);
-            border: 1px solid var(--accent);
-            display: flex; align-items: center; justify-content: center;
-            flex-shrink: 0;
-        }
-        .pricing-card.featured .pricing-check {
-            background: rgba(255,255,255,0.1);
-            border-color: rgba(255,255,255,0.3);
-        }
-
-        .pricing-btn {
-            width: 100%;
-            padding: 12px;
-            border-radius: var(--radius-pill);
-            font-family: 'DM Sans', sans-serif;
-            font-size: 14px;
-            font-weight: 500;
-            border: 1px solid var(--border-strong);
-            background: transparent;
-            color: var(--ink);
-            cursor: pointer;
-            transition: all 0.2s;
-        }
-        .pricing-btn:hover { background: var(--paper-warm); }
-        .pricing-card.featured .pricing-btn {
-            background: #fff;
-            color: var(--ink);
-            border-color: transparent;
-        }
-        .pricing-card.featured .pricing-btn:hover { background: #f0ede8; }
-
-        /* CTA */
-        .cta-section {
-            padding: 100px 48px;
-            text-align: center;
-            background: var(--paper);
-        }
-
-        .cta-inner {
-            max-width: 700px;
-            margin: 0 auto;
-        }
-
-        .cta-inner h2 {
-            font-family: 'Syne', sans-serif;
-            font-size: clamp(36px, 5vw, 64px);
-            font-weight: 800;
-            letter-spacing: -2.5px;
-            line-height: 1.0;
-            color: var(--ink);
-            margin-bottom: 20px;
-        }
-        .cta-inner p {
-            font-size: 16px;
-            color: var(--ink-muted);
-            font-weight: 300;
-            margin-bottom: 40px;
-            line-height: 1.7;
-        }
-
-        /* FOOTER */
-        footer {
-            background: var(--ink);
-            color: rgba(255,255,255,0.5);
-            padding: 60px 48px 40px;
-        }
-
-        .footer-grid {
-            max-width: 1100px;
-            margin: 0 auto;
-            display: grid;
-            grid-template-columns: 2fr 1fr 1fr 1fr;
-            gap: 60px;
-            margin-bottom: 60px;
-        }
-
-        .footer-brand h3 {
-            font-family: 'Syne', sans-serif;
-            font-size: 22px;
-            font-weight: 800;
-            color: #fff;
-            margin-bottom: 12px;
-        }
-        .footer-brand h3 span { color: var(--accent); }
-        .footer-brand p {
-            font-size: 13px;
-            line-height: 1.7;
-            max-width: 240px;
-        }
-
-        .footer-col h4 {
-            font-size: 12px;
-            font-weight: 600;
-            text-transform: uppercase;
-            letter-spacing: 0.08em;
-            color: rgba(255,255,255,0.6);
-            margin-bottom: 16px;
-        }
-        .footer-col ul { list-style: none; }
-        .footer-col li { margin-bottom: 10px; }
-        .footer-col a {
-            font-size: 13px;
-            color: rgba(255,255,255,0.4);
-            text-decoration: none;
-            transition: color 0.15s;
-        }
-        .footer-col a:hover { color: rgba(255,255,255,0.8); }
-
-        .footer-bottom {
-            max-width: 1100px;
-            margin: 0 auto;
-            border-top: 1px solid rgba(255,255,255,0.08);
-            padding-top: 32px;
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            font-size: 12px;
-        }
-
-        /* SCROLL REVEAL */
-        .reveal {
-            opacity: 0;
-            transform: translateY(30px);
-            transition: all 0.7s cubic-bezier(0.25, 0.46, 0.45, 0.94);
-        }
-        .reveal.visible {
-            opacity: 1;
-            transform: translateY(0);
-        }
-
-        /* Responsive */
-        @media (max-width: 768px) {
-            nav { padding: 16px 24px; }
-            .nav-links { display: none; }
-            .hero h1 { letter-spacing: -2px; }
-            .hero-stats { gap: 24px; flex-wrap: wrap; justify-content: center; }
-            .mockup-body { grid-template-columns: 1fr; }
-            .mockup-sidebar { display: none; }
-            .kpi-grid { grid-template-columns: repeat(2, 1fr); }
-            .ai-section-inner { grid-template-columns: 1fr; gap: 40px; }
-            .ai-avatar-container { width: 240px; height: 240px; }
-            .features-grid { grid-template-columns: 1fr; }
-            .steps-grid { grid-template-columns: repeat(2, 1fr); }
-            .steps-grid::before { display: none; }
-            .testimonials-grid { grid-template-columns: 1fr; }
-            .pricing-grid { grid-template-columns: 1fr; }
-            .pricing-card.featured { transform: none; }
-            .footer-grid { grid-template-columns: 1fr 1fr; gap: 32px; }
-            .preview-section, .ai-section, .features-section, .how-section, .testimonials-section, .pricing-section, .cta-section { padding-left: 24px; padding-right: 24px; }
-        }
     </style>
 </head>
 <body>
 
-    <!-- NAV -->
-    <nav>
-        <a href="#" class="nav-logo">VISITA<span>.</span></a>
-        <ul class="nav-links">
-            <li><a href="#fitur">Fitur</a></li>
-            <li><a href="#cara-kerja">Cara Kerja</a></li>
-            <li><a href="#harga">Harga</a></li>
-            <li><a href="#testimoni">Testimoni</a></li>
-        </ul>
-        <div class="nav-cta">
-            <a href="{{ route('login') }}" class="btn btn-ghost">Masuk</a>
-            @if (Route::has('register'))
-                <a href="{{ route('register') }}" class="btn btn-primary">Mulai Gratis →</a>
-            @endif
-        </div>
-    </nav>
+    <!-- Background layers -->
+    <canvas id="particle-canvas"></canvas>
+    <div class="bg-mesh"></div>
+    <div class="bg-scanline"></div>
 
-    <!-- HERO -->
-    <section class="hero">
-        <div class="hero-grid-bg"></div>
-        <div class="hero-blob hero-blob-1"></div>
-        <div class="hero-blob hero-blob-2"></div>
+    <!-- ==================== KIOSK SHELL ==================== -->
+    <div class="kiosk-shell">
 
-        <div class="hero-badge">
-            <div class="hero-badge-dot"></div>
-            Sistem Manajemen Tamu Bertenaga AI — 2026
-        </div>
-
-        <h1>Sambut Setiap Tamu <em>Lebih Cerdas</em></h1>
-
-        <p class="hero-sub">
-            Platform manajemen tamu generasi berikutnya dengan kecerdasan buatan yang meningkatkan pengalaman kunjungan dari registrasi hingga kepulangan.
-        </p>
-
-        <div class="hero-actions">
-            @if (Route::has('register'))
-                <a href="{{ route('register') }}" class="btn btn-accent" style="font-size:15px;padding:12px 28px;">
-                    Coba Gratis 14 Hari →
-                </a>
-            @endif
-            <a href="#fitur" class="btn btn-ghost" style="font-size:15px;padding:12px 28px;">
-                Lihat Demo
-            </a>
-        </div>
-
-        <div class="hero-stats">
-            <div class="hero-stat">
-                <div class="hero-stat-num">50K+</div>
-                <div class="hero-stat-label">Tamu Terdaftar</div>
-            </div>
-            <div class="hero-stat-divider"></div>
-            <div class="hero-stat">
-                <div class="hero-stat-num">98%</div>
-                <div class="hero-stat-label">Kepuasan</div>
-            </div>
-            <div class="hero-stat-divider"></div>
-            <div class="hero-stat">
-                <div class="hero-stat-num">3 Det</div>
-                <div class="hero-stat-label">Check-in Rata-rata</div>
-            </div>
-            <div class="hero-stat-divider"></div>
-            <div class="hero-stat">
-                <div class="hero-stat-num">500+</div>
-                <div class="hero-stat-label">Perusahaan</div>
-            </div>
-        </div>
-    </section>
-
-    <!-- DASHBOARD PREVIEW -->
-    <section class="preview-section">
-        <div class="dashboard-mockup reveal">
-            <div class="mockup-bar">
-                <div class="mockup-dots">
-                    <div class="mockup-dot"></div>
-                    <div class="mockup-dot"></div>
-                    <div class="mockup-dot"></div>
+        <!-- HEADER -->
+        <header class="kiosk-header">
+            <div class="logo-wrap">
+                <div class="logo-icon">
+                    <!-- V-shield logo mark -->
+                    <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                        <path d="M12 2L3 6.5V12c0 5.25 3.75 10.15 9 11.35C17.25 22.15 21 17.25 21 12V6.5L12 2zm-1.5 13.5L7 12l1.41-1.41L10.5 13.17l5.09-5.08L17 9.5 10.5 15.5z"/>
+                    </svg>
                 </div>
-                <div class="mockup-url">visita.app/dashboard</div>
-            </div>
-            <div class="mockup-body">
-                <div class="mockup-sidebar">
-                    <div class="sidebar-logo">VISITA<span>.</span></div>
-                    <div class="sidebar-nav-item active">
-                        <svg class="sidebar-nav-icon" viewBox="0 0 16 16" fill="currentColor"><rect x="1" y="1" width="6" height="6" rx="1"/><rect x="9" y="1" width="6" height="6" rx="1"/><rect x="1" y="9" width="6" height="6" rx="1"/><rect x="9" y="9" width="6" height="6" rx="1"/></svg>
-                        Dashboard
-                    </div>
-                    <div class="sidebar-nav-item">
-                        <svg class="sidebar-nav-icon" viewBox="0 0 16 16" fill="currentColor"><path d="M8 1a3 3 0 100 6 3 3 0 000-6zM3 13c0-2.76 2.24-5 5-5s5 2.24 5 5H3z"/></svg>
-                        Tamu
-                    </div>
-                    <div class="sidebar-nav-item">
-                        <svg class="sidebar-nav-icon" viewBox="0 0 16 16" fill="currentColor"><path d="M2 2h12v12H2z" opacity=".2"/><path d="M5 1v2M11 1v2M1 7h14M2 2h12a1 1 0 011 1v10a1 1 0 01-1 1H2a1 1 0 01-1-1V3a1 1 0 011-1z" fill="none" stroke="currentColor" stroke-linecap="round"/></svg>
-                        Jadwal
-                    </div>
-                    <div class="sidebar-nav-item">
-                        <svg class="sidebar-nav-icon" viewBox="0 0 16 16" fill="currentColor"><path d="M13 2H3a1 1 0 00-1 1v10a1 1 0 001 1h10a1 1 0 001-1V3a1 1 0 00-1-1zM7 11l-3-3 1.4-1.4L7 8.2l3.6-3.6L12 6l-5 5z"/></svg>
-                        Persetujuan
-                    </div>
-                    <div class="sidebar-nav-item">
-                        <svg class="sidebar-nav-icon" viewBox="0 0 16 16" fill="currentColor"><path d="M8 1L6 5H2l3 2.5L3.5 12 8 9l4.5 3L11 7.5 14 5h-4L8 1z"/></svg>
-                        AI Asisten
-                    </div>
-                    <div class="sidebar-nav-item">
-                        <svg class="sidebar-nav-icon" viewBox="0 0 16 16" fill="currentColor"><path d="M8 1a7 7 0 100 14A7 7 0 008 1zM7 5h2v4H7zm0 6h2v2H7z"/></svg>
-                        Laporan
-                    </div>
-                </div>
-                <div class="mockup-main">
-                    <div class="mockup-header">
-                        <div>
-                            <div class="mockup-title">Dashboard Tamu</div>
-                            <div class="mockup-date">Minggu, 26 April 2026 — Pagi ini</div>
-                        </div>
-                        <button class="btn btn-accent" style="font-size:12px;padding:8px 16px;">+ Daftarkan Tamu</button>
-                    </div>
-                    <div class="kpi-grid">
-                        <div class="kpi-card">
-                            <div class="kpi-label">Tamu Hari Ini</div>
-                            <div class="kpi-value">47</div>
-                            <div class="kpi-delta">↑ 12% dari kemarin</div>
-                        </div>
-                        <div class="kpi-card">
-                            <div class="kpi-label">Sedang Berkunjung</div>
-                            <div class="kpi-value">18</div>
-                            <div class="kpi-delta">↑ 3 dari sejam lalu</div>
-                        </div>
-                        <div class="kpi-card">
-                            <div class="kpi-label">Menunggu Masuk</div>
-                            <div class="kpi-value">5</div>
-                            <div class="kpi-delta down">↓ 2 dari kemarin</div>
-                        </div>
-                        <div class="kpi-card">
-                            <div class="kpi-label">Rata-rata Durasi</div>
-                            <div class="kpi-value">45m</div>
-                            <div class="kpi-delta">↑ stabil</div>
-                        </div>
-                    </div>
-                    <div class="visitor-table">
-                        <div class="table-header">
-                            <span>Nama Tamu</span>
-                            <span>Tujuan</span>
-                            <span>Masuk</span>
-                            <span>Status</span>
-                            <span>Aksi</span>
-                        </div>
-                        <div class="table-row">
-                            <div class="visitor-name">
-                                <div class="visitor-avatar" style="background:#1a56db;">AS</div>
-                                <span>Arya Santoso</span>
-                            </div>
-                            <span>Wawancara HR</span>
-                            <span>08:30</span>
-                            <span><div class="badge badge-green">Di dalam</div></span>
-                            <span style="font-size:11px;color:#1a56db;cursor:pointer;">Detail</span>
-                        </div>
-                        <div class="table-row">
-                            <div class="visitor-name">
-                                <div class="visitor-avatar" style="background:#c8a84b;">DK</div>
-                                <span>Dewi Kurniawati</span>
-                            </div>
-                            <span>Rapat Vendor</span>
-                            <span>09:00</span>
-                            <span><div class="badge badge-amber">Menunggu</div></span>
-                            <span style="font-size:11px;color:#1a56db;cursor:pointer;">Detail</span>
-                        </div>
-                        <div class="table-row">
-                            <div class="visitor-name">
-                                <div class="visitor-avatar" style="background:#2a9d4f;">BR</div>
-                                <span>Budi Rahardjo</span>
-                            </div>
-                            <span>Presentasi Produk</span>
-                            <span>09:15</span>
-                            <span><div class="badge badge-blue">Terjadwal</div></span>
-                            <span style="font-size:11px;color:#1a56db;cursor:pointer;">Detail</span>
-                        </div>
-                        <div class="table-row">
-                            <div class="visitor-name">
-                                <div class="visitor-avatar" style="background:#d13e2a;">SL</div>
-                                <span>Siti Lestari</span>
-                            </div>
-                            <span>Kunjungan Klien</span>
-                            <span>10:00</span>
-                            <span><div class="badge badge-green">Di dalam</div></span>
-                            <span style="font-size:11px;color:#1a56db;cursor:pointer;">Detail</span>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </section>
-
-    <!-- AI SECTION -->
-    <section class="ai-section" id="fitur">
-        <div class="ai-section-inner">
-            <div class="ai-visual reveal">
-                <div class="ai-avatar-container">
-                    <div class="ai-orbit ai-orbit-1"><div class="ai-orbit-dot"></div></div>
-                    <div class="ai-orbit ai-orbit-2"><div class="ai-orbit-dot" style="background:var(--gold);top:auto;bottom:-4px;left:50%;"></div></div>
-                    <div class="ai-orbit ai-orbit-3"><div class="ai-orbit-dot" style="background:#2a9d4f;top:50%;left:-4px;transform:none;"></div></div>
-                    <div class="ai-pulse-ring"></div>
-                    <div class="ai-core">
-                        <div class="ai-face">
-                            <div class="ai-eyes">
-                                <div class="ai-eye"></div>
-                                <div class="ai-eye"></div>
-                            </div>
-                            <div class="ai-mouth"></div>
-                        </div>
-                    </div>
-
-                    <!-- Floating chips -->
-                    <div class="ai-chip ai-chip-1">
-                        <div class="ai-chip-dot" style="background:#2a9d4f;"></div>
-                        Tamu diverifikasi
-                    </div>
-                    <div class="ai-chip ai-chip-2">
-                        <div class="ai-chip-dot" style="background:var(--accent);"></div>
-                        Analisis real-time
-                    </div>
-                    <div class="ai-chip ai-chip-3">
-                        <div class="ai-chip-dot" style="background:var(--gold);"></div>
-                        97% akurasi
-                    </div>
-
-                    <!-- Chat widget -->
-                    <div class="ai-chat-widget">
-                        <div class="chat-widget-header">
-                            <div class="chat-widget-avatar">
-                                <svg width="12" height="12" viewBox="0 0 12 12" fill="white"><path d="M6 1l1.5 3 3.5.5-2.5 2.5.5 3.5L6 9l-3 1.5.5-3.5L1 4.5l3.5-.5L6 1z"/></svg>
-                            </div>
-                            <div>
-                                <div class="chat-widget-name">VISITA AI</div>
-                                <div class="chat-widget-status">● Online</div>
-                            </div>
-                        </div>
-                        <div class="chat-bubble">Halo! Siapa yang ingin Anda kunjungi?</div>
-                        <div class="chat-bubble user">Saya ingin bertemu Pak Budi, Direktur IT</div>
-                    </div>
+                <div>
+                    <div class="logo-text">VISITA<span class="logo-dot">.</span></div>
+                    <div class="logo-tagline">Enterprise Visitor Management</div>
                 </div>
             </div>
 
-            <div class="ai-content reveal">
-                <div class="section-label">AI-Powered</div>
-                <h2>Asisten AI yang Selalu Siap Membantu</h2>
-                <p>VISITA AI memahami konteks kunjungan, memverifikasi identitas, dan memandu tamu dengan natural — seperti resepsionis terbaik Anda, 24 jam sehari.</p>
-
-                <div class="ai-features">
-                    <div class="ai-feature">
-                        <div class="ai-feature-icon">
-                            <svg width="18" height="18" viewBox="0 0 18 18" fill="none"><circle cx="9" cy="9" r="7" stroke="#1a56db" stroke-width="1.5"/><path d="M6 9l2 2 4-4" stroke="#1a56db" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
-                        </div>
-                        <div class="ai-feature-text">
-                            <h4>Verifikasi Otomatis</h4>
-                            <p>AI memverifikasi identitas tamu dan mencocokkan dengan jadwal kunjungan secara real-time.</p>
-                        </div>
-                    </div>
-                    <div class="ai-feature">
-                        <div class="ai-feature-icon">
-                            <svg width="18" height="18" viewBox="0 0 18 18" fill="none"><path d="M3 12V6a2 2 0 012-2h8a2 2 0 012 2v6" stroke="#1a56db" stroke-width="1.5" stroke-linecap="round"/><path d="M1 12h16" stroke="#1a56db" stroke-width="1.5" stroke-linecap="round"/></svg>
-                        </div>
-                        <div class="ai-feature-text">
-                            <h4>Notifikasi Cerdas</h4>
-                            <p>Tuan rumah otomatis diberitahu saat tamu tiba, dengan ringkasan konteks kunjungan.</p>
-                        </div>
-                    </div>
-                    <div class="ai-feature">
-                        <div class="ai-feature-icon">
-                            <svg width="18" height="18" viewBox="0 0 18 18" fill="none"><path d="M9 2v14M2 9h14" stroke="#1a56db" stroke-width="1.5" stroke-linecap="round"/></svg>
-                        </div>
-                        <div class="ai-feature-text">
-                            <h4>Analisis & Laporan</h4>
-                            <p>Laporan kunjungan otomatis dengan insight pola kunjungan dan rekomendasi operasional.</p>
-                        </div>
-                    </div>
+            <div class="header-clock">
+                <div class="clock-time">
+                    <span id="clock-h">--</span><span class="clock-colon">:</span><span id="clock-m">--</span>
                 </div>
+                <div class="clock-date" id="clock-date">Memuat tanggal...</div>
             </div>
-        </div>
-    </section>
+        </header>
 
-    <!-- FEATURES -->
-    <section class="features-section">
-        <div style="max-width:1100px;margin:0 auto;">
-            <div class="section-label reveal">Kemampuan Platform</div>
-            <div class="section-title reveal">Semua yang Anda Butuhkan</div>
-            <div class="section-sub reveal">Dirancang untuk perusahaan modern yang menghargai waktu tamu dan keamanan gedung.</div>
+        <div class="header-divider"></div>
 
-            <div class="features-grid">
-                <div class="feature-card reveal">
-                    <div class="feature-number">01</div>
-                    <h3>Check-in Digital</h3>
-                    <p>Tamu mendaftar mandiri melalui tablet, QR code, atau pre-registration link. Tidak ada antrian panjang di resepsionis.</p>
-                </div>
-                <div class="feature-card reveal">
-                    <div class="feature-number">02</div>
-                    <h3>Manajemen Akses</h3>
-                    <p>Integrasikan dengan sistem akses gedung. Badge digital otomatis diterbitkan sesuai zona yang diizinkan.</p>
-                </div>
-                <div class="feature-card reveal">
-                    <div class="feature-number">03</div>
-                    <h3>NDA & Dokumen</h3>
-                    <p>Tandatangani NDA, peraturan gedung, dan dokumen legal lainnya secara digital saat check-in.</p>
-                </div>
-                <div class="feature-card reveal">
-                    <div class="feature-number">04</div>
-                    <h3>Screening Keamanan</h3>
-                    <p>Verifikasi watchlist otomatis dan screening keamanan terintegrasi untuk menjaga keamanan gedung.</p>
-                </div>
-                <div class="feature-card reveal">
-                    <div class="feature-number">05</div>
-                    <h3>Laporan Real-time</h3>
-                    <p>Dashboard live menampilkan siapa saja yang ada di gedung saat ini, riwayat, dan analitik mendalam.</p>
-                </div>
-                <div class="feature-card reveal">
-                    <div class="feature-number">06</div>
-                    <h3>Integrasi Kalender</h3>
-                    <p>Sinkronisasi dengan Google Calendar, Outlook, dan sistem meeting perusahaan untuk pra-registrasi otomatis.</p>
-                </div>
+        <!-- MAIN -->
+        <main class="kiosk-main">
+
+            <!-- Welcome text -->
+            <div class="welcome-block">
+                <div class="welcome-label">Sistem Check-in Otomatis</div>
+                <h1 class="welcome-heading">
+                    Selamat Datang di <span class="highlight">VISITA</span>
+                </h1>
+                <p class="welcome-sub">Silakan pilih metode check-in Anda untuk melanjutkan</p>
             </div>
-        </div>
-    </section>
 
-    <!-- HOW IT WORKS -->
-    <section class="how-section" id="cara-kerja">
-        <div class="how-section-inner">
-            <div class="section-label reveal">Proses</div>
-            <div class="section-title reveal">Sederhana, Cepat, Aman</div>
-            <div class="section-sub reveal">Dari tamu tiba hingga check-out, semua berjalan otomatis.</div>
+            <!-- Action cards -->
+            <div class="cards-row">
 
-            <div class="steps-grid">
-                <div class="step reveal">
-                    <div class="step-circle">1</div>
-                    <h4>Pra-Registrasi</h4>
-                    <p>Tamu menerima undangan digital dan mengisi data sebelum tiba.</p>
-                </div>
-                <div class="step reveal">
-                    <div class="step-circle">2</div>
-                    <h4>Check-in Digital</h4>
-                    <p>Scan QR atau selfie untuk verifikasi identitas otomatis.</p>
-                </div>
-                <div class="step reveal">
-                    <div class="step-circle">3</div>
-                    <h4>Notifikasi Host</h4>
-                    <p>Tuan rumah langsung diberitahu dan badge akses diterbitkan.</p>
-                </div>
-                <div class="step reveal">
-                    <div class="step-circle">4</div>
-                    <h4>Check-out & Laporan</h4>
-                    <p>Check-out dicatat otomatis dan laporan kunjungan tersimpan.</p>
-                </div>
-            </div>
-        </div>
-    </section>
+                <!-- Card 1: Sudah Ada Janji -->
+                <div class="checkin-card card-appointment" onclick="handleCheckin('appointment')" role="button" tabindex="0" aria-label="Check-in dengan janji temu">
+                    <div class="card-icon-wrap">
+                        <!-- QR Code icon -->
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" xmlns="http://www.w3.org/2000/svg">
+                            <rect x="3" y="3" width="7" height="7" rx="1"/>
+                            <rect x="14" y="3" width="7" height="7" rx="1"/>
+                            <rect x="3" y="14" width="7" height="7" rx="1"/>
+                            <path d="M14 14h.01M18 14h.01M14 18h.01M18 18h.01M16 16v.01"/>
+                        </svg>
+                    </div>
 
-    <!-- TESTIMONIALS -->
-    <section class="testimonials-section" id="testimoni">
-        <div style="max-width:1100px;margin:0 auto;">
-            <div class="section-label reveal">Testimoni</div>
-            <div class="section-title reveal" style="color:#fff;margin-bottom:16px;">Dipercaya Ratusan Perusahaan</div>
-            <div class="section-sub reveal" style="color:rgba(255,255,255,0.5);margin-bottom:60px;">Dari startup hingga korporasi, VISITA mengubah cara mereka menyambut tamu.</div>
+                    <div class="card-body">
+                        <div class="card-title">Sudah Ada Janji</div>
+                        <div class="card-sub">Scan QR Code atau masukkan<br>kode token reservasi Anda</div>
+                    </div>
 
-            <div class="testimonials-grid">
-                <div class="testimonial-card reveal">
-                    <div class="stars">★★★★★</div>
-                    <div class="testimonial-text">"VISITA mengubah total pengalaman tamu di kantor kami. Check-in yang dulu 5 menit sekarang hanya 20 detik. Tamu kami sangat terkesan."</div>
-                    <div class="testimonial-author">
-                        <div class="author-avatar" style="background:#1a56db;">RH</div>
-                        <div>
-                            <div class="author-name">Reza Hartawan</div>
-                            <div class="author-role">COO, TechCorp Indonesia</div>
-                        </div>
+                    <div class="card-cta">
+                        MULAI CHECK-IN
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M5 12h14M12 5l7 7-7 7"/>
+                        </svg>
                     </div>
                 </div>
-                <div class="testimonial-card reveal">
-                    <div class="stars">★★★★★</div>
-                    <div class="testimonial-text">"Fitur AI-nya luar biasa. Sistem mendeteksi anomali kunjungan dan langsung alert tim keamanan kami. Investasi terbaik tahun ini."</div>
-                    <div class="testimonial-author">
-                        <div class="author-avatar" style="background:#c8a84b;">MS</div>
-                        <div>
-                            <div class="author-name">Maya Sari</div>
-                            <div class="author-role">Facility Manager, BCA Group</div>
-                        </div>
+
+                <!-- Card 2: Tamu Baru / Walk-in -->
+                <div class="checkin-card card-walkin" onclick="handleCheckin('walkin')" role="button" tabindex="0" aria-label="Registrasi tamu baru walk-in">
+                    <div class="card-icon-wrap">
+                        <!-- User Plus icon -->
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" xmlns="http://www.w3.org/2000/svg">
+                            <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/>
+                            <circle cx="9" cy="7" r="4"/>
+                            <line x1="19" y1="8" x2="19" y2="14"/>
+                            <line x1="22" y1="11" x2="16" y2="11"/>
+                        </svg>
+                    </div>
+
+                    <div class="card-body">
+                        <div class="card-title">Tamu Baru / Walk-in</div>
+                        <div class="card-sub">Isi formulir registrasi secara<br>langsung di layar ini</div>
+                    </div>
+
+                    <div class="card-cta">
+                        DAFTAR SEKARANG
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M5 12h14M12 5l7 7-7 7"/>
+                        </svg>
                     </div>
                 </div>
-                <div class="testimonial-card reveal">
-                    <div class="stars">★★★★★</div>
-                    <div class="testimonial-text">"Setup dalam 2 jam, langsung bisa digunakan. Tim support mereka responsif dan selalu siap membantu. Sangat direkomendasikan!"</div>
-                    <div class="testimonial-author">
-                        <div class="author-avatar" style="background:#2a9d4f;">AP</div>
-                        <div>
-                            <div class="author-name">Andi Purnomo</div>
-                            <div class="author-role">IT Director, Pertamina</div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </section>
 
-    <!-- PRICING -->
-    <section class="pricing-section" id="harga">
-        <div style="max-width:1100px;margin:0 auto;text-align:center;">
-            <div class="section-label reveal" style="justify-content:center;">Harga</div>
-            <div class="section-title reveal" style="margin:0 auto 16px;">Transparan, Tanpa Kejutan</div>
-            <div class="section-sub reveal" style="margin:0 auto 60px;">Mulai gratis, upgrade kapan saja.</div>
-        </div>
+            </div>
+        </main>
 
-        <div class="pricing-grid">
-            <div class="pricing-card reveal">
-                <div class="pricing-tier">Starter</div>
-                <div class="pricing-price">Gratis</div>
-                <div class="pricing-period">Selamanya, tanpa kartu kredit</div>
-                <div class="pricing-divider"></div>
-                <ul class="pricing-features">
-                    <li class="pricing-feature">
-                        <div class="pricing-check"><svg width="8" height="8" viewBox="0 0 8 8"><path d="M1 4l2 2 4-4" stroke="#1a56db" stroke-width="1.5" fill="none" stroke-linecap="round"/></svg></div>
-                        Hingga 50 tamu/bulan
-                    </li>
-                    <li class="pricing-feature">
-                        <div class="pricing-check"><svg width="8" height="8" viewBox="0 0 8 8"><path d="M1 4l2 2 4-4" stroke="#1a56db" stroke-width="1.5" fill="none" stroke-linecap="round"/></svg></div>
-                        Dashboard dasar
-                    </li>
-                    <li class="pricing-feature">
-                        <div class="pricing-check"><svg width="8" height="8" viewBox="0 0 8 8"><path d="M1 4l2 2 4-4" stroke="#1a56db" stroke-width="1.5" fill="none" stroke-linecap="round"/></svg></div>
-                        Notifikasi email
-                    </li>
-                    <li class="pricing-feature">
-                        <div class="pricing-check"><svg width="8" height="8" viewBox="0 0 8 8"><path d="M1 4l2 2 4-4" stroke="#1a56db" stroke-width="1.5" fill="none" stroke-linecap="round"/></svg></div>
-                        Support komunitas
-                    </li>
-                </ul>
-                <button class="pricing-btn">Mulai Sekarang</button>
-            </div>
+        <!-- FOOTER -->
+        <footer class="kiosk-footer">
+            <p class="footer-copy">
+                &copy; <span id="footer-year"></span> <strong>VISITA</strong> — Enterprise Visitor Management System &nbsp;·&nbsp; Semua hak dilindungi undang-undang
+            </p>
+        </footer>
 
-            <div class="pricing-card featured reveal">
-                <div class="pricing-tier">Professional</div>
-                <div class="pricing-price">Rp 499K</div>
-                <div class="pricing-period">per bulan, billed annually</div>
-                <div class="pricing-divider"></div>
-                <ul class="pricing-features">
-                    <li class="pricing-feature">
-                        <div class="pricing-check"><svg width="8" height="8" viewBox="0 0 8 8"><path d="M1 4l2 2 4-4" stroke="white" stroke-width="1.5" fill="none" stroke-linecap="round"/></svg></div>
-                        Tamu tak terbatas
-                    </li>
-                    <li class="pricing-feature">
-                        <div class="pricing-check"><svg width="8" height="8" viewBox="0 0 8 8"><path d="M1 4l2 2 4-4" stroke="white" stroke-width="1.5" fill="none" stroke-linecap="round"/></svg></div>
-                        AI Asisten penuh
-                    </li>
-                    <li class="pricing-feature">
-                        <div class="pricing-check"><svg width="8" height="8" viewBox="0 0 8 8"><path d="M1 4l2 2 4-4" stroke="white" stroke-width="1.5" fill="none" stroke-linecap="round"/></svg></div>
-                        Integrasi kalender
-                    </li>
-                    <li class="pricing-feature">
-                        <div class="pricing-check"><svg width="8" height="8" viewBox="0 0 8 8"><path d="M1 4l2 2 4-4" stroke="white" stroke-width="1.5" fill="none" stroke-linecap="round"/></svg></div>
-                        NDA & dokumen digital
-                    </li>
-                    <li class="pricing-feature">
-                        <div class="pricing-check"><svg width="8" height="8" viewBox="0 0 8 8"><path d="M1 4l2 2 4-4" stroke="white" stroke-width="1.5" fill="none" stroke-linecap="round"/></svg></div>
-                        Priority support 24/7
-                    </li>
-                </ul>
-                <button class="pricing-btn">Coba 14 Hari Gratis</button>
-            </div>
+    </div>
 
-            <div class="pricing-card reveal">
-                <div class="pricing-tier">Enterprise</div>
-                <div class="pricing-price">Custom</div>
-                <div class="pricing-period">Harga sesuai kebutuhan</div>
-                <div class="pricing-divider"></div>
-                <ul class="pricing-features">
-                    <li class="pricing-feature">
-                        <div class="pricing-check"><svg width="8" height="8" viewBox="0 0 8 8"><path d="M1 4l2 2 4-4" stroke="#1a56db" stroke-width="1.5" fill="none" stroke-linecap="round"/></svg></div>
-                        Multi-lokasi & multi-tenant
-                    </li>
-                    <li class="pricing-feature">
-                        <div class="pricing-check"><svg width="8" height="8" viewBox="0 0 8 8"><path d="M1 4l2 2 4-4" stroke="#1a56db" stroke-width="1.5" fill="none" stroke-linecap="round"/></svg></div>
-                        On-premise deployment
-                    </li>
-                    <li class="pricing-feature">
-                        <div class="pricing-check"><svg width="8" height="8" viewBox="0 0 8 8"><path d="M1 4l2 2 4-4" stroke="#1a56db" stroke-width="1.5" fill="none" stroke-linecap="round"/></svg></div>
-                        Custom AI training
-                    </li>
-                    <li class="pricing-feature">
-                        <div class="pricing-check"><svg width="8" height="8" viewBox="0 0 8 8"><path d="M1 4l2 2 4-4" stroke="#1a56db" stroke-width="1.5" fill="none" stroke-linecap="round"/></svg></div>
-                        Dedicated account manager
-                    </li>
-                </ul>
-                <button class="pricing-btn">Hubungi Sales</button>
-            </div>
-        </div>
-    </section>
+    <!-- Online status bar -->
+    <div class="status-bar">
+        <div class="status-dot"></div>
+        SISTEM AKTIF &amp; TERHUBUNG
+    </div>
 
-    <!-- CTA -->
-    <section class="cta-section">
-        <div class="cta-inner reveal">
-            <h2>Siap Mengubah Pengalaman Tamu Anda?</h2>
-            <p>Bergabung dengan 500+ perusahaan yang sudah menggunakan VISITA. Mulai gratis, tanpa kartu kredit.</p>
-            @if (Route::has('register'))
-                <a href="{{ route('register') }}" class="btn btn-primary" style="font-size:16px;padding:14px 36px;margin-right:12px;">
-                    Mulai Gratis Sekarang →
-                </a>
-            @endif
-            <a href="#" class="btn btn-ghost" style="font-size:16px;padding:14px 36px;">
-                Jadwalkan Demo
-            </a>
-        </div>
-    </section>
-
-    <!-- FOOTER -->
-    <footer>
-        <div class="footer-grid">
-            <div class="footer-brand">
-                <h3>VISITA<span>.</span></h3>
-                <p>Sistem manajemen tamu bertenaga AI untuk perusahaan modern Indonesia.</p>
-            </div>
-            <div class="footer-col">
-                <h4>Produk</h4>
-                <ul>
-                    <li><a href="#">Fitur</a></li>
-                    <li><a href="#">Keamanan</a></li>
-                    <li><a href="#">Integrasi</a></li>
-                    <li><a href="#">API</a></li>
-                    <li><a href="#">Changelog</a></li>
-                </ul>
-            </div>
-            <div class="footer-col">
-                <h4>Perusahaan</h4>
-                <ul>
-                    <li><a href="#">Tentang Kami</a></li>
-                    <li><a href="#">Blog</a></li>
-                    <li><a href="#">Karir</a></li>
-                    <li><a href="#">Kontak</a></li>
-                    <li><a href="#">Press</a></li>
-                </ul>
-            </div>
-            <div class="footer-col">
-                <h4>Dukungan</h4>
-                <ul>
-                    <li><a href="#">Dokumentasi</a></li>
-                    <li><a href="#">Status</a></li>
-                    <li><a href="#">Kebijakan Privasi</a></li>
-                    <li><a href="#">Syarat Layanan</a></li>
-                </ul>
-            </div>
-        </div>
-        <div class="footer-bottom">
-            <span>© 2026 VISITA. Dibuat dengan ♥ di Indonesia.</span>
-            <span>Semarang, Jawa Tengah 🇮🇩</span>
-        </div>
-    </footer>
-
+    <!-- ==================== JAVASCRIPT ==================== -->
     <script>
-        const observer = new IntersectionObserver((entries) => {
-            entries.forEach((entry, i) => {
-                if (entry.isIntersecting) {
-                    setTimeout(() => {
-                        entry.target.classList.add('visible');
-                    }, 80);
-                    observer.unobserve(entry.target);
-                }
+        /* -------------------------------------------------------
+           CLOCK & DATE
+        ------------------------------------------------------- */
+        const DAYS_ID   = ['Minggu','Senin','Selasa','Rabu','Kamis','Jumat','Sabtu'];
+        const MONTHS_ID = ['Januari','Februari','Maret','April','Mei','Juni',
+                           'Juli','Agustus','September','Oktober','November','Desember'];
+
+        function padTwo(n) { return String(n).padStart(2, '0'); }
+
+        function updateClock() {
+            const now  = new Date();
+            const h    = padTwo(now.getHours());
+            const m    = padTwo(now.getMinutes());
+            const day  = DAYS_ID[now.getDay()];
+            const date = now.getDate();
+            const mon  = MONTHS_ID[now.getMonth()];
+            const yr   = now.getFullYear();
+
+            document.getElementById('clock-h').textContent    = h;
+            document.getElementById('clock-m').textContent    = m;
+            document.getElementById('clock-date').textContent = `${day}, ${date} ${mon} ${yr}`;
+            document.getElementById('footer-year').textContent = yr;
+        }
+
+        updateClock();
+        setInterval(updateClock, 1000);
+
+        /* -------------------------------------------------------
+           RIPPLE EFFECT
+        ------------------------------------------------------- */
+        document.querySelectorAll('.checkin-card').forEach(card => {
+            card.addEventListener('pointerdown', function (e) {
+                const rect    = this.getBoundingClientRect();
+                const x       = e.clientX - rect.left;
+                const y       = e.clientY - rect.top;
+                const size    = Math.max(rect.width, rect.height) * 1.5;
+
+                const ripple  = document.createElement('span');
+                ripple.className = 'ripple';
+                ripple.style.cssText = `
+                    width: ${size}px;
+                    height: ${size}px;
+                    left: ${x - size / 2}px;
+                    top: ${y - size / 2}px;
+                `;
+                this.appendChild(ripple);
+
+                ripple.addEventListener('animationend', () => ripple.remove());
             });
-        }, { threshold: 0.1, rootMargin: '0px 0px -40px 0px' });
-
-        document.querySelectorAll('.reveal').forEach(el => observer.observe(el));
-
-        window.addEventListener('scroll', () => {
-            const nav = document.querySelector('nav');
-            nav.style.boxShadow = window.scrollY > 20 ? '0 4px 24px rgba(0,0,0,0.08)' : 'none';
         });
 
-        document.querySelectorAll('.pricing-btn').forEach(btn => {
-            btn.addEventListener('click', function() {
-                const plan = this.closest('.pricing-card').querySelector('.pricing-tier').textContent;
-                if (plan === 'Enterprise') {
-                    window.location.href = 'mailto:sales@visita.app';
-                } else {
-                    window.location.href = '{{ Route::has("register") ? route("register") : "#" }}';
+        /* -------------------------------------------------------
+           CARD HANDLER — redirect ke route Laravel
+        ------------------------------------------------------- */
+        function handleCheckin(type) {
+            if (type === 'appointment') {
+                // window.location.href = "/kiosk/appointment";
+                console.log('[VISITA] Navigate → Appointment Check-in');
+                alert('Fitur Scan Token akan segera hadir!');
+            } else {
+                // window.location.href = "/kiosk/walkin";
+                console.log('[VISITA] Navigate → Walk-in Registration');
+                alert('Fitur Form Registrasi akan segera hadir!');
+            }
+        }
+
+        /* -------------------------------------------------------
+           PARTICLE CANVAS
+        ------------------------------------------------------- */
+        (function initParticles() {
+            const canvas = document.getElementById('particle-canvas');
+            const ctx    = canvas.getContext('2d');
+
+            let W, H, particles;
+
+            const CONFIG = {
+                count:         70,
+                baseRadius:    1.2,
+                maxSpeed:      0.25,
+                connectDist:   160,
+                baseOpacity:   0.35,
+                colors:        ['#6366f1', '#818cf8', '#a5b4fc', '#f43f5e'],
+            };
+
+            function resize() {
+                W = canvas.width  = window.innerWidth;
+                H = canvas.height = window.innerHeight;
+            }
+
+            class Particle {
+                constructor() { this.reset(true); }
+
+                reset(init = false) {
+                    this.x    = Math.random() * W;
+                    this.y    = init ? Math.random() * H : (Math.random() > 0.5 ? -5 : H + 5);
+                    this.r    = CONFIG.baseRadius + Math.random() * 1.2;
+                    this.vx   = (Math.random() - 0.5) * CONFIG.maxSpeed;
+                    this.vy   = (Math.random() - 0.5) * CONFIG.maxSpeed;
+                    this.color = CONFIG.colors[Math.floor(Math.random() * CONFIG.colors.length)];
+                    this.alpha = 0.1 + Math.random() * 0.5;
+                    this.pulse = Math.random() * Math.PI * 2;
+                    this.pulseSpeed = 0.008 + Math.random() * 0.01;
                 }
-            });
-        });
+
+                update() {
+                    this.x += this.vx;
+                    this.y += this.vy;
+                    this.pulse += this.pulseSpeed;
+
+                    if (this.x < -10 || this.x > W + 10 || this.y < -10 || this.y > H + 10) {
+                        this.reset();
+                    }
+                }
+
+                draw() {
+                    const a = this.alpha * (0.7 + 0.3 * Math.sin(this.pulse));
+                    ctx.beginPath();
+                    ctx.arc(this.x, this.y, this.r, 0, Math.PI * 2);
+                    ctx.fillStyle = this.color;
+                    ctx.globalAlpha = a;
+                    ctx.fill();
+                    ctx.globalAlpha = 1;
+                }
+            }
+
+            function buildParticles() {
+                particles = Array.from({ length: CONFIG.count }, () => new Particle());
+            }
+
+            function drawLines() {
+                for (let i = 0; i < particles.length; i++) {
+                    for (let j = i + 1; j < particles.length; j++) {
+                        const a = particles[i], b = particles[j];
+                        const dx = a.x - b.x, dy = a.y - b.y;
+                        const dist = Math.sqrt(dx * dx + dy * dy);
+
+                        if (dist < CONFIG.connectDist) {
+                            const alpha = (1 - dist / CONFIG.connectDist) * 0.12;
+                            ctx.beginPath();
+                            ctx.moveTo(a.x, a.y);
+                            ctx.lineTo(b.x, b.y);
+                            ctx.strokeStyle = `rgba(99,102,241,${alpha})`;
+                            ctx.lineWidth = 0.7;
+                            ctx.stroke();
+                        }
+                    }
+                }
+            }
+
+            function loop() {
+                ctx.clearRect(0, 0, W, H);
+                drawLines();
+                particles.forEach(p => { p.update(); p.draw(); });
+                requestAnimationFrame(loop);
+            }
+
+            resize();
+            buildParticles();
+            loop();
+
+            window.addEventListener('resize', () => { resize(); buildParticles(); });
+        })();
+
+        /* -------------------------------------------------------
+           PREVENT CONTEXT MENU (kiosk mode)
+        ------------------------------------------------------- */
+        document.addEventListener('contextmenu', e => e.preventDefault());
     </script>
+
 </body>
 </html>

@@ -194,13 +194,13 @@ class SummaryResource extends Resource
     // Override izin melihat menu di sidebar dan daftar tabel
     public static function canViewAny(): bool
     {
-        return auth()->user()->can('viewany summary');
+        return auth()->user()->can('ViewAny:Visitor');
     }
 
     // (Opsional) Mencegah user mengakses data detail jika diakali lewat URL
     public static function canView($record): bool
     {
-        return auth()->user()->can('viewany summary');
+        return auth()->user()->can('ViewAny:Visitor');
     }
 
     public static function getEloquentQuery(): Builder

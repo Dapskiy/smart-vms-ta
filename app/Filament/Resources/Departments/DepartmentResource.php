@@ -55,4 +55,9 @@ class DepartmentResource extends Resource
             'edit'   => EditDepartment::route('/{record}/edit'),
         ];
     }
+
+    public static function canViewAny(): bool
+    {
+        return auth()->user()->can('ViewAny:Department');
+    }
 }
