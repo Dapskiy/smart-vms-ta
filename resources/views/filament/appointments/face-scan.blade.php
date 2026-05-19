@@ -3,25 +3,22 @@
         video: null,
         isLoading: true,
         isReady: false,
-        isScanning: false,
         loadingText: 'Memuat Model AI...',
         message: '',
         messageType: 'info',
         referenceFeatures: @js(json_decode($record->visitor->face_features ?? 'null')),
-        
-        // Auto-scan & liveness states
-        autoScanActive: false,
-        livenessStep: 'straight', // 'straight' -> 'right' -> 'passed'
-        consecutiveNoFace: 0,
-        faceInPlace: false, // Wajah sudah di posisi yang pas
 
-        // Computed outline color for circular border
-        get outlineColor() {
-            if (!this.isScanning) return 'none';
-            if (this.messageType === 'error') return '#ef4444';
+        autoScanActive: false,
+        livenessStep: 'straight',
+        consecutiveNoFace: 0,
+        faceInPlace: false,
+
+        get ringColor() {
+            if (this.messageType === 'error')   return '#ef4444';
             if (this.messageType === 'success') return '#10b981';
-            return '#3b82f6';
+            return '#6366f1';
         },
+        get ringColorAlpha() { return this.ringColor + '33'; },
 
         async init() {
             this.video = this.$refs.video;
@@ -29,399 +26,314 @@
                 if (typeof faceapi === 'undefined') {
                     this.loadingText = 'Mengunduh pustaka AI...';
                     await new Promise((resolve, reject) => {
-                        let script = document.createElement('script');
-                        script.src = '/js/face-api.min.js?v=' + new Date().getTime();
-                        script.onload = resolve;
-                        script.onerror = () => reject(new Error('Gagal mengunduh file face-api.min.js dari server.'));
-                        document.head.appendChild(script);
+                        let s = document.createElement('script');
+                        s.src = '/js/face-api.min.js?v=' + Date.now();
+                        s.onload = resolve;
+                        s.onerror = () => reject(new Error('Gagal mengunduh face-api.min.js'));
+                        document.head.appendChild(s);
                     });
                 }
-
-                if (typeof faceapi === 'undefined') {
-                    throw new Error('Library face-api gagal dimuat.');
-                }
-
+                if (typeof faceapi === 'undefined') throw new Error('Library face-api gagal dimuat.');
                 this.loadingText = 'Memuat Model AI...';
                 await Promise.all([
                     faceapi.nets.tinyFaceDetector.loadFromUri('/models'),
                     faceapi.nets.faceLandmark68Net.loadFromUri('/models'),
-                    faceapi.nets.faceRecognitionNet.loadFromUri('/models')
+                    faceapi.nets.faceRecognitionNet.loadFromUri('/models'),
                 ]);
-                
                 this.loadingText = 'Mengakses Kamera...';
                 await this.startVideo();
-                
                 this.isLoading = false;
                 this.isReady = true;
-                this.message = 'Posisikan wajah Anda di dalam lingkaran.';
-                this.messageType = 'info';
-                
+                this.setMsg('Posisikan wajah di dalam lingkaran.', 'info');
                 this.startAutoScan();
             } catch (error) {
                 console.error(error);
                 this.loadingText = 'Kamera Gagal Diakses';
-                this.message = error.message || 'Kamera tidak dapat diakses atau diblokir browser.';
-                this.messageType = 'error';
+                this.setMsg(error.message || 'Kamera tidak dapat diakses.', 'error');
                 this.isLoading = false;
             }
         },
 
         async startVideo() {
-            if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+            if (!navigator.mediaDevices?.getUserMedia)
                 throw new Error('Browser memblokir kamera. Gunakan HTTPS atau localhost!');
-            }
-            try {
-                const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'user', width: { ideal: 640 }, height: { ideal: 480 } } });
-                this.video.srcObject = stream;
-                return new Promise((resolve) => {
-                    this.video.onloadedmetadata = () => { resolve(this.video); };
-                });
-            } catch (error) {
-                throw new Error('Kamera tidak ditemukan atau akses ditolak.');
-            }
+            const stream = await navigator.mediaDevices.getUserMedia({
+                video: { facingMode: 'user', width: { ideal: 640 }, height: { ideal: 480 } }
+            }).catch(() => { throw new Error('Kamera tidak ditemukan atau akses ditolak.'); });
+            this.video.srcObject = stream;
+            return new Promise(resolve => { this.video.onloadedmetadata = () => { this.video.play(); resolve(); }; });
         },
 
-        startAutoScan() {
-            this.autoScanActive = true;
-            this.isScanning = true;
-            this.scanLoop();
+        setMsg(text, type) {
+            this.message = text;
+            this.messageType = type;
+            /* Sync ke elemen statik (agar animasi CSS tetap jalan) */
+            const el = this.$refs.msgBadge;
+            if (!el) return;
+            el.textContent = text;
+            el.style.background = type === 'error' ? '#ef4444' : type === 'success' ? '#10b981' : '#6366f1';
         },
+
+        setGrid(hide) {
+            const g = this.$refs.faceGrid;
+            if (g) g.style.opacity = hide ? '0' : '1';
+        },
+
+        setRing(type) {
+            const c = this.ringColor;
+            const arc  = this.$refs.ringArc;
+            const base = this.$refs.ringBase;
+            if (arc)  arc.setAttribute('stroke', c);
+            if (base) base.setAttribute('stroke', c + '33');
+        },
+
+        showArrow(dir) {
+            const r = this.$refs.arrowRight;
+            const l = this.$refs.arrowLeft;
+            if (r) r.style.display = dir === 'right' ? 'flex' : 'none';
+            if (l) l.style.display = dir === 'left'  ? 'flex' : 'none';
+        },
+
+        startAutoScan() { this.autoScanActive = true; this.scanLoop(); },
 
         async scanLoop() {
             if (!this.autoScanActive) return;
-
             try {
-                const detection = await faceapi.detectSingleFace(this.video, new faceapi.TinyFaceDetectorOptions())
-                    .withFaceLandmarks()
-                    .withFaceDescriptor();
+                const det = await faceapi
+                    .detectSingleFace(this.video, new faceapi.TinyFaceDetectorOptions())
+                    .withFaceLandmarks().withFaceDescriptor();
 
-                if (!detection) {
+                if (!det) {
                     this.consecutiveNoFace++;
                     this.faceInPlace = false;
-                    if (this.consecutiveNoFace > 3) {
-                        this.message = 'Wajah tidak terdeteksi. Masukkan wajah ke dalam lingkaran.';
-                        this.messageType = 'error';
-                    }
-                    setTimeout(() => this.scanLoop(), 200);
-                    return;
+                    this.setGrid(false);
+                    this.setRing();
+                    if (this.consecutiveNoFace > 3)
+                        this.setMsg('Wajah tidak terdeteksi. Masukkan ke lingkaran.', 'error');
+                    setTimeout(() => this.scanLoop(), 200); return;
                 }
-                
                 this.consecutiveNoFace = 0;
 
-                // Distance / Size check
-                const box = detection.alignedRect.box;
-                const videoWidth = this.video.videoWidth;
-                const videoHeight = this.video.videoHeight;
-                const ratio = box.width / videoWidth;
+                const box   = det.alignedRect.box;
+                const ratio = box.width / this.video.videoWidth;
+                const offX  = Math.abs((box.x + box.width/2)  - this.video.videoWidth/2)  / this.video.videoWidth;
+                const offY  = Math.abs((box.y + box.height/2) - this.video.videoHeight/2) / this.video.videoHeight;
 
                 if (ratio < 0.28) {
-                    this.faceInPlace = false;
-                    this.message = 'Wajah terlalu jauh — maju sedikit.';
-                    this.messageType = 'error';
-                    setTimeout(() => this.scanLoop(), 200);
-                    return;
+                    this.faceInPlace = false; this.setGrid(false);
+                    this.setMsg('Wajah terlalu jauh — maju sedikit.', 'error');
+                    this.setRing(); setTimeout(() => this.scanLoop(), 200); return;
                 }
                 if (ratio > 0.65) {
-                    this.faceInPlace = false;
-                    this.message = 'Wajah terlalu dekat — mundur sedikit.';
-                    this.messageType = 'error';
-                    setTimeout(() => this.scanLoop(), 200);
-                    return;
+                    this.faceInPlace = false; this.setGrid(false);
+                    this.setMsg('Wajah terlalu dekat — mundur sedikit.', 'error');
+                    this.setRing(); setTimeout(() => this.scanLoop(), 200); return;
                 }
-
-                // Center check — face center must be within ±20% of video center
-                const faceCenterX = box.x + box.width / 2;
-                const faceCenterY = box.y + box.height / 2;
-                const videoMidX = videoWidth / 2;
-                const videoMidY = videoHeight / 2;
-                const toleranceX = videoWidth * 0.20;
-                const toleranceY = videoHeight * 0.20;
-
-                if (Math.abs(faceCenterX - videoMidX) > toleranceX || Math.abs(faceCenterY - videoMidY) > toleranceY) {
-                    this.faceInPlace = false;
-                    const dx = faceCenterX - videoMidX;
-                    const dy = faceCenterY - videoMidY;
+                if (offX > 0.20 || offY > 0.20) {
+                    this.faceInPlace = false; this.setGrid(false); this.setRing();
+                    const dx = (box.x + box.width/2) - this.video.videoWidth/2;
+                    const dy = (box.y + box.height/2) - this.video.videoHeight/2;
                     let hint = 'Posisikan wajah di tengah lingkaran';
-                    if (Math.abs(dx) > Math.abs(dy)) {
-                        hint = dx > 0 ? 'Geser ke kiri ←' : 'Geser ke kanan →';
-                    } else {
-                        hint = dy > 0 ? 'Geser ke atas ↑' : 'Geser ke bawah ↓';
-                    }
-                    this.message = hint;
-                    this.messageType = 'error';
-                    setTimeout(() => this.scanLoop(), 200);
-                    return;
+                    if (Math.abs(dx) > Math.abs(dy)) hint = dx > 0 ? 'Geser ke kiri ←' : 'Geser ke kanan →';
+                    else hint = dy > 0 ? 'Geser ke atas ↑' : 'Geser ke bawah ↓';
+                    this.setMsg(hint, 'error'); setTimeout(() => this.scanLoop(), 200); return;
                 }
 
-                // Face is correctly centered!
+                /* Wajah pas di tengah */
                 this.faceInPlace = true;
+                this.setGrid(true);
+                this.messageType = 'success'; this.setRing();
 
-                // Liveness Detection (Head Yaw)
                 if (this.livenessStep !== 'passed') {
-                    const leftEdge = detection.landmarks.positions[0].x;
-                    const rightEdge = detection.landmarks.positions[16].x;
-                    const noseTip = detection.landmarks.positions[30].x;
-                    const noseRatio = (noseTip - leftEdge) / (rightEdge - leftEdge);
-
+                    const pts = det.landmarks.positions;
+                    const nr  = (pts[30].x - pts[0].x) / (pts[16].x - pts[0].x);
                     if (this.livenessStep === 'straight') {
-                        this.message = 'Tengok ke kanan ➡';
-                        this.messageType = 'info';
-                        if (noseRatio < 0.38) {
-                            this.livenessStep = 'right';
-                        }
+                        this.setMsg('Tengok ke kanan ➡', 'info');
+                        this.messageType = 'info'; this.setRing();
+                        this.showArrow('right');
+                        if (nr < 0.38) this.livenessStep = 'right';
                     } else if (this.livenessStep === 'right') {
-                        this.message = '⬅ Sekarang tengok ke kiri';
-                        this.messageType = 'info';
-                        if (noseRatio > 0.62) {
+                        this.setMsg('⬅ Sekarang tengok ke kiri', 'info');
+                        this.messageType = 'info'; this.setRing();
+                        this.showArrow('left');
+                        if (nr > 0.62) {
                             this.livenessStep = 'passed';
-                            this.message = 'Verifikasi berhasil!';
-                            this.messageType = 'success';
+                            this.setMsg('Verifikasi berhasil! Memproses...', 'success');
+                            this.messageType = 'success'; this.setRing();
+                            this.showArrow('none');
+                            this.autoScanActive = false;
+                            this.processResult(det); return;
                         }
                     }
-
-                    setTimeout(() => this.scanLoop(), 100);
-                    return;
+                    setTimeout(() => this.scanLoop(), 100); return;
                 }
-
-                // Liveness Passed, proceed to match!
-                this.autoScanActive = false;
-                this.processCheckIn(detection);
-                
-            } catch (error) {
-                console.error(error);
-                setTimeout(() => this.scanLoop(), 500);
-            }
+            } catch(e) { console.error(e); setTimeout(() => this.scanLoop(), 500); }
         },
 
-        processCheckIn(detection) {
+        processResult(detection) {
             if (this.referenceFeatures) {
-                const refDescriptor = new Float32Array(this.referenceFeatures);
-                const distance = faceapi.euclideanDistance(refDescriptor, detection.descriptor);
-                
-                if (distance < 0.5) {
-                    this.message = 'Wajah Cocok! Menyelesaikan check-in...';
-                    this.messageType = 'success';
+                const ref = new Float32Array(this.referenceFeatures);
+                const dist = faceapi.euclideanDistance(ref, detection.descriptor);
+                if (dist < 0.5) {
+                    this.setMsg('Wajah Cocok! Menyelesaikan check-in...', 'success');
                     this.stopVideo();
                     this.$wire.callMountedTableAction();
                 } else {
-                    this.message = 'Wajah tidak cocok dengan tamu terdaftar!';
-                    this.messageType = 'error';
+                    this.setMsg('Wajah tidak cocok! (' + dist.toFixed(2) + ')', 'error');
                     setTimeout(() => {
-                        this.livenessStep = 'straight';
-                        this.faceInPlace = false;
+                        this.livenessStep = 'straight'; this.faceInPlace = false;
+                        this.setGrid(false); this.showArrow('none');
                         this.startAutoScan();
                     }, 3000);
                 }
             } else {
-                this.message = 'Menyimpan profil wajah baru...';
-                this.messageType = 'success';
+                this.setMsg('Menyimpan profil wajah...', 'success');
                 this.stopVideo();
-                const descriptorArray = Array.from(detection.descriptor);
-                this.$wire.callMountedTableAction({ face_features: JSON.stringify(descriptorArray) });
+                this.$wire.callMountedTableAction({ face_features: JSON.stringify(Array.from(detection.descriptor)) });
             }
         },
-        
+
         stopVideo() {
             this.autoScanActive = false;
-            if (this.video && this.video.srcObject) {
-                this.video.srcObject.getTracks().forEach(track => track.stop());
-            }
+            if (this.video?.srcObject)
+                this.video.srcObject.getTracks().forEach(t => t.stop());
         },
 
-        destroy() {
-            this.stopVideo();
-        }
+        destroy() { this.stopVideo(); }
     }"
-    x-init="init()" 
+    x-init="init()"
     @destroyed="destroy()"
-    class="relative w-full flex flex-col items-center justify-center p-4 bg-white dark:bg-gray-900 rounded-xl"
+    class="flex flex-col items-center gap-3 pb-2"
 >
     <style>
-        /* Spinning outline animation */
-        @keyframes spin-outline {
-            0%   { stroke-dashoffset: 0; }
-            100% { stroke-dashoffset: -628; }
-        }
-        /* Face grid pulse animation */
-        @keyframes face-pulse {
-            0%, 100% { opacity: 0.15; }
-            50%       { opacity: 0.7; }
-        }
-        /* Laser scan */
-        @keyframes laser-scan {
-            0%, 100% { transform: translateY(-50%); opacity: 0; }
-            10%, 90%  { opacity: 1; }
-            50%        { transform: translateY(50%); }
-        }
-        /* Arrow bounce */
-        @keyframes bounce-right {
-            0%, 100% { transform: translateX(0); }
-            50%       { transform: translateX(6px); }
-        }
-        @keyframes bounce-left {
-            0%, 100% { transform: translateX(0); }
-            50%       { transform: translateX(-6px); }
-        }
-        .arrow-right { animation: bounce-right 0.8s ease-in-out infinite; }
-        .arrow-left  { animation: bounce-left 0.8s ease-in-out infinite; }
-
-        /* Glow on success/error */
-        .scan-glow-success { filter: drop-shadow(0 0 12px #10b981); }
-        .scan-glow-error   { filter: drop-shadow(0 0 12px #ef4444); }
-        .scan-glow-info    { filter: drop-shadow(0 0 12px #3b82f6); }
+        @keyframes fs-spin-ring { to { stroke-dashoffset: -692; } }
+        @keyframes fs-pulse     { 0%,100%{opacity:0.15;} 50%{opacity:0.75;} }
+        @keyframes fs-bounce-r  { 0%,100%{transform:translateX(0);} 50%{transform:translateX(6px);} }
+        @keyframes fs-bounce-l  { 0%,100%{transform:translateX(0);} 50%{transform:translateX(-6px);} }
+        @keyframes fs-spin      { to { transform:rotate(360deg); } }
     </style>
 
-    <!-- Loading Overlay -->
-    <div x-show="isLoading" class="absolute inset-0 z-50 bg-white/95 dark:bg-gray-900/95 flex items-center justify-center rounded-xl">
-        <div class="flex flex-col items-center text-center p-4">
-            <svg class="animate-spin h-10 w-10 text-primary-500 mb-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>
-            <span x-text="loadingText" class="text-gray-800 dark:text-gray-200 font-bold text-lg"></span>
-        </div>
-    </div>
-
-    <!-- ── CIRCULAR CAMERA CONTAINER ─────────────────────────────── -->
-    <div class="relative flex items-center justify-center"
-         style="width: 280px; height: 280px;">
-
-        <!-- The spinning colored SVG ring (sits OUTSIDE the circle crop) -->
-        <svg class="absolute inset-0 w-full h-full z-30 pointer-events-none"
-             viewBox="0 0 280 280"
-             :class="messageType === 'success' ? 'scan-glow-success' : (messageType === 'error' ? 'scan-glow-error' : 'scan-glow-info')">
-            <circle
-                cx="140" cy="140" r="130"
-                fill="none"
-                stroke-width="5"
-                stroke-linecap="round"
-                :stroke="outlineColor"
-                stroke-dasharray="120 694"
-                style="animation: spin-outline 1.6s linear infinite; transform-origin: center;"
-                x-show="isScanning"
-            />
-            <!-- Static thin base ring -->
-            <circle
-                cx="140" cy="140" r="130"
-                fill="none"
-                stroke-width="2"
-                :stroke="messageType === 'error' ? 'rgba(239,68,68,0.25)' : (messageType === 'success' ? 'rgba(16,185,129,0.25)' : 'rgba(59,130,246,0.25)')"
-            />
+    <!-- Loading state -->
+    <div x-show="isLoading" class="flex flex-col items-center justify-center gap-3 py-16">
+        <svg style="width:2.8rem;height:2.8rem;animation:fs-spin 1s linear infinite;" viewBox="0 0 24 24" fill="none">
+            <circle cx="12" cy="12" r="10" stroke="#6366f1" stroke-width="3" stroke-dasharray="40" stroke-dashoffset="10"/>
         </svg>
-
-        <!-- Circular video crop -->
-        <div class="relative rounded-full overflow-hidden bg-black z-10"
-             style="width: 260px; height: 260px;">
-            <video x-ref="video" autoplay muted playsinline
-                   class="w-full h-full object-cover"
-                   style="transform: scaleX(-1);"></video>
-
-            <!-- Dark overlay + face grid SVG (fades out when face is in place) -->
-            <div class="absolute inset-0 pointer-events-none z-20 transition-opacity duration-500"
-                 :style="faceInPlace ? 'opacity:0' : 'opacity:1'">
-                <svg class="w-full h-full" viewBox="0 0 260 260">
-                    <defs>
-                        <!-- Face silhouette clip -->
-                        <clipPath id="face-circ-clip">
-                            <circle cx="130" cy="130" r="130"/>
-                        </clipPath>
-                        <!-- Face grid shape: tall oval portrait -->
-                        <path id="face-grid-shape"
-                              d="M 130,28
-                                 C 165,28 196,55 196,100
-                                 C 208,100 208,126 196,128
-                                 C 188,162 158,195 130,200
-                                 C 102,195 72,162 64,128
-                                 C 52,126 52,100 64,100
-                                 C 64,55 95,28 130,28 Z"/>
-                        <mask id="face-grid-mask">
-                            <rect width="260" height="260" fill="white"/>
-                            <use href="#face-grid-shape" fill="black"/>
-                        </mask>
-                    </defs>
-
-                    <!-- Darkened backdrop (outside the face shape) -->
-                    <rect width="260" height="260" fill="rgba(0,0,0,0.62)" mask="url(#face-grid-mask)" clip-path="url(#face-circ-clip)"/>
-
-                    <!-- Pulsing face silhouette border (grid effect) -->
-                    <use href="#face-grid-shape"
-                         fill="none"
-                         stroke-width="2.5"
-                         stroke-dasharray="10 6"
-                         style="animation: face-pulse 1.4s ease-in-out infinite;"
-                         :stroke="messageType === 'error' ? '#ef4444' : '#60a5fa'"/>
-
-                    <!-- Scanning laser inside face -->
-                    <g clip-path="url(#face-circ-clip)" x-show="isScanning && !faceInPlace">
-                        <rect x="30" y="130" width="200" height="2"
-                              fill="#10b981"
-                              style="animation: laser-scan 2.2s ease-in-out infinite; transform-box: fill-box; transform-origin: center;"/>
-                        <rect x="30" y="118" width="200" height="14"
-                              fill="url(#laser-grad)"
-                              style="animation: laser-scan 2.2s ease-in-out infinite; transform-box: fill-box; transform-origin: center;"/>
-                        <defs>
-                            <linearGradient id="laser-grad" x1="0" y1="0" x2="0" y2="1">
-                                <stop offset="0%" stop-color="#10b981" stop-opacity="0"/>
-                                <stop offset="100%" stop-color="#10b981" stop-opacity="0.45"/>
-                            </linearGradient>
-                        </defs>
-                    </g>
-                </svg>
-            </div>
-
-            <!-- SUCCESS ring flash (when faceInPlace) -->
-            <div class="absolute inset-0 rounded-full pointer-events-none z-20 transition-all duration-500"
-                 :style="faceInPlace ? 'box-shadow: inset 0 0 0 3px #10b981;' : ''">
-            </div>
-        </div>
+        <span x-text="loadingText" class="text-sm font-medium text-gray-500 dark:text-gray-400"></span>
     </div>
 
-    <!-- ── DIRECTIONAL ARROW INSTRUCTIONS ─────────────────────────── -->
-    <div class="mt-5 flex items-center justify-center gap-4 min-h-[56px]">
+    <!-- Camera section -->
+    <div x-show="!isLoading" class="flex flex-col items-center gap-3 w-full">
 
-        <!-- Arrow RIGHT (when step = straight) -->
-        <div x-show="isReady && livenessStep === 'straight' && faceInPlace"
-             x-transition
-             class="flex flex-col items-center gap-1 arrow-right">
-            <svg xmlns="http://www.w3.org/2000/svg" class="w-10 h-10 text-blue-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                <path stroke-linecap="round" stroke-linejoin="round" d="M13 7l5 5m0 0l-5 5m5-5H6"/>
+        <!-- Circular camera frame 272×272 -->
+        <div style="position:relative;width:272px;height:272px;flex-shrink:0;">
+
+            <!-- Spinning ring -->
+            <svg style="position:absolute;inset:0;width:100%;height:100%;z-index:4;pointer-events:none;"
+                 viewBox="0 0 272 272">
+                <circle x-ref="ringBase"
+                        cx="136" cy="136" r="126"
+                        fill="none" stroke-width="3"
+                        :stroke="ringColorAlpha"/>
+                <circle x-ref="ringArc"
+                        cx="136" cy="136" r="126"
+                        fill="none" stroke-width="5" stroke-linecap="round"
+                        :stroke="ringColor"
+                        stroke-dasharray="110 692"
+                        style="animation:fs-spin-ring 1.6s linear infinite;transform-origin:center;"/>
             </svg>
-            <span class="text-xs font-semibold text-blue-400">Tengok Kanan</span>
+
+            <!-- Circular crop -->
+            <div style="position:absolute;inset:8px;border-radius:50%;overflow:hidden;background:#111;z-index:2;">
+                <video x-ref="video" autoplay muted playsinline
+                       style="width:100%;height:100%;object-fit:cover;transform:scaleX(-1);display:block;">
+                </video>
+
+                <!-- Face grid overlay (blinking dashed face silhouette, fades when face is in place) -->
+                <div x-ref="faceGrid"
+                     style="position:absolute;inset:0;pointer-events:none;transition:opacity 0.5s;opacity:1;">
+                    <svg xmlns="http://www.w3.org/2000/svg"
+                         style="width:100%;height:100%;display:block;"
+                         viewBox="0 0 256 256"
+                         preserveAspectRatio="xMidYMid slice">
+                        <defs>
+                            <path id="fs-face-shape"
+                                  d="M128,20 C166,20 196,52 196,96 C210,96 210,120 196,122 C188,158 160,192 128,197 C96,192 68,158 60,122 C46,120 46,96 60,96 C60,52 90,20 128,20 Z"/>
+                            <mask id="fs-face-mask">
+                                <rect width="256" height="256" fill="white"/>
+                                <use href="#fs-face-shape" fill="black"/>
+                            </mask>
+                        </defs>
+                        <!-- Dark backdrop outside face area -->
+                        <rect width="256" height="256" fill="rgba(0,0,0,0.62)" mask="url(#fs-face-mask)"/>
+                        <!-- Pulsing dashed face border -->
+                        <use href="#fs-face-shape" fill="none"
+                             :stroke="messageType === 'error' ? '#ef4444' : '#818cf8'"
+                             stroke-width="2.5"
+                             stroke-dasharray="10 6"
+                             style="animation:fs-pulse 1.4s ease-in-out infinite;"/>
+                    </svg>
+                </div>
+
+                <!-- Inner success ring (green glow when face in place) -->
+                <div style="position:absolute;inset:0;border-radius:50%;pointer-events:none;transition:box-shadow 0.4s;"
+                     :style="faceInPlace ? 'box-shadow:inset 0 0 0 3px #10b981' : ''">
+                </div>
+            </div>
         </div>
 
-        <!-- Status message (center) -->
-        <div x-show="message" class="flex-1 text-center">
-            <span x-text="message"
-                  class="inline-block px-4 py-2 rounded-full text-sm font-semibold text-white shadow-lg transition-all duration-300"
-                  :class="messageType === 'success' ? 'bg-emerald-500' : (messageType === 'error' ? 'bg-red-500' : 'bg-blue-500')">
+        <!-- ── STATUS MESSAGE (OUTSIDE the circle) ── -->
+        <div style="min-height:36px;display:flex;align-items:center;justify-content:center;padding:0 0.5rem;">
+            <span x-ref="msgBadge"
+                  x-show="message"
+                  style="display:inline-block;padding:0.4rem 1.1rem;border-radius:999px;
+                         font-size:0.78rem;font-weight:600;color:#fff;
+                         text-align:center;max-width:260px;transition:background 0.3s;
+                         background:#6366f1;">
             </span>
         </div>
 
-        <!-- Arrow LEFT (when step = right) -->
-        <div x-show="isReady && livenessStep === 'right'"
-             x-transition
-             class="flex flex-col items-center gap-1 arrow-left">
-            <svg xmlns="http://www.w3.org/2000/svg" class="w-10 h-10 text-blue-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                <path stroke-linecap="round" stroke-linejoin="round" d="M11 17l-5-5m0 0l5-5m-5 5h12"/>
-            </svg>
-            <span class="text-xs font-semibold text-blue-400">Tengok Kiri</span>
+        <!-- ── DIRECTIONAL ARROWS (OUTSIDE the circle) ── -->
+        <div style="display:flex;align-items:center;justify-content:center;gap:1.5rem;min-height:52px;">
+            <!-- Arrow Right -->
+            <div x-ref="arrowRight"
+                 style="display:none;flex-direction:column;align-items:center;gap:4px;
+                        animation:fs-bounce-r 0.8s ease-in-out infinite;">
+                <svg style="width:2rem;height:2rem;color:#818cf8;"
+                     fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M13 7l5 5m0 0l-5 5m5-5H6"/>
+                </svg>
+                <span style="font-size:0.68rem;color:#818cf8;font-weight:700;letter-spacing:.04em;">KANAN</span>
+            </div>
+
+            <!-- Arrow Left -->
+            <div x-ref="arrowLeft"
+                 style="display:none;flex-direction:column;align-items:center;gap:4px;
+                        animation:fs-bounce-l 0.8s ease-in-out infinite;">
+                <svg style="width:2rem;height:2rem;color:#818cf8;"
+                     fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M11 17l-5-5m0 0l5-5m-5 5h12"/>
+                </svg>
+                <span style="font-size:0.68rem;color:#818cf8;font-weight:700;letter-spacing:.04em;">KIRI</span>
+            </div>
         </div>
 
-    </div>
-
-    <!-- ── BOTTOM INFO BOX ─────────────────────────────────────────── -->
-    <div class="mt-3 w-full max-w-xs">
-        <p x-show="!isReady && !isLoading" class="text-sm text-red-500 font-medium text-center">
-            Tidak dapat melanjutkan tanpa akses kamera.
-        </p>
+        <!-- ── Info hint ── -->
         <div x-show="isReady && livenessStep !== 'passed'"
-             class="bg-gray-50 dark:bg-gray-800 rounded-lg p-3 border border-gray-200 dark:border-gray-700 text-center">
-            <p class="text-xs text-gray-500 dark:text-gray-400">
-                Masukkan wajah ke lingkaran → tengok kanan → tengok kiri → check-in otomatis.
-            </p>
+             class="w-full rounded-lg px-4 py-2.5 text-center text-xs text-gray-500 dark:text-gray-400 border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800">
+            <template x-if="!referenceFeatures">
+                <span>Posisikan wajah → tengok kanan → kiri → wajah tersimpan &amp; check-in otomatis.</span>
+            </template>
+            <template x-if="referenceFeatures">
+                <span>Posisikan wajah → tengok kanan → kiri → check-in otomatis.</span>
+            </template>
         </div>
+
         <div x-show="livenessStep === 'passed'"
-             class="bg-emerald-50 dark:bg-emerald-900/20 rounded-lg p-3 border border-emerald-200 dark:border-emerald-800 text-center">
-            <p class="text-xs text-emerald-600 dark:text-emerald-400 font-medium">
-                Liveness terverifikasi. Memproses pengenalan wajah...
-            </p>
+             class="w-full rounded-lg px-4 py-2.5 text-center text-xs font-medium
+                    text-emerald-600 dark:text-emerald-400
+                    border border-emerald-200 dark:border-emerald-800
+                    bg-emerald-50 dark:bg-emerald-900/20">
+            Liveness terverifikasi. Memproses...
         </div>
     </div>
 </div>

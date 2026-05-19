@@ -949,7 +949,7 @@
                 faceapi.nets.faceRecognitionNet.loadFromUri('/models'),
             ]);
 
-            const video = document.getElementById('face-video');
+            const video = document.getElementById('ci-face-video');
             try {
                 faceScanStream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'user', width: { ideal: 640 } } });
                 video.srcObject = faceScanStream;
@@ -959,6 +959,11 @@
                     document.getElementById('face-camera-wrap').style.display = 'flex';
                     livenessStep = 'straight';
                     faceInPlace  = false;
+                    // Reset grid to visible
+                    const grid = document.getElementById('ci-face-grid');
+                    if (grid) grid.style.opacity = '1';
+                    setFaceMessage('Posisikan wajah di dalam lingkaran', 'info');
+                    updateFaceRingColor('blue');
                     faceScanActive = true;
                     faceScanLoop(video);
                 };
@@ -1055,42 +1060,46 @@
                     showSuccessPopup(data.appointment);
                 } else {
                     setFaceMessage(data.message || 'Wajah tidak dikenali.', 'error');
-                    setTimeout(() => { faceScanActive=true; livenessStep='straight'; faceInPlace=false; faceScanLoop(document.getElementById('face-video')); }, 3000);
+                    setTimeout(() => { faceScanActive=true; livenessStep='straight'; faceInPlace=false; faceScanLoop(document.getElementById('ci-face-video')); }, 3000);
                 }
             } catch(e) {
                 setFaceMessage('Koneksi gagal. Coba lagi.', 'error');
-                setTimeout(() => { faceScanActive=true; livenessStep='straight'; faceInPlace=false; faceScanLoop(document.getElementById('face-video')); }, 3000);
+                setTimeout(() => { faceScanActive=true; livenessStep='straight'; faceInPlace=false; faceScanLoop(document.getElementById('ci-face-video')); }, 3000);
             }
         }
 
         function setFaceMessage(msg, type) {
-            const el = document.getElementById('face-msg');
+            const el = document.getElementById('ci-face-msg');
             if (!el) return;
             el.textContent = msg;
-            el.className = 'face-msg-badge';
-            if (type==='error')   el.style.background = '#ef4444';
-            else if (type==='success') el.style.background = '#10b981';
-            else el.style.background = '#6366f1';
+            el.style.background = type==='error'?'#ef4444':type==='success'?'#10b981':'#6366f1';
         }
 
         function updateFaceRingColor(color) {
-            const svg = document.getElementById('face-ring-svg');
+            const svg = document.getElementById('ci-ring-svg');
             if (!svg) return;
-            const arc = svg.querySelector('.ring-arc');
-            const base = svg.querySelector('.ring-base');
+            const arc  = svg.querySelector('.ci-ring-arc');
+            const base = svg.querySelector('.ci-ring-base');
+            const bdr  = document.getElementById('ci-face-border');
             const colors = { red:'#ef4444', green:'#10b981', blue:'#6366f1' };
-            if (arc) arc.setAttribute('stroke', colors[color] || '#6366f1');
-            if (base) base.setAttribute('stroke', colors[color]+'40' || '#6366f144');
+            const c = colors[color] || '#6366f1';
+            if (arc)  arc.setAttribute('stroke', c);
+            if (base) base.setAttribute('stroke', c + '33');
+            if (bdr)  bdr.setAttribute('stroke', color==='red' ? '#ef4444' : '#818cf8');
         }
 
         function updateFaceGrid(hide) {
-            const grid = document.getElementById('face-grid-overlay');
+            const grid = document.getElementById('ci-face-grid');
+            const ring = document.getElementById('ci-inner-ring');
             if (grid) grid.style.opacity = hide ? '0' : '1';
+            if (ring) ring.style.boxShadow = hide ? 'inset 0 0 0 3px #10b981' : '';
         }
 
         function showArrow(dir) {
-            document.getElementById('arrow-right').style.display = dir==='right' ? 'flex':'none';
-            document.getElementById('arrow-left').style.display  = dir==='left'  ? 'flex':'none';
+            const r = document.getElementById('ci-arrow-right');
+            const l = document.getElementById('ci-arrow-left');
+            if (r) r.style.display = dir==='right' ? 'flex':'none';
+            if (l) l.style.display = dir==='left'  ? 'flex':'none';
         }
 
         function loadScript(src) {
@@ -1280,37 +1289,47 @@
                 <svg style="width:2.5rem;height:2.5rem;color:#6366f1;animation:kp-spin 1s linear infinite;" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="3" stroke-dasharray="40" stroke-dashoffset="10"/></svg>
                 <span style="color:#8899bb;font-size:0.85rem;">Memuat model AI...</span>
             </div>
-            <div id="face-camera-wrap" style="display:none;flex-direction:column;align-items:center;gap:0.75rem;">
-                <div style="position:relative;width:260px;height:260px;">
-                    <svg id="face-ring-svg" style="position:absolute;inset:0;width:100%;height:100%;z-index:3;pointer-events:none;" viewBox="0 0 260 260">
-                        <circle class="ring-base" cx="130" cy="130" r="124" fill="none" stroke="#6366f144" stroke-width="3"/>
-                        <circle class="ring-arc" cx="130" cy="130" r="124" fill="none" stroke="#6366f1" stroke-width="4" stroke-linecap="round" stroke-dasharray="100 680" style="animation:kp-spin-ring 1.6s linear infinite;transform-origin:center;"/>
+            <div id="face-camera-wrap" style="display:none;flex-direction:column;align-items:center;gap:0.5rem;">
+                <div style="position:relative;width:272px;height:272px;flex-shrink:0;">
+                    <!-- Spinning ring -->
+                    <svg id="ci-ring-svg" style="position:absolute;inset:0;width:100%;height:100%;z-index:4;pointer-events:none;" viewBox="0 0 272 272">
+                        <circle class="ci-ring-base" cx="136" cy="136" r="126" fill="none" stroke-width="3" stroke="#6366f133"/>
+                        <circle class="ci-ring-arc"  cx="136" cy="136" r="126" fill="none" stroke-width="5" stroke-linecap="round" stroke="#6366f1" stroke-dasharray="110 692" style="animation:kp-spin-ring 1.6s linear infinite;transform-origin:center;"/>
                     </svg>
-                    <div style="position:absolute;inset:5px;border-radius:50%;overflow:hidden;background:#000;">
-                        <video id="face-video" autoplay muted playsinline style="width:100%;height:100%;object-fit:cover;transform:scaleX(-1);"></video>
-                        <div id="face-grid-overlay" style="position:absolute;inset:0;pointer-events:none;transition:opacity 0.5s;">
-                            <svg style="width:100%;height:100%;" viewBox="0 0 250 250">
+                    <!-- Circular crop -->
+                    <div style="position:absolute;inset:8px;border-radius:50%;overflow:hidden;background:#111;z-index:2;">
+                        <video id="ci-face-video" autoplay muted playsinline style="width:100%;height:100%;object-fit:cover;transform:scaleX(-1);display:block;"></video>
+                        <!-- Face grid -->
+                        <div id="ci-face-grid" style="position:absolute;inset:0;pointer-events:none;transition:opacity 0.5s;opacity:1;">
+                            <svg xmlns="http://www.w3.org/2000/svg" style="width:100%;height:100%;display:block;" viewBox="0 0 256 256" preserveAspectRatio="xMidYMid slice">
                                 <defs>
-                                    <path id="kp-face" d="M125,22 C162,22 192,52 192,95 C204,95 204,118 192,120 C184,155 155,188 125,193 C95,188 66,155 58,120 C46,118 46,95 58,95 C58,52 88,22 125,22 Z"/>
-                                    <mask id="kp-mask"><rect width="250" height="250" fill="white"/><use href="#kp-face" fill="black"/></mask>
+                                    <path id="ci-face-shape" d="M128,20 C166,20 196,52 196,96 C210,96 210,120 196,122 C188,158 160,192 128,197 C96,192 68,158 60,122 C46,120 46,96 60,96 C60,52 90,20 128,20 Z"/>
+                                    <mask id="ci-face-mask">
+                                        <rect width="256" height="256" fill="white"/>
+                                        <use href="#ci-face-shape" fill="black"/>
+                                    </mask>
                                 </defs>
-                                <rect width="250" height="250" fill="rgba(0,0,0,0.55)" mask="url(#kp-mask)"/>
-                                <use href="#kp-face" fill="none" stroke="#60a5fa" stroke-width="2.5" stroke-dasharray="10 6" style="animation:kp-pulse 1.4s ease-in-out infinite;"/>
+                                <rect width="256" height="256" fill="rgba(0,0,0,0.62)" mask="url(#ci-face-mask)"/>
+                                <use id="ci-face-border" href="#ci-face-shape" fill="none" stroke="#818cf8" stroke-width="2.5" stroke-dasharray="10 6" style="animation:kp-pulse 1.4s ease-in-out infinite;"/>
                             </svg>
                         </div>
-                        <div style="position:absolute;top:10px;left:0;right:0;display:flex;justify-content:center;z-index:10;">
-                            <span id="face-msg" style="background:#6366f1;color:#fff;padding:0.35rem 0.9rem;border-radius:999px;font-size:0.72rem;font-weight:600;text-align:center;max-width:90%;transition:background 0.3s;"></span>
-                        </div>
+                        <!-- Inner success ring -->
+                        <div id="ci-inner-ring" style="position:absolute;inset:0;border-radius:50%;pointer-events:none;transition:box-shadow 0.4s;"></div>
                     </div>
                 </div>
-                <div style="display:flex;align-items:center;justify-content:center;gap:1.5rem;min-height:48px;">
-                    <div id="arrow-right" style="display:none;flex-direction:column;align-items:center;gap:4px;animation:kp-bounce-r 0.8s ease-in-out infinite;">
-                        <svg style="width:2rem;height:2rem;color:#60a5fa;" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M13 7l5 5m0 0l-5 5m5-5H6"/></svg>
-                        <span style="font-size:0.7rem;color:#60a5fa;font-weight:600;">Kanan</span>
+                <!-- Message badge (OUTSIDE the circle) -->
+                <div style="min-height:36px;display:flex;align-items:center;justify-content:center;padding:0 0.5rem;">
+                    <span id="ci-face-msg" style="display:inline-block;padding:0.4rem 1.1rem;border-radius:999px;font-size:0.78rem;font-weight:600;color:#fff;text-align:center;max-width:260px;transition:background 0.3s;background:#6366f1;"></span>
+                </div>
+                <!-- Arrows (OUTSIDE the circle) -->
+                <div style="display:flex;align-items:center;justify-content:center;gap:1.5rem;min-height:52px;">
+                    <div id="ci-arrow-right" style="display:none;flex-direction:column;align-items:center;gap:4px;animation:kp-bounce-r 0.8s ease-in-out infinite;">
+                        <svg style="width:2rem;height:2rem;color:#818cf8;" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M13 7l5 5m0 0l-5 5m5-5H6"/></svg>
+                        <span style="font-size:0.68rem;color:#818cf8;font-weight:700;letter-spacing:.04em;">KANAN</span>
                     </div>
-                    <div id="arrow-left" style="display:none;flex-direction:column;align-items:center;gap:4px;animation:kp-bounce-l 0.8s ease-in-out infinite;">
-                        <svg style="width:2rem;height:2rem;color:#60a5fa;" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M11 17l-5-5m0 0l5-5m-5 5h12"/></svg>
-                        <span style="font-size:0.7rem;color:#60a5fa;font-weight:600;">Kiri</span>
+                    <div id="ci-arrow-left" style="display:none;flex-direction:column;align-items:center;gap:4px;animation:kp-bounce-l 0.8s ease-in-out infinite;">
+                        <svg style="width:2rem;height:2rem;color:#818cf8;" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M11 17l-5-5m0 0l5-5m-5 5h12"/></svg>
+                        <span style="font-size:0.68rem;color:#818cf8;font-weight:700;letter-spacing:.04em;">KIRI</span>
                     </div>
                 </div>
             </div>
@@ -1359,37 +1378,47 @@
                 <svg style="width:2.5rem;height:2.5rem;color:#10b981;animation:kp-spin 1s linear infinite;" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="3" stroke-dasharray="40" stroke-dashoffset="10"/></svg>
                 <span style="color:#8899bb;font-size:0.85rem;">Memuat model AI...</span>
             </div>
-            <div id="co-face-camera-wrap" style="display:none;flex-direction:column;align-items:center;gap:0.75rem;">
-                <div style="position:relative;width:260px;height:260px;">
-                    <svg id="co-ring-svg" style="position:absolute;inset:0;width:100%;height:100%;z-index:3;pointer-events:none;" viewBox="0 0 260 260">
-                        <circle class="co-ring-base" cx="130" cy="130" r="124" fill="none" stroke="#10b98144" stroke-width="3"/>
-                        <circle class="co-ring-arc" cx="130" cy="130" r="124" fill="none" stroke="#10b981" stroke-width="4" stroke-linecap="round" stroke-dasharray="100 680" style="animation:kp-spin-ring 1.6s linear infinite;transform-origin:center;"/>
+            <div id="co-face-camera-wrap" style="display:none;flex-direction:column;align-items:center;gap:0.5rem;">
+                <div style="position:relative;width:272px;height:272px;flex-shrink:0;">
+                    <!-- Spinning ring -->
+                    <svg id="co-ring-svg" style="position:absolute;inset:0;width:100%;height:100%;z-index:4;pointer-events:none;" viewBox="0 0 272 272">
+                        <circle class="co-ring-base" cx="136" cy="136" r="126" fill="none" stroke-width="3" stroke="#10b98133"/>
+                        <circle class="co-ring-arc"  cx="136" cy="136" r="126" fill="none" stroke-width="5" stroke-linecap="round" stroke="#10b981" stroke-dasharray="110 692" style="animation:kp-spin-ring 1.6s linear infinite;transform-origin:center;"/>
                     </svg>
-                    <div style="position:absolute;inset:5px;border-radius:50%;overflow:hidden;background:#000;">
-                        <video id="co-face-video" autoplay muted playsinline style="width:100%;height:100%;object-fit:cover;transform:scaleX(-1);"></video>
-                        <div id="co-face-grid" style="position:absolute;inset:0;pointer-events:none;transition:opacity 0.5s;">
-                            <svg style="width:100%;height:100%;" viewBox="0 0 250 250">
+                    <!-- Circular crop -->
+                    <div style="position:absolute;inset:8px;border-radius:50%;overflow:hidden;background:#111;z-index:2;">
+                        <video id="co-face-video" autoplay muted playsinline style="width:100%;height:100%;object-fit:cover;transform:scaleX(-1);display:block;"></video>
+                        <!-- Face grid -->
+                        <div id="co-face-grid" style="position:absolute;inset:0;pointer-events:none;transition:opacity 0.5s;opacity:1;">
+                            <svg xmlns="http://www.w3.org/2000/svg" style="width:100%;height:100%;display:block;" viewBox="0 0 256 256" preserveAspectRatio="xMidYMid slice">
                                 <defs>
-                                    <path id="co-face-path" d="M125,22 C162,22 192,52 192,95 C204,95 204,118 192,120 C184,155 155,188 125,193 C95,188 66,155 58,120 C46,118 46,95 58,95 C58,52 88,22 125,22 Z"/>
-                                    <mask id="co-face-mask"><rect width="250" height="250" fill="white"/><use href="#co-face-path" fill="black"/></mask>
+                                    <path id="co-face-shape" d="M128,20 C166,20 196,52 196,96 C210,96 210,120 196,122 C188,158 160,192 128,197 C96,192 68,158 60,122 C46,120 46,96 60,96 C60,52 90,20 128,20 Z"/>
+                                    <mask id="co-face-mask">
+                                        <rect width="256" height="256" fill="white"/>
+                                        <use href="#co-face-shape" fill="black"/>
+                                    </mask>
                                 </defs>
-                                <rect width="250" height="250" fill="rgba(0,0,0,0.55)" mask="url(#co-face-mask)"/>
-                                <use href="#co-face-path" fill="none" stroke="#34d399" stroke-width="2.5" stroke-dasharray="10 6" style="animation:kp-pulse 1.4s ease-in-out infinite;"/>
+                                <rect width="256" height="256" fill="rgba(0,0,0,0.62)" mask="url(#co-face-mask)"/>
+                                <use id="co-face-border" href="#co-face-shape" fill="none" stroke="#818cf8" stroke-width="2.5" stroke-dasharray="10 6" style="animation:kp-pulse 1.4s ease-in-out infinite;"/>
                             </svg>
                         </div>
-                        <div style="position:absolute;top:10px;left:0;right:0;display:flex;justify-content:center;z-index:10;">
-                            <span id="co-face-msg" style="background:#10b981;color:#fff;padding:0.35rem 0.9rem;border-radius:999px;font-size:0.72rem;font-weight:600;text-align:center;max-width:90%;transition:background 0.3s;"></span>
-                        </div>
+                        <!-- Inner success ring -->
+                        <div id="co-inner-ring" style="position:absolute;inset:0;border-radius:50%;pointer-events:none;transition:box-shadow 0.4s;"></div>
                     </div>
                 </div>
-                <div style="display:flex;align-items:center;justify-content:center;gap:1.5rem;min-height:48px;">
+                <!-- Message badge (OUTSIDE the circle) -->
+                <div style="min-height:36px;display:flex;align-items:center;justify-content:center;padding:0 0.5rem;">
+                    <span id="co-face-msg" style="display:inline-block;padding:0.4rem 1.1rem;border-radius:999px;font-size:0.78rem;font-weight:600;color:#fff;text-align:center;max-width:260px;transition:background 0.3s;background:#10b981;"></span>
+                </div>
+                <!-- Arrows (OUTSIDE the circle) -->
+                <div style="display:flex;align-items:center;justify-content:center;gap:1.5rem;min-height:52px;">
                     <div id="co-arrow-right" style="display:none;flex-direction:column;align-items:center;gap:4px;animation:kp-bounce-r 0.8s ease-in-out infinite;">
-                        <svg style="width:2rem;height:2rem;color:#34d399;" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M13 7l5 5m0 0l-5 5m5-5H6"/></svg>
-                        <span style="font-size:0.7rem;color:#34d399;font-weight:600;">Kanan</span>
+                        <svg style="width:2rem;height:2rem;color:#818cf8;" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M13 7l5 5m0 0l-5 5m5-5H6"/></svg>
+                        <span style="font-size:0.68rem;color:#818cf8;font-weight:700;letter-spacing:.04em;">KANAN</span>
                     </div>
                     <div id="co-arrow-left" style="display:none;flex-direction:column;align-items:center;gap:4px;animation:kp-bounce-l 0.8s ease-in-out infinite;">
-                        <svg style="width:2rem;height:2rem;color:#34d399;" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M11 17l-5-5m0 0l5-5m-5 5h12"/></svg>
-                        <span style="font-size:0.7rem;color:#34d399;font-weight:600;">Kiri</span>
+                        <svg style="width:2rem;height:2rem;color:#818cf8;" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M11 17l-5-5m0 0l5-5m-5 5h12"/></svg>
+                        <span style="font-size:0.68rem;color:#818cf8;font-weight:700;letter-spacing:.04em;">KIRI</span>
                     </div>
                 </div>
             </div>
@@ -1552,14 +1581,19 @@
         function setCoMsg(msg, type) {
             const el = document.getElementById('co-face-msg'); if(!el) return;
             el.textContent = msg;
-            el.style.background = type==='error'?'#ef4444':type==='success'?'#10b981':'#6366f1';
+            el.style.background = type==='error'?'#ef4444':type==='success'?'#10b981':'#10b981';
         }
         function updateCoRing(color) {
             const map = {red:'#ef4444',green:'#10b981',blue:'#6366f1'};
-            const arc = document.querySelector('#co-ring-svg .co-ring-arc');
+            const c = map[color] || '#10b981';
+            const arc  = document.querySelector('#co-ring-svg .co-ring-arc');
             const base = document.querySelector('#co-ring-svg .co-ring-base');
-            if(arc) arc.setAttribute('stroke', map[color]);
-            if(base) base.setAttribute('stroke', map[color]+'44');
+            const bdr  = document.getElementById('co-face-border');
+            const ring = document.getElementById('co-inner-ring');
+            if(arc)  arc.setAttribute('stroke', c);
+            if(base) base.setAttribute('stroke', c + '33');
+            if(bdr)  bdr.setAttribute('stroke', color==='red' ? '#ef4444' : '#34d399');
+            if(ring) ring.style.boxShadow = color==='green' ? 'inset 0 0 0 3px #10b981' : '';
         }
         function coGridVisible(hide) {
             const g = document.getElementById('co-face-grid'); if(g) g.style.opacity = hide?'0':'1';
