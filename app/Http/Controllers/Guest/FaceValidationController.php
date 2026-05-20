@@ -51,11 +51,13 @@ class FaceValidationController extends Controller
         }
 
         if ($bestMatch && $bestDistance <= $threshold) {
+            $companyInfo = $bestMatch->company ? " dari {$bestMatch->company}" : "";
+            
             return response()->json([
                 'is_duplicate'  => true,
                 'distance'      => round($bestDistance, 4),
                 'matched_name'  => $bestMatch->name,
-                'message'       => "Wajah ini sudah terdaftar atas nama \"{$bestMatch->name}\". Setiap visitor harus memiliki wajah unik.",
+                'message'       => "Wajah ini sudah terdaftar atas nama \"{$bestMatch->name}\"{$companyInfo}. Setiap visitor harus memiliki wajah unik.",
             ]);
         }
 
