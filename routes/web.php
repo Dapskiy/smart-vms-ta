@@ -5,6 +5,7 @@ use App\Livewire\GuestRegistrationForm;
 use App\Http\Controllers\AppointmentCheckoutController;
 use App\Http\Controllers\Guest\FaceCheckinController;
 use App\Http\Controllers\Guest\FaceCheckoutController;
+use App\Http\Controllers\Guest\FaceValidationController;
 
 Route::get('/', function () {
     return view('welcome');
@@ -30,3 +31,7 @@ Route::post('/kiosk/face-checkin', [FaceCheckinController::class, 'checkin'])
 // Route untuk face check-out mandiri dari kiosk publik (no auth)
 Route::post('/kiosk/face-checkout', [FaceCheckoutController::class, 'checkout'])
     ->name('kiosk.face.checkout');
+
+// Route validasi duplikasi wajah sebelum registrasi (no auth)
+Route::post('/kiosk/face-check-duplicate', [FaceValidationController::class, 'checkDuplicate'])
+    ->name('kiosk.face.check-duplicate');

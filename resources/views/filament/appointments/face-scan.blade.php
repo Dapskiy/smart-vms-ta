@@ -7,6 +7,7 @@
         message: '',
         messageType: 'info',
         referenceFeatures: @js(json_decode($record->visitor->face_features ?? 'null')),
+        visitorId: @js($record->visitor->id ?? null),
 
         autoScanActive: false,
         livenessStep: 'straight',
@@ -172,7 +173,8 @@
 
         processResult(detection) {
             if (this.referenceFeatures) {
-                const ref = new Float32Array(this.referenceFeatures);
+                /* ── MODE VERIFIKASI: cocokkan dengan data tersimpan ── */
+                const ref  = new Float32Array(this.referenceFeatures);
                 const dist = faceapi.euclideanDistance(ref, detection.descriptor);
                 if (dist < 0.5) {
                     this.setMsg('Wajah Cocok! Menyelesaikan check-in...', 'success');
@@ -187,9 +189,44 @@
                     }, 3000);
                 }
             } else {
-                this.setMsg('Menyimpan profil wajah...', 'success');
-                this.stopVideo();
-                this.$wire.callMountedTableAction({ face_features: JSON.stringify(Array.from(detection.descriptor)) });
+                /* ── MODE REGISTRASI: cek duplikat dulu sebelum simpan ── */
+                this.setMsg('Memeriksa duplikasi wajah...', 'info');
+                this.messageType = 'info'; this.setRing();
+
+                const descriptorArr = Array.from(detection.descriptor);
+                const csrfToken = document.querySelector('meta[name=csrf-token]')?.content || '';
+
+                fetch('/kiosk/face-check-duplicate', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': csrfToken },
+                    body: JSON.stringify({ descriptor: descriptorArr, visitor_id: this.visitorId })
+                })
+                .then(r => r.json())
+                .then(data => {
+                    if (data.is_duplicate) {
+                        /* Wajah sudah milik orang lain → tolak */
+                        this.setMsg('❌ ' + data.message, 'error');
+                        this.messageType = 'error'; this.setRing();
+                        this.faceInPlace = false; this.setGrid(false);
+                        /* Restart scan setelah 4 detik */
+                        setTimeout(() => {
+                            this.livenessStep = 'straight'; this.faceInPlace = false;
+                            this.setGrid(false); this.showArrow('none');
+                            this.setMsg('Posisikan wajah di dalam lingkaran.', 'info');
+                            this.startAutoScan();
+                        }, 4000);
+                    } else {
+                        /* Wajah unik → simpan dan check-in */
+                        this.setMsg('Wajah unik! Menyimpan...', 'success');
+                        this.messageType = 'success'; this.setRing();
+                        this.stopVideo();
+                        this.$wire.callMountedTableAction({ face_features: JSON.stringify(descriptorArr) });
+                    }
+                })
+                .catch(() => {
+                    this.setMsg('Koneksi gagal. Coba lagi.', 'error');
+                    setTimeout(() => { this.livenessStep='straight'; this.faceInPlace=false; this.setGrid(false); this.showArrow('none'); this.startAutoScan(); }, 3000);
+                });
             }
         },
 
