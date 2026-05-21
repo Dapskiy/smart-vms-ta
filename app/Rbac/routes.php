@@ -33,7 +33,7 @@ Route::group([
             ->name('delete_user');
     });
 
-    // Roles
+    // For Roles
     Route::group(['prefix' => 'roles'], function () {
 
         Route::get('/', [RoleController::class, 'index'])
