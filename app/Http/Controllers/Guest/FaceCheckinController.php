@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\Appointment;
 use App\Models\Visitor;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Crypt;
 use Illuminate\Support\Facades\Log;
 
 class FaceCheckinController extends Controller
@@ -13,11 +14,13 @@ class FaceCheckinController extends Controller
     /**
      * Validate face descriptor against all visitors who have face_features
      * and have a pending appointment today.
+     * Optionally receives face_photo (base64 data URI) → encrypted & stored.
      */
     public function checkin(Request $request)
     {
         $request->validate([
             'descriptor' => 'required|array|min:128',
+            'face_photo' => 'nullable|string', // base64 data URI dari kamera
         ]);
 
         $incomingDescriptor = $request->input('descriptor');
@@ -48,6 +51,18 @@ class FaceCheckinController extends Controller
                 'success' => false,
                 'message' => 'Wajah tidak dikenali dalam sistem.',
             ], 404);
+        }
+
+        // Simpan foto wajah terenkripsi jika dikirim dan belum ada
+        if ($request->filled('face_photo') && empty($bestMatch->face_photo)) {
+            try {
+                $bestMatch->update([
+                    'face_photo' => Crypt::encryptString($request->input('face_photo')),
+                ]);
+                Log::info("[FACE-CHECKIN] Face photo saved for visitor #{$bestMatch->id}");
+            } catch (\Throwable $e) {
+                Log::warning("[FACE-CHECKIN] Failed to save face photo: " . $e->getMessage());
+            }
         }
 
         // Find a pending appointment for this visitor today

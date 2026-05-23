@@ -6,6 +6,7 @@ use App\Http\Controllers\AppointmentCheckoutController;
 use App\Http\Controllers\Guest\FaceCheckinController;
 use App\Http\Controllers\Guest\FaceCheckoutController;
 use App\Http\Controllers\Guest\FaceValidationController;
+use App\Http\Controllers\Admin\VisitorFacePhotoController;
 
 Route::get('/', function () {
     return view('welcome');
@@ -23,6 +24,12 @@ Route::get('/invitation/{token}', GuestRegistrationForm::class)->name('guest.inv
 Route::post('/admin/appointments/checkout', [AppointmentCheckoutController::class, 'checkout'])
     ->middleware(['auth', 'verified'])
     ->name('filament.admin.resources.appointments.checkout');
+
+// ── Admin: Lihat foto wajah visitor (terenkripsi → didekripsi on-demand) ──
+// Dilindungi auth — hanya admin yang sudah login Filament yang bisa akses
+Route::get('/admin/visitors/{visitor}/face-photo', [VisitorFacePhotoController::class, 'show'])
+    ->middleware(['auth'])
+    ->name('admin.visitor.face-photo');
 
 // Route untuk face check-in dari kiosk publik (no auth)
 Route::post('/kiosk/face-checkin', [FaceCheckinController::class, 'checkin'])

@@ -932,6 +932,8 @@
         let livenessStep       = 'straight'; // straight -> right -> passed
         let consecutiveNoFace  = 0;
         let faceInPlace        = false;
+        let ciPhotoSnapshot    = null; // foto wajah lurus sebelum liveness
+        let ciPreparingPhoto   = false; // flag agar capture hanya sekali
         let scanCountdown      = null;
 
         async function openFaceScan() {
@@ -973,11 +975,26 @@
         }
 
         function closeFaceScan() {
-            faceScanActive = false;
+            faceScanActive  = false;
+            ciPhotoSnapshot  = null; // reset untuk scan berikutnya
+            ciPreparingPhoto = false;
             if (faceScanStream) { faceScanStream.getTracks().forEach(t => t.stop()); faceScanStream = null; }
             document.getElementById('modal-face').classList.remove('active');
             document.getElementById('face-loading').style.display = 'flex';
             document.getElementById('face-camera-wrap').style.display = 'none';
+        }
+
+        function captureKioskPhoto(video) {
+            try {
+                const canvas = document.createElement('canvas');
+                canvas.width  = video.videoWidth  || 320;
+                canvas.height = video.videoHeight || 240;
+                const ctx = canvas.getContext('2d');
+                ctx.translate(canvas.width, 0);
+                ctx.scale(-1, 1); // mirror balik sesuai tampilan
+                ctx.drawImage(video, 0, 0);
+                return canvas.toDataURL('image/jpeg', 0.80);
+            } catch(e) { console.warn('captureKioskPhoto failed:', e); return null; }
         }
 
         async function faceScanLoop(video) {
@@ -1027,6 +1044,18 @@
                     const pts = det.landmarks.positions;
                     const noseRatio = (pts[30].x - pts[0].x) / (pts[16].x - pts[0].x);
                     if (livenessStep === 'straight') {
+                        if (!ciPhotoSnapshot) {
+                            // Belum ada foto: tampilkan pesan diam, ambil diam-diam
+                            if (!ciPreparingPhoto) {
+                                ciPreparingPhoto = true;
+                                setFaceMessage('Diam sebentar...', 'info');
+                                setTimeout(() => {
+                                    ciPhotoSnapshot  = captureKioskPhoto(document.getElementById('ci-face-video'));
+                                    ciPreparingPhoto = false;
+                                }, 800);
+                            }
+                            setTimeout(()=>faceScanLoop(video),100); return;
+                        }
                         setFaceMessage('Tengok ke kanan ➡', 'info');
                         showArrow('right');
                         if (noseRatio < 0.38) livenessStep = 'right';
@@ -1052,7 +1081,7 @@
                 const res = await fetch('/kiosk/face-checkin', {
                     method: 'POST',
                     headers: { 'Content-Type':'application/json', 'X-CSRF-TOKEN': document.querySelector('meta[name=csrf-token]').content },
-                    body: JSON.stringify({ descriptor: Array.from(descriptor) })
+                    body: JSON.stringify({ descriptor: Array.from(descriptor), face_photo: ciPhotoSnapshot })
                 });
                 const data = await res.json();
                 if (data.success) {
