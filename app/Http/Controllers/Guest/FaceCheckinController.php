@@ -74,10 +74,6 @@ class FaceCheckinController extends Controller
                         $existingPhotos = [$bestMatch->face_photo];
                     }
                 }
-                $existingPhotos[] = Crypt::encryptString($request->input('face_photo'));
-                if (count($existingPhotos) > 10) {
-                    array_shift($existingPhotos);
-                }
 
                 $existingFeatures = [];
                 if (!empty($bestMatch->face_features)) {
@@ -86,16 +82,23 @@ class FaceCheckinController extends Controller
                         $existingFeatures = (isset($decoded[0]) && is_array($decoded[0])) ? $decoded : [$decoded];
                     }
                 }
-                $existingFeatures[] = $incomingDescriptor;
-                if (count($existingFeatures) > 10) {
-                    array_shift($existingFeatures);
+
+                $saveData = [];
+
+                // Maksimal 10 sampel per visitor — jika sudah penuh, tidak ditambah lagi
+                if (count($existingPhotos) < 10) {
+                    $existingPhotos[] = Crypt::encryptString($request->input('face_photo'));
+                    $saveData['face_photo'] = json_encode($existingPhotos);
+                }
+                if (count($existingFeatures) < 10) {
+                    $existingFeatures[] = $incomingDescriptor;
+                    $saveData['face_features'] = json_encode($existingFeatures);
                 }
 
-                $bestMatch->update([
-                    'face_photo' => json_encode($existingPhotos),
-                    'face_features' => json_encode($existingFeatures)
-                ]);
-                Log::info("[FACE-CHECKIN] Face photo and descriptor appended for visitor #{$bestMatch->id}");
+                if (!empty($saveData)) {
+                    $bestMatch->update($saveData);
+                }
+                Log::info("[FACE-CHECKIN] Face data appended for visitor #{$bestMatch->id} (features: " . count($existingFeatures) . "/10)");
             } catch (\Throwable $e) {
                 Log::warning("[FACE-CHECKIN] Failed to save face photo: " . $e->getMessage());
             }

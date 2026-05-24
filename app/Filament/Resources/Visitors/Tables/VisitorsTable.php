@@ -2,6 +2,7 @@
 
 namespace App\Filament\Resources\Visitors\Tables;
 
+use Filament\Actions\Action;
 use Filament\Actions\BulkActionGroup;
 use Filament\Actions\DeleteAction;
 use Filament\Actions\DeleteBulkAction;
@@ -29,7 +30,7 @@ class VisitorsTable
                 TextColumn::make('identity_type')
                     ->label('Jenis ID')
                     ->badge()
-                    ->color(fn (string $state): string => match ($state) {
+                    ->color(fn (?string $state): string => match ($state) {
                         'KTP'      => 'info',
                         'SIM'      => 'warning',
                         'Passport' => 'success',
@@ -49,16 +50,10 @@ class VisitorsTable
                     ->label('Wajah')
                     ->boolean()
                     ->getStateUsing(fn ($record) => !empty($record->face_features))
-                    ->trueIcon('heroicon-o-face-smile')
+                    ->trueIcon('heroicon-o-check-circle')
                     ->falseIcon('heroicon-o-x-circle')
                     ->trueColor('success')
-                    ->falseColor('gray')
-                    ->action(
-                        \Filament\Actions\Action::make('view_face')
-                            ->url(fn ($record): string => route('admin.visitor.face-photo', $record->id))
-                            ->openUrlInNewTab()
-                            ->visible(fn ($record) => !empty($record->face_photo))
-                    ),
+                    ->falseColor('gray'),
 
                 IconColumn::make('is_blacklisted')
                     ->label('Blacklist')
@@ -89,6 +84,16 @@ class VisitorsTable
                     ),
             ])
             ->recordActions([
+                // Tombol lihat foto wajah — muncul hanya jika visitor punya foto
+                Action::make('view_face_photo')
+                    ->label('')
+                    ->icon('heroicon-o-face-smile')
+                    ->color('warning')
+                    ->tooltip('Lihat Foto Wajah')
+                    ->url(fn ($record): string => route('admin.visitor.face-photo', $record->id))
+                    ->openUrlInNewTab()
+                    ->visible(fn ($record): bool => !empty($record->face_photo)),
+
                 EditAction::make(),
                 DeleteAction::make(),
             ])

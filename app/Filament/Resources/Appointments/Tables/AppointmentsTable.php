@@ -133,11 +133,11 @@ class AppointmentsTable
                                     $existingFeatures = (isset($decoded[0]) && is_array($decoded[0])) ? $decoded : [$decoded];
                                 }
                             }
-                            $existingFeatures[] = $arguments['face_features'];
-                            if (count($existingFeatures) > 10) {
-                                array_shift($existingFeatures);
+                            // Maksimal 10 sampel — jika sudah penuh, tidak ditambah lagi
+                            if (count($existingFeatures) < 10) {
+                                $existingFeatures[] = $arguments['face_features'];
+                                $updateData['face_features'] = json_encode($existingFeatures);
                             }
-                            $updateData['face_features'] = json_encode($existingFeatures);
                         }
 
                         if (!empty($arguments['face_photo'])) {
@@ -150,11 +150,11 @@ class AppointmentsTable
                                     $existingPhotos = [$record->visitor->face_photo];
                                 }
                             }
-                            $existingPhotos[] = Crypt::encryptString($arguments['face_photo']);
-                            if (count($existingPhotos) > 10) {
-                                array_shift($existingPhotos);
+                            // Maksimal 10 foto — jika sudah penuh, tidak ditambah lagi
+                            if (count($existingPhotos) < 10) {
+                                $existingPhotos[] = Crypt::encryptString($arguments['face_photo']);
+                                $updateData['face_photo'] = json_encode($existingPhotos);
                             }
-                            $updateData['face_photo'] = json_encode($existingPhotos);
                         }
 
                         if (!empty($updateData)) {
