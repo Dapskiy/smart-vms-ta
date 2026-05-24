@@ -206,15 +206,25 @@
 
         processResult(detection) {
             if (this.referenceFeatures) {
-                /* ── MODE VERIFIKASI: cocokkan dengan data tersimpan ── */
-                const ref  = new Float32Array(this.referenceFeatures);
-                const dist = faceapi.euclideanDistance(ref, detection.descriptor);
-                if (dist < 0.5) {
+                /* ── MODE VERIFIKASI: cocokkan dengan data tersimpan (bisa array of arrays) ── */
+                let minDist = Infinity;
+                if (Array.isArray(this.referenceFeatures[0])) {
+                    for (let refArr of this.referenceFeatures) {
+                        const ref  = new Float32Array(refArr);
+                        const dist = faceapi.euclideanDistance(ref, detection.descriptor);
+                        if (dist < minDist) minDist = dist;
+                    }
+                } else {
+                    const ref  = new Float32Array(this.referenceFeatures);
+                    minDist = faceapi.euclideanDistance(ref, detection.descriptor);
+                }
+
+                if (minDist < 0.5) {
                     this.setMsg('Wajah Cocok! Menyelesaikan check-in...', 'success');
                     this.stopVideo();
                     this.$wire.callMountedTableAction();
                 } else {
-                    this.setMsg('Wajah tidak cocok! (' + dist.toFixed(2) + ')', 'error');
+                    this.setMsg('Wajah tidak cocok! (' + minDist.toFixed(2) + ')', 'error');
                     setTimeout(() => {
                         this.livenessStep = 'straight'; this.faceInPlace = false;
                         this.setGrid(false); this.showArrow('none');

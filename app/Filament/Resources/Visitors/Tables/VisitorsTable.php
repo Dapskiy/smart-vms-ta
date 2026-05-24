@@ -52,7 +52,13 @@ class VisitorsTable
                     ->trueIcon('heroicon-o-face-smile')
                     ->falseIcon('heroicon-o-x-circle')
                     ->trueColor('success')
-                    ->falseColor('gray'),
+                    ->falseColor('gray')
+                    ->action(
+                        \Filament\Actions\Action::make('view_face')
+                            ->url(fn ($record): string => route('admin.visitor.face-photo', $record->id))
+                            ->openUrlInNewTab()
+                            ->visible(fn ($record) => !empty($record->face_photo))
+                    ),
 
                 IconColumn::make('is_blacklisted')
                     ->label('Blacklist')

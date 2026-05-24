@@ -34,15 +34,24 @@ class FaceCheckinController extends Controller
 
         foreach ($visitors as $visitor) {
             $stored = json_decode($visitor->face_features, true);
-            if (!is_array($stored) || count($stored) !== count($incomingDescriptor)) {
-                continue;
+            if (!is_array($stored)) continue;
+
+            // Backwards compatibility for single descriptor array
+            if (isset($stored[0]) && !is_array($stored[0])) {
+                $stored = [$stored];
             }
 
-            $distance = $this->euclideanDistance($incomingDescriptor, $stored);
+            foreach ($stored as $descriptor) {
+                if (count($descriptor) !== count($incomingDescriptor)) {
+                    continue;
+                }
 
-            if ($distance < $bestDistance) {
-                $bestDistance = $distance;
-                $bestMatch    = $visitor;
+                $distance = $this->euclideanDistance($incomingDescriptor, $descriptor);
+
+                if ($distance < $bestDistance) {
+                    $bestDistance = $distance;
+                    $bestMatch    = $visitor;
+                }
             }
         }
 
@@ -53,13 +62,40 @@ class FaceCheckinController extends Controller
             ], 404);
         }
 
-        // Simpan foto wajah terenkripsi jika dikirim dan belum ada
-        if ($request->filled('face_photo') && empty($bestMatch->face_photo)) {
+        // Simpan foto wajah terenkripsi jika dikirim
+        if ($request->filled('face_photo')) {
             try {
+                $existingPhotos = [];
+                if (!empty($bestMatch->face_photo)) {
+                    $decoded = json_decode($bestMatch->face_photo, true);
+                    if (is_array($decoded)) {
+                        $existingPhotos = $decoded;
+                    } else {
+                        $existingPhotos = [$bestMatch->face_photo];
+                    }
+                }
+                $existingPhotos[] = Crypt::encryptString($request->input('face_photo'));
+                if (count($existingPhotos) > 10) {
+                    array_shift($existingPhotos);
+                }
+
+                $existingFeatures = [];
+                if (!empty($bestMatch->face_features)) {
+                    $decoded = json_decode($bestMatch->face_features, true);
+                    if (is_array($decoded)) {
+                        $existingFeatures = (isset($decoded[0]) && is_array($decoded[0])) ? $decoded : [$decoded];
+                    }
+                }
+                $existingFeatures[] = $incomingDescriptor;
+                if (count($existingFeatures) > 10) {
+                    array_shift($existingFeatures);
+                }
+
                 $bestMatch->update([
-                    'face_photo' => Crypt::encryptString($request->input('face_photo')),
+                    'face_photo' => json_encode($existingPhotos),
+                    'face_features' => json_encode($existingFeatures)
                 ]);
-                Log::info("[FACE-CHECKIN] Face photo saved for visitor #{$bestMatch->id}");
+                Log::info("[FACE-CHECKIN] Face photo and descriptor appended for visitor #{$bestMatch->id}");
             } catch (\Throwable $e) {
                 Log::warning("[FACE-CHECKIN] Failed to save face photo: " . $e->getMessage());
             }

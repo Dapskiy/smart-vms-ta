@@ -23,8 +23,15 @@ class VisitorFacePhotoController extends Controller
         }
 
         try {
+            // Cek apakah face_photo berupa JSON array (format baru maks 10) atau string tunggal (format lama)
+            $photoData = $visitor->face_photo;
+            $decoded = json_decode($photoData, true);
+            if (is_array($decoded)) {
+                $photoData = end($decoded); // Ambil yang paling terakhir (terbaru)
+            }
+
             // Dekripsi menggunakan APP_KEY (AES-256-CBC)
-            $decrypted = Crypt::decryptString($visitor->face_photo);
+            $decrypted = Crypt::decryptString($photoData);
 
             // Decrypted value adalah data URI: "data:image/jpeg;base64,/9j/..."
             // Pisahkan header dari data base64

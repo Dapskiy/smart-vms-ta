@@ -122,14 +122,41 @@ class AppointmentsTable
                             }
                         }
 
-                        // Simpan face features + foto terenkripsi ke visitor
+                        // Simpan face features + foto terenkripsi ke visitor (maks 10)
                         $updateData = [];
+
                         if (!empty($arguments['face_features'])) {
-                            $updateData['face_features'] = $arguments['face_features'];
+                            $existingFeatures = [];
+                            if (!empty($record->visitor->face_features)) {
+                                $decoded = json_decode($record->visitor->face_features, true);
+                                if (is_array($decoded)) {
+                                    $existingFeatures = (isset($decoded[0]) && is_array($decoded[0])) ? $decoded : [$decoded];
+                                }
+                            }
+                            $existingFeatures[] = $arguments['face_features'];
+                            if (count($existingFeatures) > 10) {
+                                array_shift($existingFeatures);
+                            }
+                            $updateData['face_features'] = json_encode($existingFeatures);
                         }
+
                         if (!empty($arguments['face_photo'])) {
-                            $updateData['face_photo'] = Crypt::encryptString($arguments['face_photo']);
+                            $existingPhotos = [];
+                            if (!empty($record->visitor->face_photo)) {
+                                $decoded = json_decode($record->visitor->face_photo, true);
+                                if (is_array($decoded)) {
+                                    $existingPhotos = $decoded;
+                                } else {
+                                    $existingPhotos = [$record->visitor->face_photo];
+                                }
+                            }
+                            $existingPhotos[] = Crypt::encryptString($arguments['face_photo']);
+                            if (count($existingPhotos) > 10) {
+                                array_shift($existingPhotos);
+                            }
+                            $updateData['face_photo'] = json_encode($existingPhotos);
                         }
+
                         if (!empty($updateData)) {
                             $record->visitor->update($updateData);
                         }
