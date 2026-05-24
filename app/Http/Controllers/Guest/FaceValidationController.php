@@ -47,6 +47,10 @@ class FaceValidationController extends Controller
             }
 
             foreach ($stored as $descriptor) {
+                // Format lama: elemen bisa berupa string JSON
+                if (is_string($descriptor)) {
+                    $descriptor = json_decode($descriptor, true) ?? [];
+                }
                 if (count($descriptor) !== count($incoming)) continue;
 
                 $distance = $this->euclideanDistance($incoming, $descriptor);

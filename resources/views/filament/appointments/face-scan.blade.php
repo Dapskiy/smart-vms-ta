@@ -6,7 +6,14 @@
         loadingText: 'Memuat Model AI...',
         message: '',
         messageType: 'info',
-        referenceFeatures: @js(json_decode($record->visitor->face_features ?? 'null')),
+        referenceFeatures: @php
+            $rf = json_decode($record->visitor->face_features ?? 'null', true);
+            if (is_array($rf) && isset($rf[0])) {
+                if (is_string($rf[0])) { $rf = array_map(fn($s) => json_decode($s, true) ?? [], $rf); }
+                if (!is_array($rf[0])) { $rf = [$rf]; } // flat array → wrap
+            }
+            echo \Illuminate\Support\Js::from($rf);
+        @endphp,
         visitorId: @js($record->visitor->id ?? null),
 
         autoScanActive: false,
@@ -264,7 +271,7 @@
                         this.messageType = 'success'; this.setRing();
                         this.stopVideo();
                         this.$wire.callMountedTableAction({
-                            face_features: JSON.stringify(descriptorArr),
+                            face_features: descriptorArr,
                             face_photo: facePhoto,      // base64 JPEG — akan dienkripsi server-side
                         });
                     }

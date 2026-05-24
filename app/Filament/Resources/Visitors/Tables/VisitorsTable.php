@@ -7,6 +7,8 @@ use Filament\Actions\BulkActionGroup;
 use Filament\Actions\DeleteAction;
 use Filament\Actions\DeleteBulkAction;
 use Filament\Actions\EditAction;
+use Filament\Forms\Components\TextInput;
+use Filament\Notifications\Notification;
 use Filament\Tables\Columns\IconColumn;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Filters\TernaryFilter;
@@ -93,6 +95,40 @@ class VisitorsTable
                     ->url(fn ($record): string => route('admin.visitor.face-photo', $record->id))
                     ->openUrlInNewTab()
                     ->visible(fn ($record): bool => !empty($record->face_photo)),
+
+                // Tombol blacklist/unblacklist dengan konfirmasi wajib ketik "BLACKLIST"
+                Action::make('toggle_blacklist')
+                    ->label('')
+                    ->icon(fn ($record) => $record->is_blacklisted ? 'heroicon-o-lock-open' : 'heroicon-o-no-symbol')
+                    ->color(fn ($record) => $record->is_blacklisted ? 'success' : 'danger')
+                    ->tooltip(fn ($record) => $record->is_blacklisted ? 'Hapus Blacklist' : 'Blacklist Visitor')
+                    ->requiresConfirmation()
+                    ->modalHeading(fn ($record) => $record->is_blacklisted ? 'Hapus Blacklist Visitor' : 'Blacklist Visitor')
+                    ->modalDescription(fn ($record) => $record->is_blacklisted
+                        ? "Visitor {$record->name} akan dihapus dari daftar blacklist."
+                        : "Visitor {$record->name} akan diblacklist dan tidak bisa melakukan kunjungan. Ketik \"BLACKLIST\" untuk konfirmasi."
+                    )
+                    ->form(fn ($record) => $record->is_blacklisted ? [] : [
+                        TextInput::make('confirmation')
+                            ->label('Ketik "BLACKLIST" untuk konfirmasi')
+                            ->required()
+                            ->rules(['in:BLACKLIST'])
+                            ->validationMessages(['in' => 'Anda harus mengetik kata "BLACKLIST" dengan tepat.'])
+                            ->placeholder('BLACKLIST'),
+                    ])
+                    ->action(function ($record) {
+                        $record->update([
+                            'is_blacklisted' => !$record->is_blacklisted,
+                        ]);
+                        Notification::make()
+                            ->title($record->is_blacklisted ? '✅ Blacklist dihapus' : '🚫 Visitor di-blacklist')
+                            ->body($record->is_blacklisted
+                                ? "{$record->name} dapat melakukan kunjungan kembali."
+                                : "{$record->name} tidak dapat melakukan kunjungan."
+                            )
+                            ->success()
+                            ->send();
+                    }),
 
                 EditAction::make(),
                 DeleteAction::make(),

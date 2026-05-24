@@ -126,16 +126,23 @@ class AppointmentsTable
                         $updateData = [];
 
                         if (!empty($arguments['face_features'])) {
+                            // Jika dikirim sebagai string JSON, decode dulu
+                            $newDescriptor = is_string($arguments['face_features'])
+                                ? json_decode($arguments['face_features'], true)
+                                : $arguments['face_features'];
+
                             $existingFeatures = [];
                             if (!empty($record->visitor->face_features)) {
                                 $decoded = json_decode($record->visitor->face_features, true);
                                 if (is_array($decoded)) {
-                                    $existingFeatures = (isset($decoded[0]) && is_array($decoded[0])) ? $decoded : [$decoded];
+                                    // Normalize elemen lama yang berformat string
+                                    $normalized = array_map(fn($e) => is_string($e) ? json_decode($e, true) : $e, $decoded);
+                                    $existingFeatures = (isset($normalized[0]) && is_array($normalized[0])) ? $normalized : [$normalized];
                                 }
                             }
                             // Maksimal 10 sampel — jika sudah penuh, tidak ditambah lagi
                             if (count($existingFeatures) < 10) {
-                                $existingFeatures[] = $arguments['face_features'];
+                                $existingFeatures[] = $newDescriptor;
                                 $updateData['face_features'] = json_encode($existingFeatures);
                             }
                         }

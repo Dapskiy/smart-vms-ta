@@ -42,6 +42,10 @@ class FaceCheckinController extends Controller
             }
 
             foreach ($stored as $descriptor) {
+                // Format lama: elemen bisa berupa string JSON
+                if (is_string($descriptor)) {
+                    $descriptor = json_decode($descriptor, true) ?? [];
+                }
                 if (count($descriptor) !== count($incomingDescriptor)) {
                     continue;
                 }
@@ -102,6 +106,15 @@ class FaceCheckinController extends Controller
             } catch (\Throwable $e) {
                 Log::warning("[FACE-CHECKIN] Failed to save face photo: " . $e->getMessage());
             }
+        }
+
+        // Blacklisted visitors tidak bisa check-in via kiosk
+        if ($bestMatch->is_blacklisted) {
+            Log::warning("[FACE-CHECKIN] Blocked blacklisted visitor #{$bestMatch->id} ({$bestMatch->name})");
+            return response()->json([
+                'success' => false,
+                'message' => "Maaf, {$bestMatch->name} telah diblacklist dan tidak dapat melakukan check-in. Silahkan hubungi admin untuk membuka blacklist.",
+            ], 403);
         }
 
         // Find a pending appointment for this visitor today
