@@ -66,7 +66,15 @@
                 <div class="chatbot-avatar">🤖</div>
                 @endif
                 <div class="chatbot-bubble chatbot-bubble--{{ $msg['role'] }}">
-                    {!! nl2br(e($msg['content'])) !!}
+                    @if($msg['role'] === 'assistant')
+                        {{-- Render Markdown untuk respons AI --}}
+                        <div class="chatbot-markdown"
+                             x-data="{ md: @js($msg['content']) }"
+                             x-html="window.marked ? marked.parse(md) : md"
+                        ></div>
+                    @else
+                        {!! nl2br(e($msg['content'])) !!}
+                    @endif
                 </div>
                 @if($msg['role'] === 'user')
                 <div class="chatbot-avatar chatbot-avatar--user">👤</div>
@@ -112,7 +120,15 @@
             </button>
         </div>
     </div>
-    {{-- Inline styles — harus di dalam root div (Livewire v3 hanya boleh 1 root element) --}}
+    {{-- marked.js untuk render Markdown --}}
+    <script src="https://cdn.jsdelivr.net/npm/marked@9/marked.min.js"></script>
+    <script>
+        if (window.marked) {
+            marked.setOptions({ breaks: true, gfm: true });
+        }
+    </script>
+
+    {{-- Inline styles --}}
     <style>
 /* ── Chatbot Layout ────────────────────── */
 .chatbot-wrapper {
@@ -244,6 +260,48 @@
     color: #111827;
     border-bottom-left-radius: 4px;
 }
+
+/* Markdown rendered content */
+.chatbot-markdown { font-size: 13.5px; line-height: 1.6; }
+.chatbot-markdown p  { margin: 0 0 6px; }
+.chatbot-markdown p:last-child { margin-bottom: 0; }
+.chatbot-markdown strong { font-weight: 700; }
+.chatbot-markdown em { font-style: italic; }
+.chatbot-markdown ul, .chatbot-markdown ol { padding-left: 18px; margin: 4px 0 6px; }
+.chatbot-markdown li { margin-bottom: 2px; }
+.chatbot-markdown code {
+    background: #e5e7eb;
+    border-radius: 4px;
+    padding: 1px 5px;
+    font-family: monospace;
+    font-size: 12.5px;
+}
+.chatbot-markdown pre {
+    background: #1f2937;
+    color: #f9fafb;
+    border-radius: 8px;
+    padding: 10px 12px;
+    overflow-x: auto;
+    font-size: 12px;
+    margin: 6px 0;
+}
+.chatbot-markdown pre code { background: none; padding: 0; color: inherit; }
+.chatbot-markdown h1,.chatbot-markdown h2,.chatbot-markdown h3 {
+    font-weight: 600;
+    margin: 6px 0 4px;
+    line-height: 1.3;
+}
+.chatbot-markdown h1 { font-size: 16px; }
+.chatbot-markdown h2 { font-size: 14.5px; }
+.chatbot-markdown h3 { font-size: 13.5px; }
+.chatbot-markdown blockquote {
+    border-left: 3px solid #d1d5db;
+    padding-left: 10px;
+    color: #6b7280;
+    margin: 4px 0;
+}
+.chatbot-markdown a { color: #4f46e5; text-decoration: underline; }
+.chatbot-markdown hr { border: none; border-top: 1px solid #e5e7eb; margin: 8px 0; }
 
 /* Typing dots */
 .chatbot-typing {
