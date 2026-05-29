@@ -1634,5 +1634,6 @@
 
 </script>
 
+@livewire('interactive-chatbot')
 </body>
 </html>
