@@ -19,6 +19,14 @@ class AppServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
+        // Jadikan APP_URL dinamis sesuai IP/Host yang mengakses (berguna saat diakses via IP LAN)
+        if (request()->server('HTTP_HOST')) {
+            $scheme = request()->isSecure() ? 'https://' : 'http://';
+            $url = $scheme . request()->server('HTTP_HOST');
+            \Illuminate\Support\Facades\URL::forceRootUrl($url);
+            config(['app.url' => $url]);
+        }
+
         \Illuminate\Support\Facades\Gate::before(function ($user, $ability) {
             return $user->hasRole('super_admin') ? true : null;
         });

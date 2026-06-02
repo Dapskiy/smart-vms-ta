@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\Appointment;
 use App\Models\Visitor;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Crypt;
 use Illuminate\Support\Facades\Log;
 
 class FaceCheckinController extends Controller
@@ -13,11 +14,13 @@ class FaceCheckinController extends Controller
     /**
      * Validate face descriptor against all visitors who have face_features
      * and have a pending appointment today.
+     * Optionally receives face_photo (base64 data URI) → encrypted & stored.
      */
     public function checkin(Request $request)
     {
         $request->validate([
             'descriptor' => 'required|array|min:128',
+            'face_photo' => 'nullable|string', // base64 data URI dari kamera
         ]);
 
         $incomingDescriptor = $request->input('descriptor');
@@ -31,15 +34,28 @@ class FaceCheckinController extends Controller
 
         foreach ($visitors as $visitor) {
             $stored = json_decode($visitor->face_features, true);
-            if (!is_array($stored) || count($stored) !== count($incomingDescriptor)) {
-                continue;
+            if (!is_array($stored)) continue;
+
+            // Backwards compatibility for single descriptor array
+            if (isset($stored[0]) && !is_array($stored[0])) {
+                $stored = [$stored];
             }
 
-            $distance = $this->euclideanDistance($incomingDescriptor, $stored);
+            foreach ($stored as $descriptor) {
+                // Format lama: elemen bisa berupa string JSON
+                if (is_string($descriptor)) {
+                    $descriptor = json_decode($descriptor, true) ?? [];
+                }
+                if (count($descriptor) !== count($incomingDescriptor)) {
+                    continue;
+                }
 
-            if ($distance < $bestDistance) {
-                $bestDistance = $distance;
-                $bestMatch    = $visitor;
+                $distance = $this->euclideanDistance($incomingDescriptor, $descriptor);
+
+                if ($distance < $bestDistance) {
+                    $bestDistance = $distance;
+                    $bestMatch    = $visitor;
+                }
             }
         }
 
@@ -48,6 +64,57 @@ class FaceCheckinController extends Controller
                 'success' => false,
                 'message' => 'Wajah tidak dikenali dalam sistem.',
             ], 404);
+        }
+
+        // Simpan foto wajah terenkripsi jika dikirim
+        if ($request->filled('face_photo')) {
+            try {
+                $existingPhotos = [];
+                if (!empty($bestMatch->face_photo)) {
+                    $decoded = json_decode($bestMatch->face_photo, true);
+                    if (is_array($decoded)) {
+                        $existingPhotos = $decoded;
+                    } else {
+                        $existingPhotos = [$bestMatch->face_photo];
+                    }
+                }
+
+                $existingFeatures = [];
+                if (!empty($bestMatch->face_features)) {
+                    $decoded = json_decode($bestMatch->face_features, true);
+                    if (is_array($decoded)) {
+                        $existingFeatures = (isset($decoded[0]) && is_array($decoded[0])) ? $decoded : [$decoded];
+                    }
+                }
+
+                $saveData = [];
+
+                // Maksimal 10 sampel per visitor — jika sudah penuh, tidak ditambah lagi
+                if (count($existingPhotos) < 10) {
+                    $existingPhotos[] = Crypt::encryptString($request->input('face_photo'));
+                    $saveData['face_photo'] = json_encode($existingPhotos);
+                }
+                if (count($existingFeatures) < 10) {
+                    $existingFeatures[] = $incomingDescriptor;
+                    $saveData['face_features'] = json_encode($existingFeatures);
+                }
+
+                if (!empty($saveData)) {
+                    $bestMatch->update($saveData);
+                }
+                Log::info("[FACE-CHECKIN] Face data appended for visitor #{$bestMatch->id} (features: " . count($existingFeatures) . "/10)");
+            } catch (\Throwable $e) {
+                Log::warning("[FACE-CHECKIN] Failed to save face photo: " . $e->getMessage());
+            }
+        }
+
+        // Blacklisted visitors tidak bisa check-in via kiosk
+        if ($bestMatch->is_blacklisted) {
+            Log::warning("[FACE-CHECKIN] Blocked blacklisted visitor #{$bestMatch->id} ({$bestMatch->name})");
+            return response()->json([
+                'success' => false,
+                'message' => "Maaf, {$bestMatch->name} telah diblacklist dan tidak dapat melakukan check-in. Silahkan hubungi admin untuk membuka blacklist.",
+            ], 403);
         }
 
         // Find a pending appointment for this visitor today

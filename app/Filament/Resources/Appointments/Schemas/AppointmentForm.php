@@ -103,7 +103,7 @@ class AppointmentForm
                 // 1. Visitor Utama
                 Select::make('visitor_id')
                     ->label('Tamu (Ketua Rombongan)')
-                    ->relationship('visitor', 'name')
+                    ->relationship('visitor', 'name', fn ($query) => $query->where('is_blacklisted', false))
                     ->getOptionLabelFromRecordUsing(fn($record) => "{$record->name} ({$record->company})")
                     ->searchable(['name', 'company'])
                     ->preload()

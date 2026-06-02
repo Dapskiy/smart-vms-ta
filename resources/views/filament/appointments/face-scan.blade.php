@@ -6,13 +6,22 @@
         loadingText: 'Memuat Model AI...',
         message: '',
         messageType: 'info',
-        referenceFeatures: @js(json_decode($record->visitor->face_features ?? 'null')),
+        referenceFeatures: @php
+            $rf = json_decode($record->visitor->face_features ?? 'null', true);
+            if (is_array($rf) && isset($rf[0])) {
+                if (is_string($rf[0])) { $rf = array_map(fn($s) => json_decode($s, true) ?? [], $rf); }
+                if (!is_array($rf[0])) { $rf = [$rf]; } // flat array → wrap
+            }
+            echo \Illuminate\Support\Js::from($rf);
+        @endphp,
         visitorId: @js($record->visitor->id ?? null),
 
         autoScanActive: false,
         livenessStep: 'straight',
         consecutiveNoFace: 0,
         faceInPlace: false,
+        photoSnapshot: null,    // Foto diambil saat wajah lurus & pas, sebelum liveness
+        preparingPhoto: false,  // Flag agar capture hanya sekali
 
         get ringColor() {
             if (this.messageType === 'error')   return '#ef4444';
@@ -149,6 +158,19 @@
                     const pts = det.landmarks.positions;
                     const nr  = (pts[30].x - pts[0].x) / (pts[16].x - pts[0].x);
                     if (this.livenessStep === 'straight') {
+                        if (!this.photoSnapshot) {
+                            /* Belum ada foto: tampilkan pesan diam, ambil foto diam-diam */
+                            if (!this.preparingPhoto) {
+                                this.preparingPhoto = true;
+                                this.setMsg('Diam sebentar...', 'info');
+                                this.messageType = 'info'; this.setRing();
+                                setTimeout(() => {
+                                    this.photoSnapshot = this.capturePhoto();
+                                    this.preparingPhoto = false;
+                                }, 800);
+                            }
+                            setTimeout(() => this.scanLoop(), 100); return;
+                        }
                         this.setMsg('Tengok ke kanan ➡', 'info');
                         this.messageType = 'info'; this.setRing();
                         this.showArrow('right');
@@ -171,17 +193,45 @@
             } catch(e) { console.error(e); setTimeout(() => this.scanLoop(), 500); }
         },
 
+        /* Ambil snapshot frame dari video sebagai JPEG base64 */
+        capturePhoto() {
+            try {
+                const canvas = document.createElement('canvas');
+                canvas.width  = this.video.videoWidth  || 320;
+                canvas.height = this.video.videoHeight || 240;
+                const ctx = canvas.getContext('2d');
+                // Mirror balik (karena video di-flip CSS)
+                ctx.translate(canvas.width, 0);
+                ctx.scale(-1, 1);
+                ctx.drawImage(this.video, 0, 0);
+                return canvas.toDataURL('image/jpeg', 0.80);
+            } catch(e) {
+                console.warn('capturePhoto failed:', e);
+                return null;
+            }
+        },
+
         processResult(detection) {
             if (this.referenceFeatures) {
-                /* ── MODE VERIFIKASI: cocokkan dengan data tersimpan ── */
-                const ref  = new Float32Array(this.referenceFeatures);
-                const dist = faceapi.euclideanDistance(ref, detection.descriptor);
-                if (dist < 0.5) {
+                /* ── MODE VERIFIKASI: cocokkan dengan data tersimpan (bisa array of arrays) ── */
+                let minDist = Infinity;
+                if (Array.isArray(this.referenceFeatures[0])) {
+                    for (let refArr of this.referenceFeatures) {
+                        const ref  = new Float32Array(refArr);
+                        const dist = faceapi.euclideanDistance(ref, detection.descriptor);
+                        if (dist < minDist) minDist = dist;
+                    }
+                } else {
+                    const ref  = new Float32Array(this.referenceFeatures);
+                    minDist = faceapi.euclideanDistance(ref, detection.descriptor);
+                }
+
+                if (minDist < 0.5) {
                     this.setMsg('Wajah Cocok! Menyelesaikan check-in...', 'success');
                     this.stopVideo();
                     this.$wire.callMountedTableAction();
                 } else {
-                    this.setMsg('Wajah tidak cocok! (' + dist.toFixed(2) + ')', 'error');
+                    this.setMsg('Wajah tidak cocok! (' + minDist.toFixed(2) + ')', 'error');
                     setTimeout(() => {
                         this.livenessStep = 'straight'; this.faceInPlace = false;
                         this.setGrid(false); this.showArrow('none');
@@ -189,12 +239,13 @@
                     }, 3000);
                 }
             } else {
-                /* ── MODE REGISTRASI: cek duplikat dulu sebelum simpan ── */
+                /* ── MODE REGISTRASI: ambil foto → cek duplikat → simpan ── */
+                const facePhoto    = this.photoSnapshot || this.capturePhoto(); // foto wajah lurus
+                const descriptorArr = Array.from(detection.descriptor);
+                const csrfToken    = document.querySelector('meta[name=csrf-token]')?.content || '';
+
                 this.setMsg('Memeriksa duplikasi wajah...', 'info');
                 this.messageType = 'info'; this.setRing();
-
-                const descriptorArr = Array.from(detection.descriptor);
-                const csrfToken = document.querySelector('meta[name=csrf-token]')?.content || '';
 
                 fetch('/kiosk/face-check-duplicate', {
                     method: 'POST',
@@ -208,7 +259,6 @@
                         this.setMsg('❌ ' + data.message, 'error');
                         this.messageType = 'error'; this.setRing();
                         this.faceInPlace = false; this.setGrid(false);
-                        /* Restart scan setelah 4 detik */
                         setTimeout(() => {
                             this.livenessStep = 'straight'; this.faceInPlace = false;
                             this.setGrid(false); this.showArrow('none');
@@ -216,11 +266,14 @@
                             this.startAutoScan();
                         }, 4000);
                     } else {
-                        /* Wajah unik → simpan dan check-in */
+                        /* Wajah unik → simpan descriptor + foto terenkripsi */
                         this.setMsg('Wajah unik! Menyimpan...', 'success');
                         this.messageType = 'success'; this.setRing();
                         this.stopVideo();
-                        this.$wire.callMountedTableAction({ face_features: JSON.stringify(descriptorArr) });
+                        this.$wire.callMountedTableAction({
+                            face_features: descriptorArr,
+                            face_photo: facePhoto,      // base64 JPEG — akan dienkripsi server-side
+                        });
                     }
                 })
                 .catch(() => {

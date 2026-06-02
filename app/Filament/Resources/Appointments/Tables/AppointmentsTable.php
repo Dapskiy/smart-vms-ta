@@ -9,6 +9,7 @@ use Filament\Tables\Table;
 use Filament\Notifications\Notification;
 use Filament\Actions\Action;
 use Carbon\Carbon;
+use Illuminate\Support\Facades\Crypt;
 
 use Filament\Actions\DeleteAction;
 use Filament\Actions\EditAction;
@@ -121,11 +122,50 @@ class AppointmentsTable
                             }
                         }
 
-                        // Simpan face features baru ke visitor
+                        // Simpan face features + foto terenkripsi ke visitor (maks 10)
+                        $updateData = [];
+
                         if (!empty($arguments['face_features'])) {
-                            $record->visitor->update([
-                                'face_features' => $arguments['face_features']
-                            ]);
+                            // Jika dikirim sebagai string JSON, decode dulu
+                            $newDescriptor = is_string($arguments['face_features'])
+                                ? json_decode($arguments['face_features'], true)
+                                : $arguments['face_features'];
+
+                            $existingFeatures = [];
+                            if (!empty($record->visitor->face_features)) {
+                                $decoded = json_decode($record->visitor->face_features, true);
+                                if (is_array($decoded)) {
+                                    // Normalize elemen lama yang berformat string
+                                    $normalized = array_map(fn($e) => is_string($e) ? json_decode($e, true) : $e, $decoded);
+                                    $existingFeatures = (isset($normalized[0]) && is_array($normalized[0])) ? $normalized : [$normalized];
+                                }
+                            }
+                            // Maksimal 10 sampel — jika sudah penuh, tidak ditambah lagi
+                            if (count($existingFeatures) < 10) {
+                                $existingFeatures[] = $newDescriptor;
+                                $updateData['face_features'] = json_encode($existingFeatures);
+                            }
+                        }
+
+                        if (!empty($arguments['face_photo'])) {
+                            $existingPhotos = [];
+                            if (!empty($record->visitor->face_photo)) {
+                                $decoded = json_decode($record->visitor->face_photo, true);
+                                if (is_array($decoded)) {
+                                    $existingPhotos = $decoded;
+                                } else {
+                                    $existingPhotos = [$record->visitor->face_photo];
+                                }
+                            }
+                            // Maksimal 10 foto — jika sudah penuh, tidak ditambah lagi
+                            if (count($existingPhotos) < 10) {
+                                $existingPhotos[] = Crypt::encryptString($arguments['face_photo']);
+                                $updateData['face_photo'] = json_encode($existingPhotos);
+                            }
+                        }
+
+                        if (!empty($updateData)) {
+                            $record->visitor->update($updateData);
                         }
 
                         // Proses check-in (admin = manual)
@@ -249,6 +289,16 @@ class AppointmentsTable
                     ->modalWidth('4xl')
                     ->modalSubmitAction(false)
                     ->modalCancelActionLabel('Tutup'),
+
+                // 4b. Tombol Lihat Foto Wajah (hanya muncul jika ada face_photo)
+                Action::make('view_face_photo')
+                    ->label('')
+                    ->icon('heroicon-o-face-smile')
+                    ->tooltip('Lihat Foto Wajah')
+                    ->color('warning')
+                    ->visible(fn(?Appointment $record): bool => !empty($record?->visitor?->face_photo))
+                    ->url(fn(Appointment $record): string => route('admin.visitor.face-photo', $record->visitor_id))
+                    ->openUrlInNewTab(),
 
                 // 5. Tombol Edit
                 EditAction::make()
