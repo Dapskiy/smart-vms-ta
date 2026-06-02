@@ -63,16 +63,18 @@ class InteractiveChatbot extends Component
                 ];
             }
 
-            $response = Http::timeout(30)->post($url, [
-                'systemInstruction' => [
-                    'parts' => [['text' => $this->systemPrompt]],
-                ],
-                'contents'         => $contents,
-                'generationConfig' => [
-                    'temperature'     => 0.7,
-                    'maxOutputTokens' => 500,
-                ],
-            ]);
+            $response = Http::timeout(30)
+                ->withoutVerifying()  // bypass SSL cert error di Windows (cURL error 60)
+                ->post($url, [
+                    'systemInstruction' => [
+                        'parts' => [['text' => $this->systemPrompt]],
+                    ],
+                    'contents'         => $contents,
+                    'generationConfig' => [
+                        'temperature'     => 0.7,
+                        'maxOutputTokens' => 500,
+                    ],
+                ]);
 
             if ($response->successful()) {
                 $reply = $response->json('candidates.0.content.parts.0.text', '...');
