@@ -7,6 +7,7 @@ use App\Http\Controllers\Guest\FaceCheckinController;
 use App\Http\Controllers\Guest\FaceCheckoutController;
 use App\Http\Controllers\Guest\FaceValidationController;
 use App\Http\Controllers\Admin\VisitorFacePhotoController;
+use App\Http\Controllers\Admin\AdminChatController;
 
 Route::get('/', function () {
     return view('welcome');
@@ -30,6 +31,12 @@ Route::post('/admin/appointments/checkout', [AppointmentCheckoutController::clas
 Route::get('/admin/visitors/{visitor}/face-photo', [VisitorFacePhotoController::class, 'show'])
     ->middleware(['auth'])
     ->name('admin.visitor.face-photo');
+
+// ── Admin AI Chat ─────────────────────────────────────────────────────────
+// Endpoint untuk widget Admin AI Assistant di panel Filament
+Route::post('/admin/ai-chat', [AdminChatController::class, 'ask'])
+    ->middleware(['auth'])
+    ->name('admin.ai.chat');
 
 // Route untuk face check-in dari kiosk publik (no auth)
 Route::post('/kiosk/face-checkin', [FaceCheckinController::class, 'checkin'])
