@@ -1,543 +1,337 @@
-<div id="admin-ai-widget" class="admin-ai-widget">
+@php
+    $adminName = auth()->user()?->name ?? 'Admin';
+    $chatUrl   = route('admin.ai.chat');
+@endphp
 
-    {{-- ── Floating Action Button ─────────────────────────────── --}}
-    <button
-        id="admin-ai-fab"
-        class="admin-ai-fab"
-        title="VISITA AI Assistant"
-        aria-label="Buka Admin AI Assistant"
-        onclick="adminAI.toggle()"
+{{-- ══════════════════════════════════════════════════════════
+     VISITA Admin AI Assistant — Floating Chat Widget
+     Styling: Tailwind CSS (bundled with Filament v3)
+     ══════════════════════════════════════════════════════════ --}}
+<div
+    id="aai-root"
+    class="fixed bottom-7 right-7 z-[99999] flex flex-col items-end gap-3 font-sans"
+    style="font-family:'Poppins','Inter',ui-sans-serif,sans-serif"
+>
+
+    {{-- ── Chat Panel ───────────────────────────────────────────── --}}
+    <div
+        id="aai-panel"
+        class="hidden w-[370px] max-h-[580px] bg-white dark:bg-gray-900 rounded-2xl shadow-2xl border border-gray-200 dark:border-gray-700 flex flex-col overflow-hidden"
+        style="animation:aaiSlideIn .22s cubic-bezier(.4,0,.2,1)"
+        role="dialog"
+        aria-label="VISITA AI Assistant"
     >
-        <span id="admin-ai-fab-icon" class="admin-ai-fab-icon">🤖</span>
-    </button>
-
-    {{-- ── Chat Modal ──────────────────────────────────────────── --}}
-    <div id="admin-ai-modal" class="admin-ai-modal" style="display:none" role="dialog" aria-label="Admin AI Assistant">
-
         {{-- Header --}}
-        <div class="admin-ai-header">
-            <div class="admin-ai-header-info">
-                <span class="admin-ai-header-icon">🤖</span>
-                <div>
-                    <div class="admin-ai-header-title">VISITA AI Assistant</div>
-                    <div class="admin-ai-header-sub">Data real-time · Powered by Gemini</div>
-                </div>
+        <div class="flex items-center gap-3 px-4 py-3 bg-gradient-to-r from-indigo-600 to-violet-600 flex-shrink-0">
+            <div class="w-9 h-9 rounded-full bg-white/20 flex items-center justify-center text-xl flex-shrink-0">🤖</div>
+            <div class="flex-1 min-w-0">
+                <p class="text-white font-semibold text-sm leading-tight truncate">VISITA AI Assistant</p>
+                <p class="text-indigo-200 text-[11px] leading-tight">Data real-time · Powered by Gemini</p>
             </div>
-            <div class="admin-ai-header-actions">
+            <div class="flex items-center gap-1.5 flex-shrink-0">
+                {{-- TTS Toggle --}}
                 <button
-                    id="admin-ai-tts-btn"
-                    class="admin-ai-ctrl-btn"
+                    id="aai-tts-btn"
+                    onclick="aaiUI.toggleTts()"
                     title="Matikan/nyalakan suara"
-                    onclick="adminAI.toggleTts()"
+                    class="w-7 h-7 rounded-lg bg-white/15 hover:bg-white/30 flex items-center justify-center text-sm text-white transition-colors"
                 >🔊</button>
+                {{-- Clear --}}
                 <button
-                    class="admin-ai-ctrl-btn"
+                    onclick="aaiUI.clearHistory()"
                     title="Hapus riwayat"
-                    onclick="adminAI.clearHistory()"
+                    class="w-7 h-7 rounded-lg bg-white/15 hover:bg-white/30 flex items-center justify-center text-sm text-white transition-colors"
                 >🗑️</button>
+                {{-- Close --}}
                 <button
-                    class="admin-ai-ctrl-btn admin-ai-close-btn"
+                    onclick="aaiUI.toggle()"
                     title="Tutup"
-                    onclick="adminAI.toggle()"
+                    class="w-7 h-7 rounded-lg bg-white/15 hover:bg-white/30 flex items-center justify-center text-xs font-bold text-white transition-colors"
                 >✕</button>
             </div>
         </div>
 
-        {{-- Messages --}}
-        <div id="admin-ai-messages" class="admin-ai-messages">
-            <div class="admin-ai-welcome">
-                <div class="admin-ai-welcome-icon">👋</div>
-                <p>Halo, <strong>{{ auth()->user()?->name ?? 'Admin' }}</strong>!<br>
-                Tanya saya tentang kondisi kunjungan hari ini.</p>
-                <div class="admin-ai-suggestions">
-                    <button class="admin-ai-chip" onclick="adminAI.sendSuggestion(this)">Siapa yang sedang check-in?</button>
-                    <button class="admin-ai-chip" onclick="adminAI.sendSuggestion(this)">Statistik hari ini</button>
-                    <button class="admin-ai-chip" onclick="adminAI.sendSuggestion(this)">Berapa tamu aktif sekarang?</button>
+        {{-- Messages Area --}}
+        <div
+            id="aai-messages"
+            class="flex-1 overflow-y-auto px-3.5 py-3 flex flex-col gap-2.5 scroll-smooth"
+            style="min-height:200px"
+        >
+            {{-- Welcome state --}}
+            <div id="aai-welcome" class="flex flex-col items-center text-center text-gray-500 dark:text-gray-400 py-4 gap-2">
+                <span class="text-4xl">👋</span>
+                <p class="text-[13px] leading-snug">
+                    Halo, <strong class="text-gray-700 dark:text-gray-200">{{ $adminName }}</strong>!<br>
+                    Tanya saya tentang kondisi kunjungan hari ini.
+                </p>
+                {{-- Suggestion chips --}}
+                <div class="flex flex-wrap gap-1.5 justify-center mt-1">
+                    <button onclick="aaiUI.suggest(this)" class="aai-chip">Siapa yang sedang check-in?</button>
+                    <button onclick="aaiUI.suggest(this)" class="aai-chip">Statistik hari ini</button>
+                    <button onclick="aaiUI.suggest(this)" class="aai-chip">Berapa tamu aktif?</button>
+                    <button onclick="aaiUI.suggest(this)" class="aai-chip">Siapa yang sudah checkout?</button>
                 </div>
             </div>
         </div>
 
-        {{-- Input --}}
-        <div class="admin-ai-input-area">
+        {{-- Input Area --}}
+        <div class="flex items-end gap-2 px-3.5 py-3 border-t border-gray-100 dark:border-gray-700 bg-gray-50 dark:bg-gray-800/60 flex-shrink-0">
             <textarea
-                id="admin-ai-input"
-                class="admin-ai-input"
-                placeholder="Tanya tentang data sistem..."
+                id="aai-input"
                 rows="1"
+                placeholder="Tanya tentang data sistem..."
+                class="flex-1 resize-none rounded-xl border border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-900 text-gray-800 dark:text-gray-100 text-[13.5px] px-3 py-2 outline-none focus:border-violet-500 dark:focus:border-violet-400 transition-colors max-h-24 overflow-y-auto leading-snug placeholder-gray-400"
                 oninput="this.style.height='auto';this.style.height=this.scrollHeight+'px'"
-                onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();adminAI.send();}"
+                onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();aaiUI.send();}"
             ></textarea>
             <button
-                id="admin-ai-send-btn"
-                class="admin-ai-send-btn"
+                id="aai-send-btn"
+                onclick="aaiUI.send()"
                 title="Kirim"
-                onclick="adminAI.send()"
+                class="w-9 h-9 flex-shrink-0 rounded-full bg-gradient-to-br from-indigo-600 to-violet-600 hover:from-indigo-500 hover:to-violet-500 disabled:opacity-40 disabled:cursor-not-allowed text-white flex items-center justify-center text-base transition-all hover:scale-105 active:scale-95 shadow-md"
             >➤</button>
         </div>
     </div>
+
+    {{-- ── Floating Action Button ───────────────────────────────── --}}
+    <button
+        id="aai-fab"
+        onclick="aaiUI.toggle()"
+        title="VISITA AI Assistant"
+        aria-label="Buka Admin AI Assistant"
+        class="w-14 h-14 rounded-full bg-gradient-to-br from-indigo-600 to-violet-600 hover:from-indigo-500 hover:to-violet-500 text-white shadow-xl hover:shadow-2xl flex items-center justify-center text-2xl transition-all hover:scale-110 active:scale-95 border-2 border-white/30"
+        style="animation:aaiPulse 2.8s infinite"
+    >
+        <span id="aai-fab-icon">🤖</span>
+    </button>
+
 </div>
 
-{{-- ── Styles ───────────────────────────────────────────────── --}}
+{{-- ── Suggestion Chip Styles (minimal, Tailwind-compatible) ── --}}
 <style>
-/* Widget container */
-.admin-ai-widget {
-    position: fixed;
-    bottom: 28px;
-    right: 28px;
-    z-index: 50000;
-    font-family: 'Poppins', 'Inter', sans-serif;
+.aai-chip {
+    @apply bg-indigo-50 dark:bg-indigo-900/40 text-indigo-700 dark:text-indigo-300
+           border border-indigo-200 dark:border-indigo-700 rounded-full
+           px-3 py-1 text-[11.5px] cursor-pointer
+           hover:bg-indigo-100 dark:hover:bg-indigo-800/50
+           transition-colors select-none;
+    font-family: inherit;
 }
-
-/* FAB */
-.admin-ai-fab {
-    width: 58px;
-    height: 58px;
-    border-radius: 50%;
-    background: linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%);
-    color: white;
-    border: none;
-    cursor: pointer;
-    box-shadow: 0 4px 24px rgba(79,70,229,.5), 0 0 0 0 rgba(79,70,229,.4);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 24px;
-    transition: transform .2s, box-shadow .2s;
-    animation: admin-ai-pulse 2.5s infinite;
-}
-.admin-ai-fab:hover {
-    transform: scale(1.12);
-    box-shadow: 0 6px 32px rgba(79,70,229,.65);
-    animation: none;
-}
-.admin-ai-fab-icon { line-height: 1; display: block; }
-@keyframes admin-ai-pulse {
-    0%,100% { box-shadow: 0 4px 24px rgba(79,70,229,.5), 0 0 0 0 rgba(79,70,229,.4); }
-    50%      { box-shadow: 0 4px 24px rgba(79,70,229,.5), 0 0 0 10px rgba(79,70,229,0); }
-}
-
-/* Modal */
-.admin-ai-modal {
-    position: absolute;
-    bottom: 70px;
-    right: 0;
-    width: 380px;
-    max-height: 560px;
-    background: #fff;
-    border-radius: 22px;
-    box-shadow: 0 24px 72px rgba(0,0,0,.2), 0 0 0 1px rgba(79,70,229,.08);
-    display: flex;
-    flex-direction: column;
-    overflow: hidden;
-    animation: admin-ai-slidein .25s cubic-bezier(.4,0,.2,1);
-}
-@keyframes admin-ai-slidein {
-    from { opacity:0; transform:translateY(18px) scale(.97); }
+@keyframes aaiSlideIn {
+    from { opacity:0; transform:translateY(14px) scale(.97); }
     to   { opacity:1; transform:translateY(0) scale(1); }
 }
-
-/* Header */
-.admin-ai-header {
-    background: linear-gradient(135deg, #4338ca 0%, #6d28d9 100%);
-    color: white;
-    padding: 14px 16px;
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: 10px;
-    flex-shrink: 0;
+@keyframes aaiPulse {
+    0%,100% { box-shadow: 0 4px 24px rgba(79,70,229,.5), 0 0 0 0 rgba(79,70,229,.35); }
+    55%     { box-shadow: 0 4px 24px rgba(79,70,229,.5), 0 0 0 9px rgba(79,70,229,0); }
 }
-.admin-ai-header-info  { display:flex; align-items:center; gap:10px; }
-.admin-ai-header-icon  { font-size:26px; }
-.admin-ai-header-title { font-weight:700; font-size:14.5px; letter-spacing:-.2px; }
-.admin-ai-header-sub   { font-size:11px; opacity:.75; margin-top:1px; }
-.admin-ai-header-actions { display:flex; gap:6px; align-items:center; }
-.admin-ai-ctrl-btn {
-    background: rgba(255,255,255,.15);
-    border: none;
-    border-radius: 8px;
-    padding: 5px 8px;
-    cursor: pointer;
-    font-size: 14px;
-    color: white;
-    transition: background .2s;
-    line-height: 1;
-}
-.admin-ai-ctrl-btn:hover { background: rgba(255,255,255,.3); }
-.admin-ai-close-btn { font-size: 13px; font-weight: 700; }
-
-/* Messages area */
-.admin-ai-messages {
-    flex: 1;
-    overflow-y: auto;
-    padding: 16px 14px;
-    display: flex;
-    flex-direction: column;
-    gap: 10px;
-    scroll-behavior: smooth;
-}
-.admin-ai-messages::-webkit-scrollbar { width:4px; }
-.admin-ai-messages::-webkit-scrollbar-thumb { background:#d1d5db; border-radius:4px; }
-
-/* Welcome screen */
-.admin-ai-welcome {
-    text-align:center;
-    color:#6b7280;
-    font-size:13px;
-    padding: 10px 0;
-}
-.admin-ai-welcome-icon { font-size:36px; margin-bottom:8px; }
-.admin-ai-welcome strong { color:#374151; }
-.admin-ai-suggestions { display:flex; flex-wrap:wrap; gap:6px; justify-content:center; margin-top:12px; }
-.admin-ai-chip {
-    background: #ede9fe;
-    color: #5b21b6;
-    border: none;
-    border-radius: 20px;
-    padding: 5px 12px;
-    font-size: 12px;
-    cursor: pointer;
-    font-family: inherit;
-    transition: background .15s, transform .1s;
-}
-.admin-ai-chip:hover { background:#ddd6fe; transform:scale(1.03); }
-
-/* Message row */
-.admin-ai-msg-row {
-    display:flex;
-    align-items:flex-end;
-    gap:8px;
-}
-.admin-ai-msg-row--user      { justify-content:flex-end; }
-.admin-ai-msg-row--assistant { justify-content:flex-start; }
-.admin-ai-avatar { font-size:20px; flex-shrink:0; }
-
-/* Bubbles */
-.admin-ai-bubble {
-    max-width:78%;
-    padding:10px 14px;
-    border-radius:16px;
-    font-size:13.5px;
-    line-height:1.55;
-    word-break:break-word;
-    white-space:pre-wrap;
-}
-.admin-ai-bubble--user {
-    background: linear-gradient(135deg,#4f46e5,#7c3aed);
-    color:white;
-    border-bottom-right-radius:4px;
-}
-.admin-ai-bubble--assistant {
-    background:#f3f4f6;
-    color:#111827;
-    border-bottom-left-radius:4px;
-}
-/* Markdown-lite rendering */
-.admin-ai-bubble--assistant b, .admin-ai-bubble--assistant strong { font-weight:700; }
-.admin-ai-bubble--assistant em { font-style:italic; }
-
-/* Typing animation */
-.admin-ai-typing {
-    display:flex;
-    gap:5px;
-    align-items:center;
-    padding:12px 16px;
-}
-.admin-ai-typing span {
-    width:7px; height:7px;
-    border-radius:50%;
-    background:#9ca3af;
-    animation:admin-ai-bounce 1.2s ease-in-out infinite;
-}
-.admin-ai-typing span:nth-child(2) { animation-delay:.2s; }
-.admin-ai-typing span:nth-child(3) { animation-delay:.4s; }
-@keyframes admin-ai-bounce {
-    0%,80%,100% { transform:translateY(0); }
-    40%          { transform:translateY(-6px); }
-}
-
-/* Error bubble */
-.admin-ai-error {
-    background:#fef2f2;
-    border:1px solid #fecaca;
-    color:#dc2626;
-    border-radius:10px;
-    padding:8px 12px;
-    font-size:12.5px;
-}
-
-/* Input area */
-.admin-ai-input-area {
-    display:flex;
-    align-items:flex-end;
-    gap:8px;
-    padding:12px 14px;
-    border-top:1px solid #e5e7eb;
-    background:#fafafa;
-    flex-shrink:0;
-}
-.admin-ai-input {
-    flex:1;
-    resize:none;
-    border:1.5px solid #e5e7eb;
-    border-radius:12px;
-    padding:9px 12px;
-    font-size:13.5px;
-    font-family:inherit;
-    outline:none;
-    background:#fff;
-    max-height:100px;
-    overflow-y:auto;
-    transition:border-color .2s;
-    line-height:1.4;
-}
-.admin-ai-input:focus { border-color:#7c3aed; }
-.admin-ai-input:disabled { background:#f3f4f6; }
-.admin-ai-send-btn {
-    width:38px; height:38px; flex-shrink:0;
-    border-radius:50%;
-    background:linear-gradient(135deg,#4f46e5,#7c3aed);
-    color:white;
-    border:none;
-    cursor:pointer;
-    font-size:16px;
-    display:flex;
-    align-items:center;
-    justify-content:center;
-    transition:transform .15s, opacity .15s;
-}
-.admin-ai-send-btn:hover   { transform:scale(1.1); }
-.admin-ai-send-btn:disabled { opacity:.4; cursor:not-allowed; transform:none; }
-
-/* Dark mode compatibility (Filament dark) */
-@media (prefers-color-scheme:dark) {
-    .admin-ai-modal    { background:#1f2937; color:#f9fafb; }
-    .admin-ai-input    { background:#111827; color:#f9fafb; border-color:#374151; }
-    .admin-ai-input-area { background:#111827; border-color:#374151; }
-    .admin-ai-bubble--assistant { background:#374151; color:#f3f4f6; }
-    .admin-ai-messages::-webkit-scrollbar-thumb { background:#4b5563; }
-    .admin-ai-chip     { background:#312e81; color:#c4b5fd; }
-    .admin-ai-chip:hover { background:#3730a3; }
-    .admin-ai-welcome  { color:#9ca3af; }
-    .admin-ai-welcome strong { color:#e5e7eb; }
-}
-
-/* Mobile */
-@media (max-width:480px) {
-    .admin-ai-modal  { width:calc(100vw - 40px); right:0; max-height:70vh; }
-    .admin-ai-widget { bottom:16px; right:16px; }
-}
+#aai-messages::-webkit-scrollbar      { width: 3px; }
+#aai-messages::-webkit-scrollbar-thumb { background: #d1d5db; border-radius: 4px; }
 </style>
 
-{{-- ── Script ───────────────────────────────────────────────── --}}
+{{-- ── JavaScript ───────────────────────────────────────────── --}}
 <script>
 (function () {
-    const CHAT_ENDPOINT = '{{ route("admin.ai.chat") }}';
-    const CSRF_TOKEN    = '{{ csrf_token() }}';
+    /* ── Config ─────────────────────────────────────────────── */
+    const ENDPOINT   = '{{ $chatUrl }}';
+    const CSRF_TOKEN = document.querySelector('meta[name="csrf-token"]')?.content
+                    ?? '{{ csrf_token() }}';  // fallback jika meta tag belum ada
 
     let isOpen    = false;
     let isLoading = false;
     let ttsOn     = true;
 
-    const adminAI = {
-        /* ── Toggle modal ────────────────────── */
+    /* ── Helpers ─────────────────────────────────────────────── */
+    const $  = (id) => document.getElementById(id);
+    const esc = (t) => t.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/\n/g,'<br>');
+
+    function renderMd(text) {
+        // Gunakan marked.js jika tersedia (dimuat di kiosk blade), fallback ke mini-render
+        if (window.marked) {
+            try { return marked.parse(text); } catch (_) {}
+        }
+        return text
+            .replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')
+            .replace(/\*\*(.+?)\*\*/g,'<strong>$1</strong>')
+            .replace(/\*(.+?)\*/g,'<em>$1</em>')
+            .replace(/`(.+?)`/g,'<code class="bg-gray-100 dark:bg-gray-700 px-1 rounded text-xs">$1</code>')
+            .replace(/\n/g,'<br>');
+    }
+
+    function scrollBottom() {
+        const el = $('aai-messages');
+        if (el) setTimeout(() => { el.scrollTop = el.scrollHeight; }, 25);
+    }
+
+    /* ── Bubble Factories ────────────────────────────────────── */
+    function bubbleUser(text) {
+        const row = document.createElement('div');
+        row.className = 'flex justify-end items-end gap-2';
+        row.innerHTML = `
+            <div class="max-w-[78%] bg-gradient-to-br from-indigo-600 to-violet-600 text-white rounded-2xl rounded-br-sm px-3.5 py-2.5 text-[13px] leading-snug break-words">${esc(text)}</div>
+            <span class="text-lg flex-shrink-0">👤</span>`;
+        return row;
+    }
+
+    function bubbleAssistant(text) {
+        const row = document.createElement('div');
+        row.className = 'flex justify-start items-end gap-2';
+        row.innerHTML = `
+            <span class="text-lg flex-shrink-0">🤖</span>
+            <div class="max-w-[78%] bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-gray-100 rounded-2xl rounded-bl-sm px-3.5 py-2.5 text-[13px] leading-snug break-words prose-sm dark:prose-invert">${renderMd(text)}</div>`;
+        return row;
+    }
+
+    function bubbleTyping() {
+        const row = document.createElement('div');
+        row.className = 'flex justify-start items-end gap-2';
+        row.id = 'aai-typing';
+        row.innerHTML = `
+            <span class="text-lg">🤖</span>
+            <div class="bg-gray-100 dark:bg-gray-700 rounded-2xl rounded-bl-sm px-4 py-3 flex gap-1.5 items-center">
+                <span class="w-1.5 h-1.5 rounded-full bg-gray-400 animate-bounce" style="animation-delay:0s"></span>
+                <span class="w-1.5 h-1.5 rounded-full bg-gray-400 animate-bounce" style="animation-delay:.18s"></span>
+                <span class="w-1.5 h-1.5 rounded-full bg-gray-400 animate-bounce" style="animation-delay:.36s"></span>
+            </div>`;
+        return row;
+    }
+
+    function bubbleError(msg) {
+        const el = document.createElement('div');
+        el.className = 'text-[12px] text-red-600 dark:text-red-400 bg-red-50 dark:bg-red-900/30 border border-red-200 dark:border-red-700 rounded-xl px-3 py-2';
+        el.textContent = '⚠️ ' + msg;
+        return el;
+    }
+
+    /* ── TTS ─────────────────────────────────────────────────── */
+    function speakText(text) {
+        if (!('speechSynthesis' in window)) return;
+        window.speechSynthesis.cancel();
+        const plain = text.replace(/[*_`#>~\-|]+/g,'').replace(/\n+/g,'. ').trim();
+        const utt   = new SpeechSynthesisUtterance(plain);
+        utt.lang    = 'id-ID';
+        utt.rate    = 1.0;
+        utt.pitch   = 1.0;
+        const voices = window.speechSynthesis.getVoices();
+        const voice  = voices.find(v => v.lang === 'id-ID' || v.name.includes('Indonesia'));
+        if (voice) utt.voice = voice;
+        window.speechSynthesis.speak(utt);
+    }
+
+    if ('speechSynthesis' in window) {
+        window.speechSynthesis.getVoices();
+        window.speechSynthesis.onvoiceschanged = () => window.speechSynthesis.getVoices();
+    }
+
+    /* ── Main UI Object ──────────────────────────────────────── */
+    const aaiUI = {
+
         toggle() {
             isOpen = !isOpen;
-            const modal = document.getElementById('admin-ai-modal');
-            const icon  = document.getElementById('admin-ai-fab-icon');
+            const panel = $('aai-panel');
+            const icon  = $('aai-fab-icon');
+            const fab   = $('aai-fab');
+
             if (isOpen) {
-                modal.style.display = 'flex';
-                modal.style.flexDirection = 'column';
+                panel.classList.remove('hidden');
+                panel.classList.add('flex', 'flex-col');
                 icon.textContent = '✕';
-                setTimeout(() => document.getElementById('admin-ai-input')?.focus(), 150);
-                this.scrollToBottom();
+                fab.style.animation = 'none';
+                setTimeout(() => $('aai-input')?.focus(), 160);
+                scrollBottom();
             } else {
-                modal.style.display = 'none';
+                panel.classList.add('hidden');
+                panel.classList.remove('flex', 'flex-col');
                 icon.textContent = '🤖';
+                fab.style.animation = 'aaiPulse 2.8s infinite';
                 window.speechSynthesis?.cancel();
             }
         },
 
-        /* ── Send via suggestion chip ────────── */
-        sendSuggestion(btn) {
-            const text = btn.textContent.trim();
-            document.getElementById('admin-ai-input').value = text;
+        suggest(btn) {
+            $('aai-input').value = btn.textContent.trim();
             this.send();
         },
 
-        /* ── Send message ────────────────────── */
         async send() {
             if (isLoading) return;
-            const input  = document.getElementById('admin-ai-input');
+            const input   = $('aai-input');
+            const sendBtn = $('aai-send-btn');
             const message = input.value.trim();
             if (!message) return;
 
+            // Clear input
             input.value = '';
             input.style.height = 'auto';
-            input.disabled = true;
-            document.getElementById('admin-ai-send-btn').disabled = true;
-            isLoading = true;
+            input.disabled  = true;
+            sendBtn.disabled = true;
+            isLoading        = true;
 
-            // Remove welcome screen
-            const welcome = document.querySelector('.admin-ai-welcome');
-            if (welcome) welcome.remove();
+            // Remove welcome screen on first message
+            $('aai-welcome')?.remove();
 
-            // Append user bubble
-            this.appendBubble('user', message);
-
-            // Show typing indicator
-            const typingEl = this.showTyping();
+            const msgArea = $('aai-messages');
+            msgArea.appendChild(bubbleUser(message));
+            const typing = bubbleTyping();
+            msgArea.appendChild(typing);
+            scrollBottom();
 
             try {
-                const res = await fetch(CHAT_ENDPOINT, {
+                const res = await fetch(ENDPOINT, {
                     method: 'POST',
                     headers: {
-                        'Content-Type': 'application/json',
-                        'Accept':       'application/json',
-                        'X-CSRF-TOKEN': CSRF_TOKEN,
+                        'Content-Type' : 'application/json',
+                        'Accept'       : 'application/json',
+                        'X-CSRF-TOKEN' : CSRF_TOKEN,
                     },
                     body: JSON.stringify({ message }),
                 });
 
-                typingEl.remove();
-
+                typing.remove();
                 const data = await res.json();
 
                 if (res.ok && data.reply) {
-                    this.appendBubble('assistant', data.reply);
-                    // TTS: strip markdown sebelum dibacakan
-                    if (ttsOn) {
-                        const plain = data.reply
-                            .replace(/[*_`#>~\-|]+/g, '')
-                            .replace(/\n+/g, '. ')
-                            .trim();
-                        this.speak(plain);
-                    }
+                    msgArea.appendChild(bubbleAssistant(data.reply));
+                    if (ttsOn) speakText(data.reply);
                 } else {
-                    const errMsg = data.error ?? 'Terjadi kesalahan. Coba lagi.';
-                    this.appendError(errMsg);
+                    msgArea.appendChild(bubbleError(data.error ?? 'Terjadi kesalahan, coba lagi.'));
                 }
             } catch (err) {
-                typingEl.remove();
-                this.appendError('Koneksi gagal: ' + err.message);
+                typing.remove();
+                $('aai-messages').appendChild(bubbleError('Koneksi gagal: ' + err.message));
             } finally {
-                isLoading = false;
-                input.disabled = false;
-                document.getElementById('admin-ai-send-btn').disabled = false;
+                isLoading        = false;
+                input.disabled   = false;
+                sendBtn.disabled = false;
                 input.focus();
+                scrollBottom();
             }
         },
 
-        /* ── DOM helpers ─────────────────────── */
-        appendBubble(role, text) {
-            const messages = document.getElementById('admin-ai-messages');
-            const row = document.createElement('div');
-            row.className = `admin-ai-msg-row admin-ai-msg-row--${role}`;
-
-            if (role === 'assistant') {
-                row.innerHTML = `
-                    <span class="admin-ai-avatar">🤖</span>
-                    <div class="admin-ai-bubble admin-ai-bubble--assistant">${this.renderMarkdown(text)}</div>`;
-            } else {
-                row.innerHTML = `
-                    <div class="admin-ai-bubble admin-ai-bubble--user">${this.escapeHtml(text)}</div>
-                    <span class="admin-ai-avatar">👤</span>`;
-            }
-
-            messages.appendChild(row);
-            this.scrollToBottom();
-        },
-
-        appendError(msg) {
-            const messages = document.getElementById('admin-ai-messages');
-            const el = document.createElement('div');
-            el.className = 'admin-ai-error';
-            el.textContent = '⚠️ ' + msg;
-            messages.appendChild(el);
-            this.scrollToBottom();
-        },
-
-        showTyping() {
-            const messages = document.getElementById('admin-ai-messages');
-            const row = document.createElement('div');
-            row.className = 'admin-ai-msg-row admin-ai-msg-row--assistant';
-            row.innerHTML = `
-                <span class="admin-ai-avatar">🤖</span>
-                <div class="admin-ai-bubble admin-ai-bubble--assistant admin-ai-typing">
-                    <span></span><span></span><span></span>
-                </div>`;
-            messages.appendChild(row);
-            this.scrollToBottom();
-            return row;
-        },
-
-        scrollToBottom() {
-            const el = document.getElementById('admin-ai-messages');
-            if (el) setTimeout(() => { el.scrollTop = el.scrollHeight; }, 30);
-        },
-
-        clearHistory() {
-            const messages = document.getElementById('admin-ai-messages');
-            messages.innerHTML = `
-                <div class="admin-ai-welcome">
-                    <div class="admin-ai-welcome-icon">👋</div>
-                    <p>Riwayat dihapus. Ada yang bisa saya bantu?</p>
-                    <div class="admin-ai-suggestions">
-                        <button class="admin-ai-chip" onclick="adminAI.sendSuggestion(this)">Siapa yang sedang check-in?</button>
-                        <button class="admin-ai-chip" onclick="adminAI.sendSuggestion(this)">Statistik hari ini</button>
-                        <button class="admin-ai-chip" onclick="adminAI.sendSuggestion(this)">Berapa tamu aktif sekarang?</button>
-                    </div>
-                </div>`;
-            window.speechSynthesis?.cancel();
-        },
-
-        /* ── Markdown renderer (lite) ─────────── */
-        renderMarkdown(text) {
-            if (window.marked) return marked.parse(text);
-            // Fallback: basic formatting
-            return text
-                .replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')
-                .replace(/\*\*(.+?)\*\*/g,'<strong>$1</strong>')
-                .replace(/\*(.+?)\*/g,'<em>$1</em>')
-                .replace(/`(.+?)`/g,'<code>$1</code>')
-                .replace(/\n/g,'<br>');
-        },
-
-        escapeHtml(text) {
-            return text.replace(/&/g,'&amp;').replace(/</g,'&lt;')
-                       .replace(/>/g,'&gt;').replace(/\n/g,'<br>');
-        },
-
-        /* ── TTS ─────────────────────────────── */
         toggleTts() {
             ttsOn = !ttsOn;
-            const btn = document.getElementById('admin-ai-tts-btn');
+            const btn = $('aai-tts-btn');
             btn.textContent = ttsOn ? '🔊' : '🔇';
             btn.title = ttsOn ? 'Matikan suara' : 'Nyalakan suara';
             if (!ttsOn) window.speechSynthesis?.cancel();
         },
 
-        speak(text) {
-            if (!('speechSynthesis' in window)) return;
-            window.speechSynthesis.cancel();
-            const utt   = new SpeechSynthesisUtterance(text);
-            utt.lang    = 'id-ID';
-            utt.rate    = 1.0;
-            utt.pitch   = 1.0;
-            const voices = window.speechSynthesis.getVoices();
-            const voice  = voices.find(v => v.lang === 'id-ID' || v.name.includes('Indonesia'));
-            if (voice) utt.voice = voice;
-            window.speechSynthesis.speak(utt);
+        clearHistory() {
+            const msgArea = $('aai-messages');
+            msgArea.innerHTML = `
+                <div class="flex flex-col items-center text-center text-gray-500 dark:text-gray-400 py-4 gap-2">
+                    <span class="text-4xl">✨</span>
+                    <p class="text-[13px]">Riwayat dihapus. Ada yang bisa saya bantu?</p>
+                    <div class="flex flex-wrap gap-1.5 justify-center mt-1">
+                        <button onclick="aaiUI.suggest(this)" class="aai-chip">Siapa yang sedang check-in?</button>
+                        <button onclick="aaiUI.suggest(this)" class="aai-chip">Statistik hari ini</button>
+                        <button onclick="aaiUI.suggest(this)" class="aai-chip">Berapa tamu aktif?</button>
+                    </div>
+                </div>`;
+            window.speechSynthesis?.cancel();
         },
     };
 
-    // Expose ke global scope
-    window.adminAI = adminAI;
-
-    // Pre-load voices
-    if ('speechSynthesis' in window) {
-        window.speechSynthesis.getVoices();
-        window.speechSynthesis.onvoiceschanged = () => window.speechSynthesis.getVoices();
-    }
+    window.aaiUI = aaiUI;
 })();
 </script>

@@ -33,14 +33,20 @@ class AdminChatController extends Controller
         $userMessage = trim($request->input('message'));
         $adminName   = auth()->user()->name ?? 'Admin';
 
-        // Bangun system prompt + konteks data real-time
-        $dataContext   = $this->aiService->buildContext();
+        // Bangun system prompt dua lapis:
+        // 1. buildContext()   → snapshot statistik real-time (selalu ada)
+        // 2. getDataForAI()   → data spesifik sesuai intent query admin
+        $globalContext  = $this->aiService->buildContext();
+        $specificData   = $this->aiService->getDataForAI($userMessage);
+
         $systemPrompt  = "Kamu adalah VISITA AI Assistant, asisten cerdas untuk panel admin sistem manajemen kunjungan tamu VISITA Enterprise. "
             . "Kamu memiliki akses ke data real-time sistem yang disediakan di bawah ini.\n\n"
             . "Jawab pertanyaan admin secara akurat, ringkas, dan profesional menggunakan Bahasa Indonesia. "
             . "Jika data tidak tersedia, katakan dengan jujur. "
             . "Admin yang bertanya saat ini adalah: {$adminName}.\n\n"
-            . $dataContext;
+            . $globalContext
+            . "\n\n---\nDATA SPESIFIK UNTUK PERTANYAAN INI:\n"
+            . $specificData;
 
         try {
             $model  = config('services.gemini.model', 'gemini-2.0-flash');
