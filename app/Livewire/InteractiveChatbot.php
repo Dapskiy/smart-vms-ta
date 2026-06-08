@@ -78,10 +78,15 @@ class InteractiveChatbot extends Component
 
             if ($response->successful()) {
                 $reply = $response->json('candidates.0.content.parts.0.text', '...');
+                $cleanReply = trim($reply);
                 $this->messages[] = [
                     'role'    => 'assistant',
-                    'content' => trim($reply),
+                    'content' => $cleanReply,
                 ];
+
+                // Kirim event ke browser agar TTS membacakan balasan AI
+                $plainText = strip_tags(preg_replace('/[#*_`~>\-|]/', '', $cleanReply));
+                $this->dispatch('chatbot-speak', text: $plainText);
             } elseif ($response->status() === 429) {
                 $this->error = 'Permintaan terlalu banyak. Tunggu sebentar lalu coba lagi. (Rate limit)';
             } else {
@@ -95,6 +100,7 @@ class InteractiveChatbot extends Component
 
         // Scroll ke bawah setelah respons masuk
         $this->dispatch('chatbot-scrolled');
+        // Note: 'chatbot-speak' sudah di-dispatch di atas saat respons sukses
     }
 
     /**

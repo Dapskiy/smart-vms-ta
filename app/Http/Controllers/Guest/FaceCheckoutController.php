@@ -28,13 +28,25 @@ class FaceCheckoutController extends Controller
         $bestDistance = PHP_FLOAT_MAX;
 
         foreach ($visitors as $visitor) {
-            $stored = json_decode($visitor->face_features, true);
-            if (!is_array($stored) || count($stored) !== count($incoming)) continue;
+            $stored = $visitor->face_features ?? [];
+            if (!is_array($stored)) continue;
 
-            $distance = $this->euclideanDistance($incoming, $stored);
-            if ($distance < $bestDistance) {
-                $bestDistance = $distance;
-                $bestMatch    = $visitor;
+            // Backwards compatibility for single descriptor array
+            if (isset($stored[0]) && !is_array($stored[0])) {
+                $stored = [$stored];
+            }
+
+            foreach ($stored as $descriptor) {
+                if (!is_array($descriptor) || count($descriptor) !== count($incoming)) {
+                    continue;
+                }
+
+                $distance = $this->euclideanDistance($incoming, $descriptor);
+
+                if ($distance < $bestDistance) {
+                    $bestDistance = $distance;
+                    $bestMatch    = $visitor;
+                }
             }
         }
 

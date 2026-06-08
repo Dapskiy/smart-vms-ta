@@ -2,14 +2,22 @@
     class="chatbot-wrapper"
     x-data="{
         open: false,
+        ttsEnabled: true,
         scrollToBottom() {
             this.$nextTick(() => {
                 const el = document.getElementById('chat-messages');
                 if (el) el.scrollTop = el.scrollHeight;
             });
+        },
+        toggleTts() {
+            this.ttsEnabled = !this.ttsEnabled;
+            if (!this.ttsEnabled) {
+                window.speechSynthesis.cancel();
+            }
         }
     }"
     x-on:chatbot-scrolled.window="scrollToBottom()"
+    x-on:chatbot-speak.window="if (ttsEnabled) { window.speakText($event.detail.text); }"
 >
     {{-- ── Toggle Button ─────────────────────────── --}}
     <button
@@ -41,6 +49,14 @@
                 <div class="chatbot-header-title">VISITA Assistant</div>
                 <div class="chatbot-header-sub">AI · Selalu siap membantu</div>
             </div>
+            <button
+                @click="toggleTts()"
+                class="chatbot-tts-btn"
+                :title="ttsEnabled ? 'Matikan suara AI' : 'Nyalakan suara AI'"
+            >
+                <span x-show="ttsEnabled">🔊</span>
+                <span x-show="!ttsEnabled">🔇</span>
+            </button>
             <button
                 wire:click="clearHistory"
                 class="chatbot-clear-btn"
@@ -126,6 +142,41 @@
         if (window.marked) {
             marked.setOptions({ breaks: true, gfm: true });
         }
+
+        /**
+         * Text-to-Speech: Membacakan balasan AI menggunakan Web Speech API
+         */
+        function speakText(text) {
+            if (!('speechSynthesis' in window)) {
+                console.warn('Fitur Text-to-Speech tidak didukung di browser ini.');
+                return;
+            }
+
+            // Hentikan suara AI jika sedang berbicara
+            window.speechSynthesis.cancel();
+
+            const utterance = new SpeechSynthesisUtterance(text);
+            utterance.lang  = 'id-ID';  // Bahasa Indonesia
+            utterance.rate  = 1.0;      // Kecepatan bicara normal
+            utterance.pitch = 1.0;      // Nada normal
+
+            // Pilih suara Indonesia jika tersedia di browser
+            const voices = window.speechSynthesis.getVoices();
+            const indoVoice = voices.find(v => v.lang === 'id-ID' || v.name.includes('Indonesia'));
+            if (indoVoice) {
+                utterance.voice = indoVoice;
+            }
+
+            window.speechSynthesis.speak(utterance);
+        }
+
+        // Pre-load daftar suara (beberapa browser memuat secara async)
+        if ('speechSynthesis' in window) {
+            window.speechSynthesis.getVoices();
+            window.speechSynthesis.onvoiceschanged = () => {
+                window.speechSynthesis.getVoices();
+            };
+        }
     </script>
 
     {{-- Inline styles --}}
@@ -194,6 +245,7 @@
 .chatbot-header-avatar { font-size: 26px; }
 .chatbot-header-title  { font-weight: 600; font-size: 15px; }
 .chatbot-header-sub    { font-size: 11px; opacity: .8; }
+.chatbot-tts-btn,
 .chatbot-clear-btn {
     margin-left: auto;
     background: rgba(255,255,255,.15);
@@ -205,6 +257,9 @@
     color: white;
     transition: background .2s;
 }
+.chatbot-tts-btn { margin-left: auto; }
+.chatbot-clear-btn { margin-left: 4px; }
+.chatbot-tts-btn:hover,
 .chatbot-clear-btn:hover { background: rgba(255,255,255,.28); }
 
 /* Messages */

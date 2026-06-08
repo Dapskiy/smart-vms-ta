@@ -12,6 +12,11 @@ class Visitor extends Model
 
     protected $guarded = [];
 
+    protected $casts = [
+        'face_features' => 'encrypted:array',
+        'face_photo' => 'encrypted:array',
+    ];
+
     public function appointments(): HasMany
     {
         return $this->hasMany(Appointment::class);

@@ -38,7 +38,7 @@ class FaceValidationController extends Controller
                 continue;
             }
 
-            $stored = json_decode($visitor->face_features, true);
+            $stored = $visitor->face_features ?? [];
             if (!is_array($stored)) continue;
 
             // Backwards compatibility for single descriptor array
@@ -47,11 +47,7 @@ class FaceValidationController extends Controller
             }
 
             foreach ($stored as $descriptor) {
-                // Format lama: elemen bisa berupa string JSON
-                if (is_string($descriptor)) {
-                    $descriptor = json_decode($descriptor, true) ?? [];
-                }
-                if (count($descriptor) !== count($incoming)) continue;
+                if (!is_array($descriptor) || count($descriptor) !== count($incoming)) continue;
 
                 $distance = $this->euclideanDistance($incoming, $descriptor);
                 if ($distance < $bestDistance) {

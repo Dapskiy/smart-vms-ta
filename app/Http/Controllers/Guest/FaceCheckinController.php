@@ -6,7 +6,6 @@ use App\Http\Controllers\Controller;
 use App\Models\Appointment;
 use App\Models\Visitor;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Crypt;
 use Illuminate\Support\Facades\Log;
 
 class FaceCheckinController extends Controller
@@ -33,7 +32,7 @@ class FaceCheckinController extends Controller
         $threshold     = 0.5; // Euclidean distance threshold
 
         foreach ($visitors as $visitor) {
-            $stored = json_decode($visitor->face_features, true);
+            $stored = $visitor->face_features ?? [];
             if (!is_array($stored)) continue;
 
             // Backwards compatibility for single descriptor array
@@ -42,11 +41,7 @@ class FaceCheckinController extends Controller
             }
 
             foreach ($stored as $descriptor) {
-                // Format lama: elemen bisa berupa string JSON
-                if (is_string($descriptor)) {
-                    $descriptor = json_decode($descriptor, true) ?? [];
-                }
-                if (count($descriptor) !== count($incomingDescriptor)) {
+                if (!is_array($descriptor) || count($descriptor) !== count($incomingDescriptor)) {
                     continue;
                 }
 
@@ -66,37 +61,27 @@ class FaceCheckinController extends Controller
             ], 404);
         }
 
-        // Simpan foto wajah terenkripsi jika dikirim
+        // Simpan foto wajah & descriptor jika dikirim
         if ($request->filled('face_photo')) {
             try {
-                $existingPhotos = [];
-                if (!empty($bestMatch->face_photo)) {
-                    $decoded = json_decode($bestMatch->face_photo, true);
-                    if (is_array($decoded)) {
-                        $existingPhotos = $decoded;
-                    } else {
-                        $existingPhotos = [$bestMatch->face_photo];
-                    }
-                }
+                $existingPhotos = is_array($bestMatch->face_photo) ? $bestMatch->face_photo : [];
+                $existingFeatures = is_array($bestMatch->face_features) ? $bestMatch->face_features : [];
 
-                $existingFeatures = [];
-                if (!empty($bestMatch->face_features)) {
-                    $decoded = json_decode($bestMatch->face_features, true);
-                    if (is_array($decoded)) {
-                        $existingFeatures = (isset($decoded[0]) && is_array($decoded[0])) ? $decoded : [$decoded];
-                    }
+                // Backwards compatibility for single descriptor array
+                if (!empty($existingFeatures) && isset($existingFeatures[0]) && !is_array($existingFeatures[0])) {
+                    $existingFeatures = [$existingFeatures];
                 }
 
                 $saveData = [];
 
                 // Maksimal 10 sampel per visitor — jika sudah penuh, tidak ditambah lagi
                 if (count($existingPhotos) < 10) {
-                    $existingPhotos[] = Crypt::encryptString($request->input('face_photo'));
-                    $saveData['face_photo'] = json_encode($existingPhotos);
+                    $existingPhotos[] = $request->input('face_photo');
+                    $saveData['face_photo'] = $existingPhotos;
                 }
                 if (count($existingFeatures) < 10) {
                     $existingFeatures[] = $incomingDescriptor;
-                    $saveData['face_features'] = json_encode($existingFeatures);
+                    $saveData['face_features'] = $existingFeatures;
                 }
 
                 if (!empty($saveData)) {
