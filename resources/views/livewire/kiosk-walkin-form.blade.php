@@ -203,6 +203,36 @@
         <div class="modal-title" style="font-size: 1.25rem; margin-bottom: 1.5rem; text-align: center;">Tujuan Kunjungan</div>
         
         <div class="form-group">
+            <label>Tipe Kunjungan</label>
+            <div style="display: flex; gap: 1rem; background: rgba(0,0,0,0.2); padding: 0.8rem 1rem; border-radius: 8px; border: 1px solid var(--border-subtle);">
+                <label style="display: flex; align-items: center; gap: 0.5rem; color: var(--text-primary); font-weight: normal; cursor: pointer; margin-bottom: 0;">
+                    <input type="radio" wire:model.live="visit_type" value="walk-in" style="accent-color: var(--accent-primary); width: 1.2rem; height: 1.2rem;">
+                    Bertamu Sekarang
+                </label>
+                <label style="display: flex; align-items: center; gap: 0.5rem; color: var(--text-primary); font-weight: normal; cursor: pointer; margin-bottom: 0;">
+                    <input type="radio" wire:model.live="visit_type" value="appointment" style="accent-color: var(--accent-primary); width: 1.2rem; height: 1.2rem;">
+                    Buat Janji (Hari Lain)
+                </label>
+            </div>
+            @error('visit_type') <span class="text-danger">{{ $message }}</span> @enderror
+        </div>
+
+        @if($visit_type === 'appointment')
+            <div style="display: flex; gap: 1rem; margin-bottom: 1.25rem;">
+                <div class="form-group" style="flex: 1; margin-bottom: 0;">
+                    <label>Tanggal Kunjungan</label>
+                    <input type="date" wire:model="visit_date" class="form-control" style="color-scheme: dark;">
+                    @error('visit_date') <span class="text-danger">{{ $message }}</span> @enderror
+                </div>
+                <div class="form-group" style="flex: 1; margin-bottom: 0;">
+                    <label>Jam</label>
+                    <input type="time" wire:model="visit_time" class="form-control" style="color-scheme: dark;">
+                    @error('visit_time') <span class="text-danger">{{ $message }}</span> @enderror
+                </div>
+            </div>
+        @endif
+
+        <div class="form-group">
             <label>Departemen Tujuan</label>
             <select wire:model.live="department_id" class="form-control">
                 <option value="">-- Pilih Departemen --</option>

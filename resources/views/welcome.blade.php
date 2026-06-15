@@ -953,6 +953,24 @@
             }, 10000);
         });
 
+        // Event listener for Appointment scheduling success
+        document.addEventListener('appointment-success', function (e) {
+            closeWalkinForm();
+            const data = e.detail;
+            document.getElementById('co-modal-title').textContent = 'Janji Temu Dibuat';
+            document.getElementById('co-modal-sub').textContent = 'Menunggu konfirmasi dari karyawan. Token/Tiket akan dikirimkan.';
+            document.getElementById('co-si-name').textContent = data.visitorName || '-';
+            document.getElementById('co-si-company').textContent = '-';
+            document.getElementById('co-si-pic').textContent = data.picName || '-';
+            document.getElementById('co-si-time').textContent = new Date().toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' });
+            
+            document.getElementById('modal-checkout').classList.add('active');
+            
+            setTimeout(() => {
+                document.getElementById('modal-checkout').classList.remove('active');
+            }, 10000);
+        });
+
         /* -------------------------------------------------------
            FACE SCAN MODAL
         ------------------------------------------------------- */

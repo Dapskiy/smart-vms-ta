@@ -19,6 +19,11 @@ class KioskWalkinForm extends Component
     public $purpose = '';
     public $pax = 1;
     
+    // Visit type fields
+    public $visit_type = 'walk-in'; // 'walk-in' atau 'appointment'
+    public $visit_date = '';
+    public $visit_time = '';
+    
     // Selection fields
     public $department_id = null;
     public $search_pic = '';
@@ -133,11 +138,19 @@ class KioskWalkinForm extends Component
 
     public function submit()
     {
-        $this->validate([
+        $rules = [
             'department_id' => 'required|exists:departments,id',
             'selected_pic_id' => 'required|exists:pics,id',
             'purpose' => 'required|string',
-        ], [
+            'visit_type' => 'required|in:walk-in,appointment',
+        ];
+
+        if ($this->visit_type === 'appointment') {
+            $rules['visit_date'] = 'required|date|after_or_equal:today';
+            $rules['visit_time'] = 'required|date_format:H:i';
+        }
+
+        $this->validate($rules, [
             'selected_pic_id.required' => 'Pilih karyawan yang akan dituju dari hasil pencarian.'
         ]);
 
@@ -157,24 +170,31 @@ class KioskWalkinForm extends Component
             return;
         }
 
-        // 2. Buat Appointment Walk-in
+        // 2. Buat Appointment
+        $isWalkIn = $this->visit_type === 'walk-in';
+        
         Appointment::create([
             'visit_id' => VisitIdService::generate(),
             'visitor_id' => $visitor->id,
             'pic_id' => $this->selected_pic_id,
-            'type' => 'walk-in',
-            'status' => 'active', // Langsung active karena walk-in
-            'visit_date' => now()->toDateString(),
+            'type' => $this->visit_type,
+            'status' => $isWalkIn ? 'active' : 'pending', 
+            'visit_date' => $isWalkIn ? now()->toDateString() : $this->visit_date,
+            'visit_time' => $isWalkIn ? now()->toTimeString() : $this->visit_time,
             'purpose' => $this->purpose,
             'pax' => $this->pax,
             'token' => Str::random(10),
-            'check_in_time' => now(), // Karena walk-in, otomatis dianggap check-in
+            'check_in_time' => $isWalkIn ? now() : null,
         ]);
 
         // 3. Dispatch event agar UI Modal berubah sukses
-        $this->dispatch('walkin-success', visitorName: $this->name, picName: $this->selected_pic_name);
+        if ($isWalkIn) {
+            $this->dispatch('walkin-success', visitorName: $this->name, picName: $this->selected_pic_name);
+        } else {
+            $this->dispatch('appointment-success', visitorName: $this->name, picName: $this->selected_pic_name);
+        }
         
-        $this->reset(['name', 'company', 'phone', 'purpose', 'pax', 'department_id', 'search_pic', 'selected_pic_id', 'selected_pic_name', 'step', 'pic_results']);
+        $this->reset(['name', 'company', 'phone', 'purpose', 'pax', 'department_id', 'search_pic', 'selected_pic_id', 'selected_pic_name', 'step', 'pic_results', 'visit_type', 'visit_date', 'visit_time']);
     }
 
     public function render()
