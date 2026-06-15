@@ -910,7 +910,7 @@
             if (type === 'appointment') {
                 openMethodPicker();
             } else {
-                alert('Fitur Form Registrasi akan segera hadir!');
+                openWalkinForm();
             }
         }
 
@@ -923,6 +923,35 @@
         function closeMethodPicker() {
             document.getElementById('modal-method').classList.remove('active');
         }
+
+        /* -------------------------------------------------------
+           WALKIN REGISTRATION MODAL
+        ------------------------------------------------------- */
+        function openWalkinForm() {
+            document.getElementById('modal-walkin').classList.add('active');
+        }
+        function closeWalkinForm() {
+            document.getElementById('modal-walkin').classList.remove('active');
+        }
+
+        // Event listener for Walk-in success
+        document.addEventListener('walkin-success', function (e) {
+            closeWalkinForm();
+            const data = e.detail;
+            document.getElementById('co-modal-title').textContent = 'Registrasi Berhasil';
+            document.getElementById('co-modal-sub').textContent = 'Silakan masuk dan melapor ke pos keamanan';
+            document.getElementById('co-si-name').textContent = data.visitorName || '-';
+            document.getElementById('co-si-company').textContent = '-';
+            document.getElementById('co-si-pic').textContent = data.picName || '-';
+            document.getElementById('co-si-time').textContent = new Date().toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' });
+            
+            document.getElementById('modal-checkout').classList.add('active');
+            
+            // Auto close success modal after 10 seconds
+            setTimeout(() => {
+                document.getElementById('modal-checkout').classList.remove('active');
+            }, 10000);
+        });
 
         /* -------------------------------------------------------
            FACE SCAN MODAL
@@ -1305,6 +1334,14 @@
                 </div>
                 <div class="mb-text"><strong>Scan Wajah</strong><span>Untuk tamu yang pernah check-in sebelumnya</span></div>
             </button>
+        </div>
+    </div>
+
+    <!-- ===== MODAL: WALKIN FORM ===== -->
+    <div id="modal-walkin" class="modal-overlay">
+        <div class="modal-box" style="max-width: 500px; max-height: 90vh; overflow-y: auto;">
+            <button class="modal-close" onclick="closeWalkinForm()">✕</button>
+            @livewire('kiosk-walkin-form')
         </div>
     </div>
 
