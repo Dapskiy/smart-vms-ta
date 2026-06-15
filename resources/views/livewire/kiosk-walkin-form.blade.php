@@ -232,7 +232,7 @@
                 @if($is_searching)
                     <div style="font-size: 0.8rem; color: var(--text-secondary); margin-top: 0.5rem;">Mencari...</div>
                 @elseif(strlen($search_pic) >= 2)
-                    @if(count($pic_results) > 0)
+                    @if($search_status === 'found')
                         <div class="pic-search-results">
                             @foreach($pic_results as $pic)
                                 <div class="pic-result-item" wire:click="selectPic({{ $pic['id'] }}, '{{ addslashes($pic['name']) }}')">
@@ -241,7 +241,11 @@
                                 </div>
                             @endforeach
                         </div>
-                    @else
+                    @elseif($search_status === 'typing')
+                        <div style="font-size: 0.85rem; color: var(--text-secondary); margin-top: 0.5rem; font-style: italic;">
+                            Teruskan mengetik nama karyawan secara spesifik...
+                        </div>
+                    @elseif($search_status === 'not_found')
                         <div style="font-size: 0.85rem; color: var(--accent-gold); margin-top: 0.5rem; padding: 0.5rem; background: rgba(251, 191, 36, 0.1); border-radius: 4px;">
                             Mohon maaf, nama karyawan tidak ditemukan pada departemen tersebut. Silakan hubungi Resepsionis.
                         </div>

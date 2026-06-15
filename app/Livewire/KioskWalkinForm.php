@@ -29,6 +29,7 @@ class KioskWalkinForm extends Component
     public $step = 1;
     public $pic_results = [];
     public $is_searching = false;
+    public $search_status = '';
 
     public function updatedDepartmentId()
     {
@@ -39,15 +40,58 @@ class KioskWalkinForm extends Component
     {
         if (strlen($this->search_pic) >= 2 && $this->department_id) {
             $this->is_searching = true;
-            $this->pic_results = Pic::where('department_id', $this->department_id)
+            
+            // Ambil kandidat dari DB menggunakan pencarian LIKE
+            $queryResults = Pic::where('department_id', $this->department_id)
                 ->where('name', 'iLike', '%' . $this->search_pic . '%')
                 ->where('is_available', true)
-                ->limit(5)
+                ->limit(10) // Ambil agak banyak untuk difilter
                 ->get()
                 ->toArray();
+
+            $filteredResults = [];
+            $searchLower = strtolower(trim($this->search_pic));
+            $searchWords = explode(' ', $searchLower);
+            
+            // Cek apakah input mengandung kata kedua dan panjangnya minimal 2 huruf
+            // End() mengambil elemen terakhir dari array (kata terakhir yang diketik)
+            $hasSecondWordMin2Chars = count($searchWords) >= 2 && strlen(end($searchWords)) >= 2;
+
+            foreach ($queryResults as $pic) {
+                $picNameLower = strtolower(trim($pic['name']));
+                $picWords = explode(' ', $picNameLower);
+
+                if (count($picWords) === 1) {
+                    // Jika nama PIC di DB hanya 1 kata, munculkan HANYA jika input persis sama
+                    if ($searchLower === $picNameLower) {
+                        $filteredResults[] = $pic;
+                    }
+                } else {
+                    // Jika nama PIC di DB ada 2 kata atau lebih, 
+                    // WAJIB mengetik spasi + minimal 2 huruf di kata kedua
+                    if ($hasSecondWordMin2Chars) {
+                        $filteredResults[] = $pic;
+                    }
+                }
+            }
+
+            // Batasi 5 untuk UI
+            $this->pic_results = array_slice($filteredResults, 0, 5);
             $this->is_searching = false;
+
+            if (count($this->pic_results) > 0) {
+                $this->search_status = 'found';
+            } elseif (count($queryResults) > 0) {
+                // Ada di DB, tapi ter-filter karena syarat "Nama 1 + 2 Huruf Nama 2" belum terpenuhi
+                $this->search_status = 'typing';
+            } else {
+                // Memang tidak ada sama sekali di DB
+                $this->search_status = 'not_found';
+            }
+
         } else {
             $this->pic_results = [];
+            $this->search_status = '';
         }
     }
 
@@ -57,6 +101,7 @@ class KioskWalkinForm extends Component
         $this->selected_pic_name = $picName;
         $this->search_pic = '';
         $this->pic_results = [];
+        $this->search_status = '';
     }
 
     public function resetPicSelection()
@@ -65,6 +110,7 @@ class KioskWalkinForm extends Component
         $this->selected_pic_name = '';
         $this->search_pic = '';
         $this->pic_results = [];
+        $this->search_status = '';
     }
 
     public function nextStep()
