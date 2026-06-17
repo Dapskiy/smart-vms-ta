@@ -9,6 +9,7 @@ use App\Models\Visitor;
 use App\Models\Appointment;
 use Illuminate\Support\Str;
 use App\Services\VisitIdService;
+use Livewire\Attributes\On;
 
 class KioskWalkinForm extends Component
 {
@@ -154,6 +155,13 @@ class KioskWalkinForm extends Component
             'selected_pic_id.required' => 'Pilih karyawan yang akan dituju dari hasil pencarian.'
         ]);
 
+        // Berhenti di sini, trigger face scan JS di frontend
+        $this->dispatch('trigger-face-scan');
+    }
+
+    #[On('finalizeWalkin')]
+    public function finalizeWalkin($descriptor, $photoBase64)
+    {
         // 1. Simpan/Cari Visitor
         $visitor = Visitor::firstOrCreate(
             ['phone' => $this->phone],
@@ -167,10 +175,52 @@ class KioskWalkinForm extends Component
 
         if ($visitor->is_blacklisted) {
             $this->addError('general', 'Mohon maaf, Anda tidak dapat melanjutkan proses registrasi. Silakan hubungi Resepsionis.');
+            $this->dispatch('walkin-error');
             return;
         }
 
-        // 2. Buat Appointment
+        // 2. Verifikasi Wajah (jika sudah punya)
+        $existingFeatures = is_array($visitor->face_features) ? $visitor->face_features : [];
+        if (!empty($existingFeatures)) {
+            $threshold = 0.4;
+            $bestDistance = 1.0;
+            
+            // Compatibility for old format (single descriptor array)
+            if (isset($existingFeatures[0]) && !is_array($existingFeatures[0])) {
+                $existingFeatures = [$existingFeatures];
+            }
+
+            foreach ($existingFeatures as $storedDescriptor) {
+                $distance = $this->euclideanDistance($storedDescriptor, $descriptor);
+                if ($distance < $bestDistance) {
+                    $bestDistance = $distance;
+                }
+            }
+
+            if ($bestDistance > $threshold) {
+                 $this->addError('general', 'Wajah tidak cocok dengan data pendaftaran sebelumnya.');
+                 $this->dispatch('walkin-error'); 
+                 return;
+            }
+        }
+
+        // 3. Simpan data wajah baru (append max 10)
+        try {
+            $existingPhotos = is_array($visitor->face_photo) ? $visitor->face_photo : [];
+            if (count($existingPhotos) < 10) {
+                $existingPhotos[] = $photoBase64;
+                $visitor->face_photo = $existingPhotos;
+            }
+            if (count($existingFeatures) < 10) {
+                $existingFeatures[] = $descriptor;
+                $visitor->face_features = $existingFeatures;
+            }
+            $visitor->save();
+        } catch (\Exception $e) {
+            // Ignore error log
+        }
+
+        // 4. Buat Appointment
         $isWalkIn = $this->visit_type === 'walk-in';
         
         Appointment::create([
@@ -195,6 +245,16 @@ class KioskWalkinForm extends Component
         }
         
         $this->reset(['name', 'company', 'phone', 'purpose', 'pax', 'department_id', 'search_pic', 'selected_pic_id', 'selected_pic_name', 'step', 'pic_results', 'visit_type', 'visit_date', 'visit_time']);
+    }
+
+    private function euclideanDistance(array $a, array $b): float
+    {
+        $sum = 0.0;
+        foreach ($a as $i => $val) {
+            $diff = $val - ($b[$i] ?? 0);
+            $sum += $diff * $diff;
+        }
+        return sqrt($sum);
     }
 
     public function render()

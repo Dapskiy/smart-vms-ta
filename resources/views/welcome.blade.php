@@ -971,6 +971,16 @@
             }, 10000);
         });
 
+        // Event listeners for Livewire trigger events
+        document.addEventListener('trigger-face-scan', function () {
+            openFaceScan('walkin');
+        });
+
+        document.addEventListener('walkin-error', function () {
+            closeFaceScan();
+            openWalkinForm(); // Kembali ke form walkin untuk melihat error
+        });
+
         /* -------------------------------------------------------
            FACE SCAN MODAL
         ------------------------------------------------------- */
@@ -982,9 +992,15 @@
         let ciPhotoSnapshot    = null; // foto wajah lurus sebelum liveness
         let ciPreparingPhoto   = false; // flag agar capture hanya sekali
         let scanCountdown      = null;
+        let faceScanMode       = 'checkin'; // 'checkin' atau 'walkin'
 
-        async function openFaceScan() {
-            closeMethodPicker();
+        async function openFaceScan(mode = 'checkin') {
+            faceScanMode = mode;
+            if (mode === 'checkin') {
+                closeMethodPicker();
+            } else if (mode === 'walkin') {
+                document.getElementById('modal-walkin').classList.remove('active');
+            }
             document.getElementById('modal-face').classList.add('active');
             setFaceMessage('Memuat Model AI...', 'info');
 
@@ -1124,6 +1140,17 @@
         }
 
         async function submitFaceDescriptor(descriptor) {
+            if (faceScanMode === 'walkin') {
+                // Return data to Livewire component
+                closeFaceScan();
+                Livewire.dispatch('finalizeWalkin', { 
+                    descriptor: Array.from(descriptor), 
+                    photoBase64: ciPhotoSnapshot 
+                });
+                return;
+            }
+
+            // Normal check-in flow via API
             try {
                 const res = await fetch('/kiosk/face-checkin', {
                     method: 'POST',
