@@ -157,12 +157,37 @@
             {{ session('general') }}
         </div>
     @endif
+    
+    @if (session()->has('general_success'))
+        <div style="background: rgba(16, 185, 129, 0.1); border: 1px solid var(--accent-green, #10b981); padding: 1rem; border-radius: 8px; margin-bottom: 1.5rem; color: #fff;">
+            {{ session('general_success') }}
+        </div>
+    @endif
 
-    <div class="step-indicator">
-        <div class="step-dot {{ $step === 1 ? 'active' : '' }}"></div>
-        <div class="step-line"></div>
-        <div class="step-dot {{ $step === 2 ? 'active' : '' }}"></div>
-    </div>
+    @if ($step > 0)
+        <div class="step-indicator">
+            <div class="step-dot {{ $step === 1 ? 'active' : '' }}"></div>
+            <div class="step-line"></div>
+            <div class="step-dot {{ $step === 2 ? 'active' : '' }}"></div>
+        </div>
+    @endif
+
+    @if ($step === 0)
+        <!-- Step 0: Pemilihan Visitor -->
+        <div class="modal-title" style="font-size: 1.25rem; margin-bottom: 0.5rem; text-align: center;">Selamat Datang</div>
+        <p style="text-align: center; color: var(--text-secondary); margin-bottom: 2rem;">Apakah Anda sudah pernah berkunjung ke sini sebelumnya?</p>
+        
+        <div style="display: flex; flex-direction: column; gap: 1rem;">
+            <button type="button" class="btn" style="background: rgba(99, 102, 241, 0.1); border: 1px solid rgba(99, 102, 241, 0.3); color: var(--text-primary); padding: 1.5rem;" wire:click="setReturningVisitor">
+                <div style="font-size: 1.1rem; font-weight: 600; margin-bottom: 0.25rem;">Sudah Pernah Berkunjung</div>
+                <div style="font-size: 0.85rem; color: var(--text-secondary); font-weight: normal;">Gunakan Face Scan untuk isi data otomatis</div>
+            </button>
+            <button type="button" class="btn" style="background: rgba(255, 255, 255, 0.05); border: 1px solid var(--border-subtle); color: var(--text-primary); padding: 1.5rem;" wire:click="setNewVisitor">
+                <div style="font-size: 1.1rem; font-weight: 600; margin-bottom: 0.25rem;">Belum Pernah Berkunjung</div>
+                <div style="font-size: 0.85rem; color: var(--text-secondary); font-weight: normal;">Isi form data diri dan daftar wajah baru</div>
+            </button>
+        </div>
+    @endif
 
     @if ($step === 1)
         <!-- Step 1: Data Diri Tamu -->

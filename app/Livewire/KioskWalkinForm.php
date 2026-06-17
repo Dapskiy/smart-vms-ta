@@ -32,10 +32,66 @@ class KioskWalkinForm extends Component
     public $selected_pic_name = '';
 
     // UI state
-    public $step = 1;
+    public $step = 0; // 0: Pilihan, 1: Data Diri, 2: Tujuan
     public $pic_results = [];
     public $is_searching = false;
     public $search_status = '';
+    
+    // Auto-fill state
+    public $is_verified_returning = false;
+    public $verified_visitor_id = null;
+
+    public function setNewVisitor()
+    {
+        $this->step = 1;
+        $this->is_verified_returning = false;
+        $this->verified_visitor_id = null;
+    }
+
+    public function setReturningVisitor()
+    {
+        $this->dispatch('trigger-face-search');
+    }
+
+    #[On('findVisitorByFace')]
+    public function findVisitorByFace($descriptor)
+    {
+        $visitors = Visitor::whereNotNull('face_features')->get();
+        $bestMatch = null;
+        $bestDistance = 1.0;
+        $threshold = 0.5;
+
+        foreach ($visitors as $visitor) {
+            $stored = $visitor->face_features ?? [];
+            if (!is_array($stored)) continue;
+            if (isset($stored[0]) && !is_array($stored[0])) $stored = [$stored];
+
+            foreach ($stored as $storedDescriptor) {
+                $dist = $this->euclideanDistance($storedDescriptor, $descriptor);
+                if ($dist < $bestDistance) {
+                    $bestDistance = $dist;
+                    $bestMatch = $visitor;
+                }
+            }
+        }
+
+        if ($bestMatch && $bestDistance <= $threshold) {
+            $this->name = $bestMatch->name;
+            $this->company = $bestMatch->company;
+            $this->phone = $bestMatch->phone;
+            $this->verified_visitor_id = $bestMatch->id;
+            $this->is_verified_returning = true;
+            
+            $this->step = 2; // Lompat ke tujuan
+            $this->dispatch('walkin-form-reopen'); // Buka modal kembali
+            session()->flash('general_success', 'Selamat datang kembali, ' . $this->name . '!');
+        } else {
+            $this->step = 1; // Paksa jadi tamu baru
+            $this->is_verified_returning = false;
+            $this->dispatch('walkin-form-reopen');
+            $this->addError('general', 'Wajah tidak dikenali. Silakan mendaftar sebagai tamu baru.');
+        }
+    }
 
     public function updatedDepartmentId()
     {
@@ -155,8 +211,22 @@ class KioskWalkinForm extends Component
             'selected_pic_id.required' => 'Pilih karyawan yang akan dituju dari hasil pencarian.'
         ]);
 
-        // Berhenti di sini, trigger face scan JS di frontend
-        $this->dispatch('trigger-face-scan');
+        if ($this->is_verified_returning && $this->verified_visitor_id) {
+            $visitor = Visitor::find($this->verified_visitor_id);
+            if ($visitor && $visitor->is_blacklisted) {
+                $this->addError('general', 'Mohon maaf, Anda tidak dapat melanjutkan proses registrasi. Silakan hubungi Resepsionis.');
+                return;
+            }
+            if ($visitor) {
+                // Update data jika ada perubahan di backend (opsional, karena form step 1 dilompati)
+                $this->createAppointmentRecord($visitor);
+            } else {
+                $this->addError('general', 'Terjadi kesalahan sistem. Silakan ulangi pendaftaran.');
+            }
+        } else {
+            // Berhenti di sini, trigger face scan JS di frontend (pendaftar baru)
+            $this->dispatch('trigger-face-scan');
+        }
     }
 
     #[On('finalizeWalkin')]
@@ -220,6 +290,11 @@ class KioskWalkinForm extends Component
             // Ignore error log
         }
 
+        $this->createAppointmentRecord($visitor);
+    }
+
+    private function createAppointmentRecord(Visitor $visitor)
+    {
         // 4. Buat Appointment
         $isWalkIn = $this->visit_type === 'walk-in';
         
@@ -237,14 +312,14 @@ class KioskWalkinForm extends Component
             'check_in_time' => $isWalkIn ? now() : null,
         ]);
 
-        // 3. Dispatch event agar UI Modal berubah sukses
+        // 5. Dispatch event agar UI Modal berubah sukses
         if ($isWalkIn) {
             $this->dispatch('walkin-success', visitorName: $this->name, picName: $this->selected_pic_name);
         } else {
             $this->dispatch('appointment-success', visitorName: $this->name, picName: $this->selected_pic_name);
         }
         
-        $this->reset(['name', 'company', 'phone', 'purpose', 'pax', 'department_id', 'search_pic', 'selected_pic_id', 'selected_pic_name', 'step', 'pic_results', 'visit_type', 'visit_date', 'visit_time']);
+        $this->reset(['name', 'company', 'phone', 'purpose', 'pax', 'department_id', 'search_pic', 'selected_pic_id', 'selected_pic_name', 'step', 'pic_results', 'visit_type', 'visit_date', 'visit_time', 'is_verified_returning', 'verified_visitor_id']);
     }
 
     private function euclideanDistance(array $a, array $b): float

@@ -976,9 +976,18 @@
             openFaceScan('walkin');
         });
 
+        document.addEventListener('trigger-face-search', function () {
+            openFaceScan('walkin-search');
+        });
+
         document.addEventListener('walkin-error', function () {
             closeFaceScan();
             openWalkinForm(); // Kembali ke form walkin untuk melihat error
+        });
+
+        document.addEventListener('walkin-form-reopen', function () {
+            closeFaceScan();
+            openWalkinForm();
         });
 
         /* -------------------------------------------------------
@@ -998,7 +1007,7 @@
             faceScanMode = mode;
             if (mode === 'checkin') {
                 closeMethodPicker();
-            } else if (mode === 'walkin') {
+            } else if (mode === 'walkin' || mode === 'walkin-search') {
                 document.getElementById('modal-walkin').classList.remove('active');
             }
             document.getElementById('modal-face').classList.add('active');
@@ -1146,6 +1155,15 @@
                 Livewire.dispatch('finalizeWalkin', { 
                     descriptor: Array.from(descriptor), 
                     photoBase64: ciPhotoSnapshot 
+                });
+                return;
+            }
+
+            if (faceScanMode === 'walkin-search') {
+                // Return data to Livewire component to search for visitor
+                closeFaceScan();
+                Livewire.dispatch('findVisitorByFace', { 
+                    descriptor: Array.from(descriptor) 
                 });
                 return;
             }
