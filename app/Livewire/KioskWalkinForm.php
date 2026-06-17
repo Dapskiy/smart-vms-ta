@@ -249,7 +249,26 @@ class KioskWalkinForm extends Component
             return;
         }
 
-        // 2. Verifikasi Wajah (jika sudah punya)
+        // 2. Global Face Duplicate Check (Anti-Spoofing / Anti-Duplicate)
+        // Memastikan wajah pengunjung baru ini tidak pernah didaftarkan atas nama orang lain
+        $allOtherVisitors = Visitor::whereNotNull('face_features')->where('id', '!=', $visitor->id)->get();
+        $globalThreshold = 0.45; // Cukup ketat untuk deteksi duplikat
+
+        foreach ($allOtherVisitors as $otherVisitor) {
+            $otherStored = $otherVisitor->face_features ?? [];
+            if (!is_array($otherStored)) continue;
+            if (isset($otherStored[0]) && !is_array($otherStored[0])) $otherStored = [$otherStored];
+
+            foreach ($otherStored as $otherDescriptor) {
+                if ($this->euclideanDistance($otherDescriptor, $descriptor) <= $globalThreshold) {
+                    $this->addError('general', 'Wajah Anda sudah terdaftar atas nama ' . $otherVisitor->name . '. Silakan gunakan opsi "Sudah Pernah Berkunjung".');
+                    $this->dispatch('walkin-error'); 
+                    return;
+                }
+            }
+        }
+
+        // 3. Verifikasi Wajah Sendiri (jika sudah punya)
         $existingFeatures = is_array($visitor->face_features) ? $visitor->face_features : [];
         if (!empty($existingFeatures)) {
             $threshold = 0.4;
@@ -313,10 +332,19 @@ class KioskWalkinForm extends Component
         ]);
 
         // 5. Dispatch event agar UI Modal berubah sukses
+        $appointmentData = [
+            'visitorName' => $this->name,
+            'picName' => $this->selected_pic_name,
+            'visit_date' => \Carbon\Carbon::parse($appointment->visit_date)->translatedFormat('d F Y'),
+            'visit_time' => $appointment->visit_time,
+            'purpose' => $appointment->purpose,
+            'type' => $appointment->type
+        ];
+
         if ($isWalkIn) {
-            $this->dispatch('walkin-success', visitorName: $this->name, picName: $this->selected_pic_name);
+            $this->dispatch('walkin-success', appt: $appointmentData);
         } else {
-            $this->dispatch('appointment-success', visitorName: $this->name, picName: $this->selected_pic_name);
+            $this->dispatch('appointment-success', appt: $appointmentData);
         }
         
         $this->reset(['name', 'company', 'phone', 'purpose', 'pax', 'department_id', 'search_pic', 'selected_pic_id', 'selected_pic_name', 'step', 'pic_results', 'visit_type', 'visit_date', 'visit_time', 'is_verified_returning', 'verified_visitor_id']);

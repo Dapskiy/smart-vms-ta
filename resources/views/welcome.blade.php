@@ -937,38 +937,53 @@
         // Event listener for Walk-in success
         document.addEventListener('walkin-success', function (e) {
             closeWalkinForm();
-            const data = e.detail;
-            document.getElementById('co-modal-title').textContent = 'Registrasi Berhasil';
-            document.getElementById('co-modal-sub').textContent = 'Silakan masuk dan melapor ke pos keamanan';
-            document.getElementById('co-si-name').textContent = data.visitorName || '-';
-            document.getElementById('co-si-company').textContent = '-';
-            document.getElementById('co-si-pic').textContent = data.picName || '-';
-            document.getElementById('co-si-time').textContent = new Date().toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' });
+            const data = e.detail.appt;
+            document.querySelector('#modal-success .success-heading').textContent = 'Registrasi Berhasil! 🎉';
+            document.querySelector('#modal-success .success-sub').textContent = 'Silakan masuk dan melapor ke pos keamanan';
+            document.getElementById('si-name').textContent = data.visitorName || '-';
+            document.getElementById('si-pic').textContent = data.picName || '-';
+            document.getElementById('si-room').textContent = '-';
+            document.getElementById('si-date').textContent = data.visit_date || '-';
+            document.getElementById('si-time').textContent = data.visit_time || '-';
+            document.getElementById('si-checkin').textContent = new Date().toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' });
+            document.getElementById('si-purpose').textContent = data.purpose || '-';
             
-            document.getElementById('modal-checkout').classList.add('active');
+            document.getElementById('modal-success').classList.add('active');
             
-            // Auto close success modal after 10 seconds
-            setTimeout(() => {
-                document.getElementById('modal-checkout').classList.remove('active');
-            }, 10000);
+            successSecondsLeft = 15;
+            updateCountdown();
+            clearInterval(successTimer);
+            successTimer = setInterval(() => {
+                successSecondsLeft--;
+                updateCountdown();
+                if (successSecondsLeft <= 0) closeSuccessPopup();
+            }, 1000);
         });
 
         // Event listener for Appointment scheduling success
         document.addEventListener('appointment-success', function (e) {
             closeWalkinForm();
-            const data = e.detail;
-            document.getElementById('co-modal-title').textContent = 'Janji Temu Dibuat';
-            document.getElementById('co-modal-sub').textContent = 'Menunggu konfirmasi dari karyawan. Token/Tiket akan dikirimkan.';
-            document.getElementById('co-si-name').textContent = data.visitorName || '-';
-            document.getElementById('co-si-company').textContent = '-';
-            document.getElementById('co-si-pic').textContent = data.picName || '-';
-            document.getElementById('co-si-time').textContent = new Date().toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' });
+            const data = e.detail.appt;
+            document.querySelector('#modal-success .success-heading').textContent = 'Janji Temu Dibuat 📅';
+            document.querySelector('#modal-success .success-sub').textContent = 'Menunggu konfirmasi dari karyawan. Token/Tiket akan dikirimkan ke Whatsapp Anda.';
+            document.getElementById('si-name').textContent = data.visitorName || '-';
+            document.getElementById('si-pic').textContent = data.picName || '-';
+            document.getElementById('si-room').textContent = '-';
+            document.getElementById('si-date').textContent = data.visit_date || '-';
+            document.getElementById('si-time').textContent = data.visit_time || '-';
+            document.getElementById('si-checkin').textContent = '-';
+            document.getElementById('si-purpose').textContent = data.purpose || '-';
             
-            document.getElementById('modal-checkout').classList.add('active');
+            document.getElementById('modal-success').classList.add('active');
             
-            setTimeout(() => {
-                document.getElementById('modal-checkout').classList.remove('active');
-            }, 10000);
+            successSecondsLeft = 15;
+            updateCountdown();
+            clearInterval(successTimer);
+            successTimer = setInterval(() => {
+                successSecondsLeft--;
+                updateCountdown();
+                if (successSecondsLeft <= 0) closeSuccessPopup();
+            }, 1000);
         });
 
         // Event listeners for Livewire trigger events
@@ -1236,6 +1251,7 @@
         ------------------------------------------------------- */
         let successTimer = null;
         let successSecondsLeft = 180;
+        let successMaxSeconds = 180;
 
         function showSuccessPopup(appt) {
             document.getElementById('si-name').textContent  = appt.visitor_name  || '-';
@@ -1248,8 +1264,10 @@
 
             document.getElementById('modal-success').classList.add('active');
 
+            successMaxSeconds = 180;
             successSecondsLeft = 180;
             updateCountdown();
+            clearInterval(successTimer);
             successTimer = setInterval(() => {
                 successSecondsLeft--;
                 updateCountdown();
@@ -1258,7 +1276,8 @@
         }
 
         function updateCountdown() {
-            const pct = (successSecondsLeft / 180) * 100;
+            const maxSec = successSecondsLeft > 15 && successSecondsLeft <= 180 ? 180 : 15;
+            const pct = (successSecondsLeft / maxSec) * 100;
             document.getElementById('countdown-bar').style.width = pct + '%';
             document.getElementById('countdown-text').textContent =
                 'Layar akan kembali otomatis dalam ' + successSecondsLeft + ' detik';
