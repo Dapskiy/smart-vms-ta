@@ -41,6 +41,17 @@ class KioskWalkinForm extends Component
     public $is_verified_returning = false;
     public $verified_visitor_id = null;
 
+    #[On('resetWalkinForm')]
+    public function resetForm()
+    {
+        $this->step = 0;
+        $this->is_verified_returning = false;
+        $this->verified_visitor_id = null;
+        $this->reset(['name', 'company', 'phone', 'purpose', 'pax', 'department_id', 'search_pic', 'selected_pic_id', 'selected_pic_name', 'pic_results', 'visit_type', 'visit_date', 'visit_time']);
+        $this->resetValidation();
+        $this->resetErrorBag();
+    }
+
     public function setNewVisitor()
     {
         $this->step = 1;
@@ -190,7 +201,16 @@ class KioskWalkinForm extends Component
 
     public function previousStep()
     {
-        $this->step = 1;
+        if ($this->step > 0) {
+            $this->step--;
+
+            if ($this->step === 0) {
+                // Reset state saat kembali ke pemilihan awal
+                $this->is_verified_returning = false;
+                $this->verified_visitor_id = null;
+                $this->reset(['name', 'company', 'phone']);
+            }
+        }
     }
 
     public function submit()

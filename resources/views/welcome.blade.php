@@ -932,6 +932,7 @@
         }
         function closeWalkinForm() {
             document.getElementById('modal-walkin').classList.remove('active');
+            Livewire.dispatch('resetWalkinForm');
         }
 
         // Event listener for Walk-in success

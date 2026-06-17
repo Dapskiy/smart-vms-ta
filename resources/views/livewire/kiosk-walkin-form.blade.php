@@ -157,6 +157,12 @@
             {{ session('general') }}
         </div>
     @endif
+
+    @error('general')
+        <div style="background: rgba(244, 63, 94, 0.1); border: 1px solid var(--accent-rose); padding: 1rem; border-radius: 8px; margin-bottom: 1.5rem; color: #fff;">
+            {{ $message }}
+        </div>
+    @enderror
     
     @if (session()->has('general_success'))
         <div style="background: rgba(16, 185, 129, 0.1); border: 1px solid var(--accent-green, #10b981); padding: 1rem; border-radius: 8px; margin-bottom: 1.5rem; color: #fff;">
@@ -218,7 +224,7 @@
         </div>
 
         <div class="form-actions">
-            <button type="button" class="btn btn-secondary" onclick="closeWalkinForm()">Batal</button>
+            <button type="button" class="btn btn-secondary" wire:click="previousStep">⬅ Kembali</button>
             <button type="button" class="btn btn-primary" wire:click="nextStep">Selanjutnya ➔</button>
         </div>
     @endif
