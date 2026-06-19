@@ -74,6 +74,25 @@
             </div>
         </div>
 
+        {{-- Speech Controls: muncul saat AI berbicara --}}
+        <div
+            id="aai-speech-controls"
+            class="hidden items-center justify-center gap-2 px-3.5 py-1.5 border-t border-gray-100 dark:border-gray-700 bg-indigo-50 dark:bg-indigo-900/20 flex-shrink-0"
+        >
+            <button
+                onclick="aaiUI.stopSpeech()"
+                title="Hentikan suara"
+                class="px-2.5 py-1 rounded-lg bg-red-100 dark:bg-red-900/40 text-red-600 dark:text-red-300 text-[11px] font-semibold hover:bg-red-200 dark:hover:bg-red-800/50 transition-colors"
+            >🛑 Stop</button>
+            <button
+                id="aai-pause-btn"
+                onclick="aaiUI.pauseResume()"
+                title="Jeda / Lanjutkan"
+                class="px-2.5 py-1 rounded-lg bg-indigo-100 dark:bg-indigo-900/40 text-indigo-600 dark:text-indigo-300 text-[11px] font-semibold hover:bg-indigo-200 dark:hover:bg-indigo-800/50 transition-colors"
+            >⏸️ Jeda</button>
+            <span class="text-[10px] text-gray-400 dark:text-gray-500 ml-1">AI sedang berbicara…</span>
+        </div>
+
         {{-- Input Area --}}
         <div class="flex items-end gap-2 px-3.5 py-3 border-t border-gray-100 dark:border-gray-700 bg-gray-50 dark:bg-gray-800/60 flex-shrink-0">
             <textarea
@@ -203,18 +222,43 @@
         return el;
     }
 
-    /* ── TTS ─────────────────────────────────────────────────── */
+    /* ── TTS ───────────────────────────────────────────────────── */
+    let isSpeaking = false;
+    let isPaused   = false;
+
+    function showSpeechControls(show) {
+        const bar = $('aai-speech-controls');
+        if (!bar) return;
+        if (show) { bar.classList.remove('hidden'); bar.classList.add('flex'); }
+        else      { bar.classList.add('hidden');    bar.classList.remove('flex'); }
+    }
+
+    function updatePauseBtn() {
+        const btn = $('aai-pause-btn');
+        if (!btn) return;
+        btn.innerHTML = isPaused ? '▶️ Lanjut' : '⏸️ Jeda';
+        btn.title     = isPaused ? 'Lanjutkan suara' : 'Jeda suara';
+    }
+
     function speakText(text) {
         if (!('speechSynthesis' in window)) return;
         window.speechSynthesis.cancel();
-        const plain = text.replace(/[*_`#>~\-|]+/g,'').replace(/\n+/g,'. ').trim();
+        const plain = text.replace(/[*_`#>~|\-]+/g,' ').replace(/\n+/g,'. ').replace(/\s{2,}/g,' ').trim();
+        if (!plain) return;
+
         const utt   = new SpeechSynthesisUtterance(plain);
         utt.lang    = 'id-ID';
-        utt.rate    = 1.0;
+        utt.rate    = 1.25;
         utt.pitch   = 1.0;
+        utt.volume  = 1.0;
         const voices = window.speechSynthesis.getVoices();
         const voice  = voices.find(v => v.lang === 'id-ID' || v.name.includes('Indonesia'));
         if (voice) utt.voice = voice;
+
+        utt.onstart  = () => { isSpeaking = true; isPaused = false; showSpeechControls(true); };
+        utt.onend    = () => { isSpeaking = false; isPaused = false; showSpeechControls(false); };
+        utt.onerror  = () => { isSpeaking = false; isPaused = false; showSpeechControls(false); };
+
         window.speechSynthesis.speak(utt);
     }
 
@@ -245,6 +289,8 @@
                 icon.textContent = '🤖';
                 fab.style.animation = 'aaiPulse 2.8s infinite';
                 window.speechSynthesis?.cancel();
+                isSpeaking = false; isPaused = false;
+                showSpeechControls(false);
             }
         },
 
@@ -313,7 +359,28 @@
             const btn = $('aai-tts-btn');
             btn.textContent = ttsOn ? '🔊' : '🔇';
             btn.title = ttsOn ? 'Matikan suara' : 'Nyalakan suara';
-            if (!ttsOn) window.speechSynthesis?.cancel();
+            if (!ttsOn) {
+                window.speechSynthesis?.cancel();
+                isSpeaking = false; isPaused = false;
+                showSpeechControls(false);
+            }
+        },
+
+        stopSpeech() {
+            window.speechSynthesis?.cancel();
+            isSpeaking = false; isPaused = false;
+            showSpeechControls(false);
+        },
+
+        pauseResume() {
+            if (isPaused) {
+                window.speechSynthesis?.resume();
+                isPaused = false;
+            } else {
+                window.speechSynthesis?.pause();
+                isPaused = true;
+            }
+            updatePauseBtn();
         },
 
         clearHistory() {
@@ -329,6 +396,8 @@
                     </div>
                 </div>`;
             window.speechSynthesis?.cancel();
+            isSpeaking = false; isPaused = false;
+            showSpeechControls(false);
         },
     };
 

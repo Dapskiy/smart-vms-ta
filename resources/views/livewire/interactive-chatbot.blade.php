@@ -3,6 +3,8 @@
     x-data="{
         open: false,
         ttsEnabled: true,
+        isSpeaking: false,
+        isPaused: false,
         scrollToBottom() {
             this.$nextTick(() => {
                 const el = document.getElementById('chat-messages');
@@ -12,12 +14,30 @@
         toggleTts() {
             this.ttsEnabled = !this.ttsEnabled;
             if (!this.ttsEnabled) {
-                window.speechSynthesis.cancel();
+                window.stopAiSpeech();
+                this.isSpeaking = false;
+                this.isPaused = false;
+            }
+        },
+        stopSpeech() {
+            window.stopAiSpeech();
+            this.isSpeaking = false;
+            this.isPaused = false;
+        },
+        pauseResumeSpeech() {
+            if (this.isPaused) {
+                window.resumeAiSpeech();
+                this.isPaused = false;
+            } else {
+                window.pauseAiSpeech();
+                this.isPaused = true;
             }
         }
     }"
     x-on:chatbot-scrolled.window="scrollToBottom()"
     x-on:chatbot-speak.window="if (ttsEnabled) { window.speakText($event.detail.text); }"
+    @tts-started.window="isSpeaking = true; isPaused = false"
+    @tts-ended.window="isSpeaking = false; isPaused = false"
 >
     {{-- ── Toggle Button ─────────────────────────── --}}
     <button
@@ -48,6 +68,22 @@
             <div>
                 <div class="chatbot-header-title">VISITA Assistant</div>
                 <div class="chatbot-header-sub">AI · Selalu siap membantu</div>
+            </div>
+            {{-- TTS Controls: Stop / Pause-Resume (muncul hanya saat AI berbicara) --}}
+            <div class="chatbot-speech-controls" x-show="isSpeaking" x-transition.opacity>
+                <button
+                    @click="stopSpeech()"
+                    class="chatbot-ctrl-btn chatbot-ctrl-stop"
+                    title="Hentikan suara"
+                >🛑</button>
+                <button
+                    @click="pauseResumeSpeech()"
+                    class="chatbot-ctrl-btn chatbot-ctrl-pause"
+                    :title="isPaused ? 'Lanjutkan suara' : 'Jeda suara'"
+                >
+                    <span x-show="!isPaused">⏸️</span>
+                    <span x-show="isPaused">▶️</span>
+                </button>
             </div>
             <button
                 @click="toggleTts()"
@@ -143,40 +179,79 @@
             marked.setOptions({ breaks: true, gfm: true });
         }
 
-        /**
-         * Text-to-Speech: Membacakan balasan AI menggunakan Web Speech API
-         */
-        function speakText(text) {
-            if (!('speechSynthesis' in window)) {
-                console.warn('Fitur Text-to-Speech tidak didukung di browser ini.');
-                return;
+        /* ══════════════════════════════════════════════════════════
+           TTS ENGINE — Web Speech API dengan State Management
+        ══════════════════════════════════════════════════════════ */
+        (function () {
+            'use strict';
+
+            let indoVoice = null;
+
+            // Pre-load suara Indonesia
+            function loadVoices() {
+                const voices = window.speechSynthesis?.getVoices() ?? [];
+                indoVoice = voices.find(v => v.lang === 'id-ID' || v.name.includes('Indonesia')) ?? null;
             }
 
-            // Hentikan suara AI jika sedang berbicara
-            window.speechSynthesis.cancel();
-
-            const utterance = new SpeechSynthesisUtterance(text);
-            utterance.lang  = 'id-ID';  // Bahasa Indonesia
-            utterance.rate  = 1.0;      // Kecepatan bicara normal
-            utterance.pitch = 1.0;      // Nada normal
-
-            // Pilih suara Indonesia jika tersedia di browser
-            const voices = window.speechSynthesis.getVoices();
-            const indoVoice = voices.find(v => v.lang === 'id-ID' || v.name.includes('Indonesia'));
-            if (indoVoice) {
-                utterance.voice = indoVoice;
-            }
-
-            window.speechSynthesis.speak(utterance);
-        }
-
-        // Pre-load daftar suara (beberapa browser memuat secara async)
-        if ('speechSynthesis' in window) {
-            window.speechSynthesis.getVoices();
-            window.speechSynthesis.onvoiceschanged = () => {
+            if ('speechSynthesis' in window) {
                 window.speechSynthesis.getVoices();
+                window.speechSynthesis.addEventListener('voiceschanged', loadVoices);
+                loadVoices();
+            }
+
+            // ── Dispatch helper (Alpine mendengarkan via @tts-started / @tts-ended) ──
+            function fireTtsEvent(name) {
+                window.dispatchEvent(new CustomEvent(name));
+            }
+
+            /**
+             * speakText(text) — Global TTS function
+             * Rate 1.25 untuk artikulasi lebih cepat tapi tetap jelas.
+             */
+            window.speakText = function (text) {
+                if (!text || !('speechSynthesis' in window)) return;
+
+                window.speechSynthesis.cancel();
+
+                // Strip markdown untuk TTS yang natural
+                const plain = text
+                    .replace(/[*_`#>~|\-]+/g, ' ')
+                    .replace(/\n+/g, '. ')
+                    .replace(/\s{2,}/g, ' ')
+                    .trim();
+
+                if (!plain) return;
+
+                const utt  = new SpeechSynthesisUtterance(plain);
+                utt.lang   = 'id-ID';
+                utt.rate   = 1.25;   // Lebih cepat, artikulasi tetap jelas
+                utt.pitch  = 1.0;
+                utt.volume = 1.0;
+                if (indoVoice) utt.voice = indoVoice;
+
+                utt.onstart  = () => fireTtsEvent('tts-started');
+                utt.onend    = () => fireTtsEvent('tts-ended');
+                utt.onerror  = () => fireTtsEvent('tts-ended');
+                utt.onpause  = () => {}; // state dikelola Alpine
+                utt.onresume = () => {};
+
+                window.speechSynthesis.speak(utt);
             };
-        }
+
+            // ── Global Control Functions ──────────────────────────────
+            window.stopAiSpeech = function () {
+                window.speechSynthesis?.cancel();
+                fireTtsEvent('tts-ended');
+            };
+
+            window.pauseAiSpeech = function () {
+                window.speechSynthesis?.pause();
+            };
+
+            window.resumeAiSpeech = function () {
+                window.speechSynthesis?.resume();
+            };
+        })();
     </script>
 
     {{-- Inline styles --}}
@@ -261,6 +336,27 @@
 .chatbot-clear-btn { margin-left: 4px; }
 .chatbot-tts-btn:hover,
 .chatbot-clear-btn:hover { background: rgba(255,255,255,.28); }
+
+/* Speech control buttons (Stop / Pause-Resume) */
+.chatbot-speech-controls {
+    display: flex;
+    align-items: center;
+    gap: 3px;
+    margin-left: auto;
+}
+.chatbot-ctrl-btn {
+    background: rgba(255,255,255,.18);
+    border: none;
+    border-radius: 6px;
+    padding: 3px 7px;
+    cursor: pointer;
+    font-size: 13px;
+    color: white;
+    transition: background .2s, transform .1s;
+    line-height: 1;
+}
+.chatbot-ctrl-btn:hover { background: rgba(255,255,255,.32); transform: scale(1.1); }
+.chatbot-ctrl-stop:active { transform: scale(.9); }
 
 /* Messages */
 .chatbot-messages {
