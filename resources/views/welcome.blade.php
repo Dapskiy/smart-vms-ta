@@ -711,6 +711,7 @@
         .countdown-text { font-size: 0.72rem; color: #8899bb; margin-bottom: 0.75rem; }
 
     </style>
+    @livewireStyles
 </head>
 <body>
 
@@ -849,6 +850,9 @@
         <div class="status-dot"></div>
         SISTEM AKTIF &amp; TERHUBUNG
     </div>
+
+    {{-- Chatbot (inside main DOM so Firefox doesn't clip it) --}}
+    @livewire('interactive-chatbot')
 
     <!-- ==================== JAVASCRIPT ==================== -->
     <script>
@@ -1755,6 +1759,8 @@
 
 </script>
 
-@livewire('interactive-chatbot')
+{{-- Livewire Scripts (includes Alpine.js v3 automatically in Livewire v3) --}}
+@livewireScripts
+
 </body>
 </html>

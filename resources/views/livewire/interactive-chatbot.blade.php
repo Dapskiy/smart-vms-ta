@@ -229,12 +229,14 @@
                 utt.volume = 1.0;
                 if (indoVoice) utt.voice = indoVoice;
 
-                utt.onstart  = () => fireTtsEvent('tts-started');
                 utt.onend    = () => fireTtsEvent('tts-ended');
                 utt.onerror  = () => fireTtsEvent('tts-ended');
                 utt.onpause  = () => {}; // state dikelola Alpine
                 utt.onresume = () => {};
 
+                // Fire tts-started SEBELUM speak() karena Firefox tidak selalu
+                // men-trigger onstart pada SpeechSynthesisUtterance
+                fireTtsEvent('tts-started');
                 window.speechSynthesis.speak(utt);
             };
 
