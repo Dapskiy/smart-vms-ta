@@ -461,6 +461,7 @@
             flex-shrink: 0;
             text-align: center;
             padding: 1.2vh 0 0.5vh;
+            margin-bottom: 2.5rem; /* Prevents collision with fixed status bar */
         }
 
         .footer-copy {
