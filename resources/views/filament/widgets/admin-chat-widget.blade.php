@@ -39,7 +39,7 @@
             </div>
 
             <div class="w-[200px] h-[200px] rounded-full bg-white flex items-center justify-center overflow-hidden shadow-lg border-4 border-white/20">
-                <img src="{{ asset('assets/images/chatbot/avatar-idle.gif') }}" alt="AI" class="w-full h-full object-cover">
+                <img id="aai-header-avatar" src="{{ asset('assets/images/chatbot/avatar-idle.gif') }}" alt="AI" class="w-full h-full object-cover">
             </div>
             <div>
                 <p class="text-white font-semibold text-[17px] leading-tight mb-1">VISITA AI Assistant</p>
@@ -239,6 +239,14 @@
         btn.title     = isPaused ? 'Lanjutkan suara' : 'Jeda suara';
     }
 
+    function updateAvatar() {
+        const avatar = $('aai-header-avatar');
+        if (!avatar) return;
+        avatar.src = (isSpeaking && !isPaused) 
+            ? "{{ asset('assets/images/chatbot/avatar-speaking.gif') }}" 
+            : "{{ asset('assets/images/chatbot/avatar-idle.gif') }}";
+    }
+
     function speakText(text) {
         if (!('speechSynthesis' in window)) return;
         window.speechSynthesis.cancel();
@@ -254,9 +262,9 @@
         const voice  = voices.find(v => v.lang === 'id-ID' || v.name.includes('Indonesia'));
         if (voice) utt.voice = voice;
 
-        utt.onstart  = () => { isSpeaking = true; isPaused = false; showSpeechControls(true); };
-        utt.onend    = () => { isSpeaking = false; isPaused = false; showSpeechControls(false); };
-        utt.onerror  = () => { isSpeaking = false; isPaused = false; showSpeechControls(false); };
+        utt.onstart  = () => { isSpeaking = true; isPaused = false; showSpeechControls(true); updateAvatar(); };
+        utt.onend    = () => { isSpeaking = false; isPaused = false; showSpeechControls(false); updateAvatar(); };
+        utt.onerror  = () => { isSpeaking = false; isPaused = false; showSpeechControls(false); updateAvatar(); };
 
         window.speechSynthesis.speak(utt);
     }
@@ -411,6 +419,7 @@
                 window.speechSynthesis?.cancel();
                 isSpeaking = false; isPaused = false;
                 showSpeechControls(false);
+                updateAvatar();
             }
         },
 
@@ -418,9 +427,10 @@
             window.speechSynthesis?.cancel();
             isSpeaking = false; isPaused = false;
             showSpeechControls(false);
+            updateAvatar();
         },
 
-        pauseResume() {
+        pauseResumeSpeech() {
             if (isPaused) {
                 window.speechSynthesis?.resume();
                 isPaused = false;
@@ -429,6 +439,7 @@
                 isPaused = true;
             }
             updatePauseBtn();
+            updateAvatar();
         },
 
         clearHistory() {

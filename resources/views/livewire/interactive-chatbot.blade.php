@@ -110,7 +110,7 @@
             </div>
 
             <div class="chatbot-header-avatar">
-                <img src="{{ asset('assets/images/chatbot/avatar-idle.gif') }}" alt="AI" style="width: 200px; height: 200px; object-fit: cover; border-radius: 50%; background: #fff; box-shadow: 0 4px 12px rgba(0,0,0,0.15); border: 4px solid rgba(255,255,255,0.2);">
+                <img :src="isSpeaking && !isPaused ? '{{ asset('assets/images/chatbot/avatar-speaking.gif') }}' : '{{ asset('assets/images/chatbot/avatar-idle.gif') }}'" alt="AI" style="width: 200px; height: 200px; object-fit: cover; border-radius: 50%; background: #fff; box-shadow: 0 4px 12px rgba(0,0,0,0.15); border: 4px solid rgba(255,255,255,0.2);">
             </div>
             <div>
                 <div class="chatbot-header-title" style="font-size: 17px; margin-bottom: 2px;">VISITA Assistant</div>
