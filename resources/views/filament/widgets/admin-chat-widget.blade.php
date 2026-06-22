@@ -104,6 +104,12 @@
                 onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();aaiUI.send();}"
             ></textarea>
             <button
+                id="aai-mic-btn"
+                onclick="aaiUI.startDictation()"
+                title="Input Suara"
+                class="w-9 h-9 flex-shrink-0 rounded-full bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-300 flex items-center justify-center text-base transition-all disabled:opacity-40"
+            >🎙️</button>
+            <button
                 id="aai-send-btn"
                 onclick="aaiUI.send()"
                 title="Kirim"
@@ -269,6 +275,55 @@
 
     /* ── Main UI Object ──────────────────────────────────────── */
     const aaiUI = {
+        isListening: false,
+        
+        startDictation() {
+            if (this.isListening) return;
+            const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+            if (!SpeechRecognition) {
+                alert('Browser Anda tidak mendukung fitur Input Suara.');
+                return;
+            }
+            
+            const recognition = new SpeechRecognition();
+            recognition.lang = 'id-ID';
+            recognition.interimResults = false;
+            recognition.maxAlternatives = 1;
+            
+            const micBtn = $('aai-mic-btn');
+            
+            recognition.onstart = () => {
+                this.isListening = true;
+                if(micBtn) {
+                    micBtn.classList.add('bg-red-100', 'dark:bg-red-900/40', 'text-red-600', 'dark:text-red-400', 'animate-pulse');
+                    micBtn.classList.remove('bg-gray-200', 'dark:bg-gray-700', 'text-gray-700', 'dark:text-gray-300');
+                }
+            };
+            
+            recognition.onresult = (event) => {
+                const transcript = event.results[0][0].transcript;
+                const input = $('aai-input');
+                const currentText = input.value;
+                input.value = currentText ? currentText + ' ' + transcript : transcript;
+                input.style.height = 'auto';
+                input.style.height = input.scrollHeight + 'px';
+            };
+            
+            recognition.onerror = (e) => {
+                console.error('Mic error:', e);
+                this.isListening = false;
+            };
+            
+            recognition.onend = () => {
+                this.isListening = false;
+                if(micBtn) {
+                    micBtn.classList.remove('bg-red-100', 'dark:bg-red-900/40', 'text-red-600', 'dark:text-red-400', 'animate-pulse');
+                    micBtn.classList.add('bg-gray-200', 'dark:bg-gray-700', 'text-gray-700', 'dark:text-gray-300');
+                }
+            };
+            
+            recognition.start();
+        },
 
         toggle() {
             isOpen = !isOpen;

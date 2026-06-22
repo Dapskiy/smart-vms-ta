@@ -5,11 +5,40 @@
         ttsEnabled: true,
         isSpeaking: false,
         isPaused: false,
+        isListening: false,
         scrollToBottom() {
             this.$nextTick(() => {
                 const el = document.getElementById('chat-messages');
                 if (el) el.scrollTop = el.scrollHeight;
             });
+        },
+        startDictation() {
+            if (this.isListening) return;
+            const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+            if (!SpeechRecognition) {
+                alert('Browser Anda tidak mendukung fitur Input Suara.');
+                return;
+            }
+            const recognition = new SpeechRecognition();
+            recognition.lang = 'id-ID';
+            recognition.interimResults = false;
+            recognition.maxAlternatives = 1;
+
+            recognition.onstart = () => { this.isListening = true; };
+            recognition.onresult = (event) => {
+                const transcript = event.results[0][0].transcript;
+                const currentText = this.$wire.get('inputMessage') || '';
+                const newText = currentText ? currentText + ' ' + transcript : transcript;
+                this.$wire.set('inputMessage', newText);
+                
+                this.$nextTick(() => {
+                    const el = this.$refs.inputArea;
+                    if(el) { el.style.height = 'auto'; el.style.height = el.scrollHeight + 'px'; }
+                });
+            };
+            recognition.onerror = (e) => { console.error('Mic error:', e); this.isListening = false; };
+            recognition.onend = () => { this.isListening = false; };
+            recognition.start();
         },
         toggleTts() {
             this.ttsEnabled = !this.ttsEnabled;
@@ -153,6 +182,7 @@
         {{-- Input Area --}}
         <div class="chatbot-input-area">
             <textarea
+                x-ref="inputArea"
                 wire:model="inputMessage"
                 wire:keydown.enter.prevent="sendMessage"
                 class="chatbot-input"
@@ -161,6 +191,17 @@
                 x-on:input="$el.style.height='auto'; $el.style.height=$el.scrollHeight+'px'"
                 @if($isLoading) disabled @endif
             ></textarea>
+            
+            <button
+                type="button"
+                @click="startDictation()"
+                class="chatbot-mic-btn"
+                :class="{ 'chatbot-mic-active': isListening }"
+                title="Input Suara"
+                @if($isLoading) disabled @endif
+            >
+                🎙️
+            </button>
             <button
                 wire:click="sendMessage"
                 wire:loading.attr="disabled"
@@ -531,6 +572,35 @@
 .chatbot-send-btn:disabled { opacity: .5; cursor: not-allowed; transform: none; }
 .chatbot-spinner { animation: spin .7s linear infinite; display: inline-block; }
 @keyframes spin { to { transform: rotate(360deg); } }
+
+/* Mic Button */
+.chatbot-mic-btn {
+    width: 38px;
+    height: 38px;
+    flex-shrink: 0;
+    border-radius: 50%;
+    background: #f3f4f6;
+    color: #4b5563;
+    border: 1px solid #e5e7eb;
+    cursor: pointer;
+    font-size: 16px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all .2s;
+}
+.chatbot-mic-btn:hover { background: #e5e7eb; }
+.chatbot-mic-btn:disabled { opacity: .5; cursor: not-allowed; }
+.chatbot-mic-active {
+    background: #fee2e2;
+    border-color: #fca5a5;
+    animation: pulse-mic 1.5s infinite;
+}
+@keyframes pulse-mic {
+    0% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.4); }
+    70% { box-shadow: 0 0 0 8px rgba(239, 68, 68, 0); }
+    100% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0); }
+}
 
 /* Mobile */
 @media (max-width: 480px) {
