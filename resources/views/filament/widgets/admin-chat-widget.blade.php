@@ -22,34 +22,28 @@
         aria-label="VISITA AI Assistant"
     >
         {{-- Header --}}
-        <div class="flex items-center gap-3 px-4 py-3 bg-gradient-to-r from-indigo-600 to-violet-600 flex-shrink-0">
-            <div class="w-9 h-9 rounded-full bg-white flex items-center justify-center overflow-hidden flex-shrink-0 shadow-sm">
-            <img src="{{ asset('assets/images/chatbot/avatar-idle.gif') }}" alt="AI" class="w-full h-full object-cover">
-        </div>
-            <div class="flex-1 min-w-0">
-                <p class="text-white font-semibold text-sm leading-tight truncate">VISITA AI Assistant</p>
-                <p class="text-indigo-200 text-[11px] leading-tight">Data real-time · Powered by Gemini</p>
-            </div>
-            <div class="flex items-center gap-1.5 flex-shrink-0">
+        <div class="relative flex flex-col items-center gap-2 px-4 pt-6 pb-5 bg-gradient-to-br from-indigo-600 to-violet-600 flex-shrink-0 text-center">
+            {{-- Action buttons (absolute top-right) --}}
+            <div class="absolute top-3 right-3 flex items-center gap-1.5">
+                {{-- Speech Controls --}}
+                <div id="aai-speech-controls" class="hidden items-center gap-1.5">
+                    <button onclick="aaiUI.stopSpeech()" class="w-7 h-7 rounded-lg bg-white/15 hover:bg-white/30 flex items-center justify-center text-sm text-white transition-colors" title="Hentikan suara">🛑</button>
+                    <button id="aai-pause-btn" onclick="aaiUI.pauseResumeSpeech()" class="w-7 h-7 rounded-lg bg-white/15 hover:bg-white/30 flex items-center justify-center text-sm text-white transition-colors" title="Jeda suara">⏸️</button>
+                </div>
                 {{-- TTS Toggle --}}
-                <button
-                    id="aai-tts-btn"
-                    onclick="aaiUI.toggleTts()"
-                    title="Matikan/nyalakan suara"
-                    class="w-7 h-7 rounded-lg bg-white/15 hover:bg-white/30 flex items-center justify-center text-sm text-white transition-colors"
-                >🔊</button>
+                <button id="aai-tts-btn" onclick="aaiUI.toggleTts()" title="Matikan/nyalakan suara" class="w-7 h-7 rounded-lg bg-white/15 hover:bg-white/30 flex items-center justify-center text-sm text-white transition-colors">🔊</button>
                 {{-- Clear --}}
-                <button
-                    onclick="aaiUI.clearHistory()"
-                    title="Hapus riwayat"
-                    class="w-7 h-7 rounded-lg bg-white/15 hover:bg-white/30 flex items-center justify-center text-sm text-white transition-colors"
-                >🗑️</button>
+                <button onclick="aaiUI.clearHistory()" title="Hapus riwayat" class="w-7 h-7 rounded-lg bg-white/15 hover:bg-white/30 flex items-center justify-center text-sm text-white transition-colors">🗑️</button>
                 {{-- Close --}}
-                <button
-                    onclick="aaiUI.toggle()"
-                    title="Tutup"
-                    class="w-7 h-7 rounded-lg bg-white/15 hover:bg-white/30 flex items-center justify-center text-xs font-bold text-white transition-colors"
-                >✕</button>
+                <button onclick="aaiUI.toggle()" title="Tutup" class="w-7 h-7 rounded-lg bg-white/15 hover:bg-white/30 flex items-center justify-center text-xs font-bold text-white transition-colors">✕</button>
+            </div>
+
+            <div class="w-[200px] h-[200px] rounded-full bg-white flex items-center justify-center overflow-hidden shadow-lg border-4 border-white/20">
+                <img src="{{ asset('assets/images/chatbot/avatar-idle.gif') }}" alt="AI" class="w-full h-full object-cover">
+            </div>
+            <div>
+                <p class="text-white font-semibold text-[17px] leading-tight mb-1">VISITA AI Assistant</p>
+                <p class="text-indigo-200 text-xs leading-tight">Data real-time · Powered by Gemini</p>
             </div>
         </div>
 
@@ -195,8 +189,7 @@
         const row = document.createElement('div');
         row.className = 'flex justify-end items-end gap-2';
         row.innerHTML = `
-            <div class="max-w-[78%] bg-gradient-to-br from-indigo-600 to-violet-600 text-white rounded-2xl rounded-br-sm px-3.5 py-2.5 text-[13px] leading-snug break-words">${esc(text)}</div>
-            <span class="text-lg flex-shrink-0">👤</span>`;
+            <div class="max-w-[85%] bg-gradient-to-br from-indigo-600 to-violet-600 text-white rounded-2xl rounded-br-sm px-3.5 py-2.5 text-[13px] leading-snug break-words">${esc(text)}</div>`;
         return row;
     }
 
@@ -204,10 +197,7 @@
         const row = document.createElement('div');
         row.className = 'flex justify-start items-end gap-2';
         row.innerHTML = `
-            <div class="w-7 h-7 flex-shrink-0 rounded-full overflow-hidden shadow-sm bg-white border border-gray-200 dark:border-gray-700">
-                <img src="{{ asset('assets/images/chatbot/avatar-idle.gif') }}" alt="AI" class="w-full h-full object-cover">
-            </div>
-            <div class="max-w-[78%] bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-gray-100 rounded-2xl rounded-bl-sm px-3.5 py-2.5 text-[13px] leading-snug break-words prose-sm dark:prose-invert">${renderMd(text)}</div>`;
+            <div class="max-w-[88%] bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-gray-100 rounded-2xl rounded-bl-sm px-3.5 py-2.5 text-[13px] leading-snug break-words prose-sm dark:prose-invert">${renderMd(text)}</div>`;
         return row;
     }
 
@@ -216,9 +206,6 @@
         row.className = 'flex justify-start items-end gap-2';
         row.id = 'aai-typing';
         row.innerHTML = `
-            <div class="w-7 h-7 flex-shrink-0 rounded-full overflow-hidden shadow-sm bg-white border border-gray-200 dark:border-gray-700">
-                <img src="{{ asset('assets/images/chatbot/avatar-idle.gif') }}" alt="AI" class="w-full h-full object-cover">
-            </div>
             <div class="bg-gray-100 dark:bg-gray-700 rounded-2xl rounded-bl-sm px-4 py-3 flex gap-1.5 items-center">
                 <span class="w-1.5 h-1.5 rounded-full bg-gray-400 animate-bounce" style="animation-delay:0s"></span>
                 <span class="w-1.5 h-1.5 rounded-full bg-gray-400 animate-bounce" style="animation-delay:.18s"></span>

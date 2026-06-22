@@ -93,42 +93,29 @@
     >
         {{-- Header --}}
         <div class="chatbot-header">
+            {{-- Action buttons (absolute top-right) --}}
+            <div class="chatbot-header-actions">
+                <div class="chatbot-speech-controls" x-show="isSpeaking" x-transition.opacity>
+                    <button @click="stopSpeech()" class="chatbot-ctrl-btn chatbot-ctrl-stop" title="Hentikan suara">🛑</button>
+                    <button @click="pauseResumeSpeech()" class="chatbot-ctrl-btn chatbot-ctrl-pause" :title="isPaused ? 'Lanjutkan suara' : 'Jeda suara'">
+                        <span x-show="!isPaused">⏸️</span>
+                        <span x-show="isPaused">▶️</span>
+                    </button>
+                </div>
+                <button @click="toggleTts()" class="chatbot-tts-btn" :title="ttsEnabled ? 'Matikan suara AI' : 'Nyalakan suara AI'">
+                    <span x-show="ttsEnabled">🔊</span>
+                    <span x-show="!ttsEnabled">🔇</span>
+                </button>
+                <button wire:click="clearHistory" class="chatbot-clear-btn" title="Hapus riwayat">🗑️</button>
+            </div>
+
             <div class="chatbot-header-avatar">
-                <img src="{{ asset('assets/images/chatbot/avatar-idle.gif') }}" alt="AI" style="width: 36px; height: 36px; object-fit: cover; border-radius: 50%; background: #fff;">
+                <img src="{{ asset('assets/images/chatbot/avatar-idle.gif') }}" alt="AI" style="width: 200px; height: 200px; object-fit: cover; border-radius: 50%; background: #fff; box-shadow: 0 4px 12px rgba(0,0,0,0.15); border: 4px solid rgba(255,255,255,0.2);">
             </div>
             <div>
-                <div class="chatbot-header-title">VISITA Assistant</div>
-                <div class="chatbot-header-sub">AI · Selalu siap membantu</div>
+                <div class="chatbot-header-title" style="font-size: 17px; margin-bottom: 2px;">VISITA Assistant</div>
+                <div class="chatbot-header-sub" style="font-size: 12px;">AI · Selalu siap membantu</div>
             </div>
-            {{-- TTS Controls: Stop / Pause-Resume (muncul hanya saat AI berbicara) --}}
-            <div class="chatbot-speech-controls" x-show="isSpeaking" x-transition.opacity>
-                <button
-                    @click="stopSpeech()"
-                    class="chatbot-ctrl-btn chatbot-ctrl-stop"
-                    title="Hentikan suara"
-                >🛑</button>
-                <button
-                    @click="pauseResumeSpeech()"
-                    class="chatbot-ctrl-btn chatbot-ctrl-pause"
-                    :title="isPaused ? 'Lanjutkan suara' : 'Jeda suara'"
-                >
-                    <span x-show="!isPaused">⏸️</span>
-                    <span x-show="isPaused">▶️</span>
-                </button>
-            </div>
-            <button
-                @click="toggleTts()"
-                class="chatbot-tts-btn"
-                :title="ttsEnabled ? 'Matikan suara AI' : 'Nyalakan suara AI'"
-            >
-                <span x-show="ttsEnabled">🔊</span>
-                <span x-show="!ttsEnabled">🔇</span>
-            </button>
-            <button
-                wire:click="clearHistory"
-                class="chatbot-clear-btn"
-                title="Hapus riwayat"
-            >🗑️</button>
         </div>
 
         {{-- Messages Area --}}
@@ -145,11 +132,6 @@
             {{-- Chat bubbles --}}
             @foreach($messages as $msg)
             <div class="chatbot-msg-row chatbot-msg-row--{{ $msg['role'] }}">
-                @if($msg['role'] === 'assistant')
-                <div class="chatbot-avatar">
-                    <img src="{{ asset('assets/images/chatbot/avatar-idle.gif') }}" alt="AI" style="width: 28px; height: 28px; object-fit: cover; border-radius: 50%; background: #fff;">
-                </div>
-                @endif
                 <div class="chatbot-bubble chatbot-bubble--{{ $msg['role'] }}">
                     @if($msg['role'] === 'assistant')
                         {{-- Render Markdown untuk respons AI --}}
@@ -161,18 +143,12 @@
                         {!! nl2br(e($msg['content'])) !!}
                     @endif
                 </div>
-                @if($msg['role'] === 'user')
-                <div class="chatbot-avatar chatbot-avatar--user">👤</div>
-                @endif
             </div>
             @endforeach
 
             {{-- Loading dots --}}
             @if($isLoading)
             <div class="chatbot-msg-row chatbot-msg-row--assistant">
-                <div class="chatbot-avatar">
-                    <img src="{{ asset('assets/images/chatbot/avatar-idle.gif') }}" alt="AI" style="width: 28px; height: 28px; object-fit: cover; border-radius: 50%; background: #fff;">
-                </div>
                 <div class="chatbot-bubble chatbot-bubble--assistant chatbot-typing">
                     <span></span><span></span><span></span>
                 </div>
@@ -361,17 +337,26 @@
 .chatbot-header {
     background: linear-gradient(135deg, #4f46e5, #7c3aed);
     color: white;
-    padding: 14px 16px;
+    padding: 24px 16px 20px;
     display: flex;
+    flex-direction: column;
     align-items: center;
-    gap: 10px;
+    gap: 8px;
+    position: relative;
+    text-align: center;
 }
-.chatbot-header-avatar { font-size: 26px; }
+.chatbot-header-actions {
+    position: absolute;
+    top: 14px;
+    right: 14px;
+    display: flex;
+    gap: 6px;
+    align-items: center;
+}
 .chatbot-header-title  { font-weight: 600; font-size: 15px; }
 .chatbot-header-sub    { font-size: 11px; opacity: .8; }
 .chatbot-tts-btn,
 .chatbot-clear-btn {
-    margin-left: auto;
     background: rgba(255,255,255,.15);
     border: none;
     border-radius: 8px;
@@ -381,8 +366,6 @@
     color: white;
     transition: background .2s;
 }
-.chatbot-tts-btn { margin-left: auto; }
-.chatbot-clear-btn { margin-left: 4px; }
 .chatbot-tts-btn:hover,
 .chatbot-clear-btn:hover { background: rgba(255,255,255,.28); }
 
@@ -390,8 +373,7 @@
 .chatbot-speech-controls {
     display: flex;
     align-items: center;
-    gap: 3px;
-    margin-left: auto;
+    gap: 6px;
 }
 .chatbot-ctrl-btn {
     background: rgba(255,255,255,.18);
@@ -438,12 +420,9 @@
 .chatbot-msg-row--user { flex-direction: row; justify-content: flex-end; }
 .chatbot-msg-row--assistant { flex-direction: row; }
 
-.chatbot-avatar { font-size: 20px; flex-shrink: 0; }
-.chatbot-avatar--user { order: 1; }
-
 /* Bubbles */
 .chatbot-bubble {
-    max-width: 76%;
+    max-width: 88%;
     padding: 10px 14px;
     border-radius: 16px;
     font-size: 13.5px;
