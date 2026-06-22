@@ -23,7 +23,9 @@
     >
         {{-- Header --}}
         <div class="flex items-center gap-3 px-4 py-3 bg-gradient-to-r from-indigo-600 to-violet-600 flex-shrink-0">
-            <div class="w-9 h-9 rounded-full bg-white/20 flex items-center justify-center text-xl flex-shrink-0">🤖</div>
+            <div class="w-9 h-9 rounded-full bg-white flex items-center justify-center overflow-hidden flex-shrink-0 shadow-sm">
+            <img src="{{ asset('assets/images/chatbot/avatar-idle.gif') }}" alt="AI" class="w-full h-full object-cover">
+        </div>
             <div class="flex-1 min-w-0">
                 <p class="text-white font-semibold text-sm leading-tight truncate">VISITA AI Assistant</p>
                 <p class="text-indigo-200 text-[11px] leading-tight">Data real-time · Powered by Gemini</p>
@@ -124,10 +126,10 @@
         onclick="aaiUI.toggle()"
         title="VISITA AI Assistant"
         aria-label="Buka Admin AI Assistant"
-        class="w-14 h-14 rounded-full bg-gradient-to-br from-indigo-600 to-violet-600 hover:from-indigo-500 hover:to-violet-500 text-white shadow-xl hover:shadow-2xl flex items-center justify-center text-2xl transition-all hover:scale-110 active:scale-95 border-2 border-white/30"
+        class="w-14 h-14 rounded-full bg-white hover:bg-gray-50 text-white shadow-xl hover:shadow-2xl flex items-center justify-center overflow-hidden transition-all hover:scale-110 active:scale-95 border-2 border-indigo-500/30"
         style="animation:aaiPulse 2.8s infinite"
     >
-        <span id="aai-fab-icon">🤖</span>
+        <span id="aai-fab-icon" class="w-full h-full"><img src="{{ asset('assets/images/chatbot/avatar-idle.gif') }}" alt="AI" class="w-full h-full object-cover"></span>
     </button>
 
 </div>
@@ -202,7 +204,9 @@
         const row = document.createElement('div');
         row.className = 'flex justify-start items-end gap-2';
         row.innerHTML = `
-            <span class="text-lg flex-shrink-0">🤖</span>
+            <div class="w-7 h-7 flex-shrink-0 rounded-full overflow-hidden shadow-sm bg-white border border-gray-200 dark:border-gray-700">
+                <img src="{{ asset('assets/images/chatbot/avatar-idle.gif') }}" alt="AI" class="w-full h-full object-cover">
+            </div>
             <div class="max-w-[78%] bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-gray-100 rounded-2xl rounded-bl-sm px-3.5 py-2.5 text-[13px] leading-snug break-words prose-sm dark:prose-invert">${renderMd(text)}</div>`;
         return row;
     }
@@ -212,7 +216,9 @@
         row.className = 'flex justify-start items-end gap-2';
         row.id = 'aai-typing';
         row.innerHTML = `
-            <span class="text-lg">🤖</span>
+            <div class="w-7 h-7 flex-shrink-0 rounded-full overflow-hidden shadow-sm bg-white border border-gray-200 dark:border-gray-700">
+                <img src="{{ asset('assets/images/chatbot/avatar-idle.gif') }}" alt="AI" class="w-full h-full object-cover">
+            </div>
             <div class="bg-gray-100 dark:bg-gray-700 rounded-2xl rounded-bl-sm px-4 py-3 flex gap-1.5 items-center">
                 <span class="w-1.5 h-1.5 rounded-full bg-gray-400 animate-bounce" style="animation-delay:0s"></span>
                 <span class="w-1.5 h-1.5 rounded-full bg-gray-400 animate-bounce" style="animation-delay:.18s"></span>
@@ -334,14 +340,14 @@
             if (isOpen) {
                 panel.classList.remove('hidden');
                 panel.classList.add('flex', 'flex-col');
-                icon.textContent = '✕';
+                icon.innerHTML = '<span class="text-2xl text-gray-800">✕</span>';
                 fab.style.animation = 'none';
                 setTimeout(() => $('aai-input')?.focus(), 160);
                 scrollBottom();
             } else {
                 panel.classList.add('hidden');
                 panel.classList.remove('flex', 'flex-col');
-                icon.textContent = '🤖';
+                icon.innerHTML = '<img src="{{ asset('assets/images/chatbot/avatar-idle.gif') }}" alt="AI" class="w-full h-full object-cover">';
                 fab.style.animation = 'aaiPulse 2.8s infinite';
                 window.speechSynthesis?.cancel();
                 isSpeaking = false; isPaused = false;

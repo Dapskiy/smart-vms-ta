@@ -93,7 +93,9 @@
     >
         {{-- Header --}}
         <div class="chatbot-header">
-            <div class="chatbot-header-avatar">🤖</div>
+            <div class="chatbot-header-avatar">
+                <img src="{{ asset('assets/images/chatbot/avatar-idle.gif') }}" alt="AI" style="width: 36px; height: 36px; object-fit: cover; border-radius: 50%; background: #fff;">
+            </div>
             <div>
                 <div class="chatbot-header-title">VISITA Assistant</div>
                 <div class="chatbot-header-sub">AI · Selalu siap membantu</div>
@@ -144,7 +146,9 @@
             @foreach($messages as $msg)
             <div class="chatbot-msg-row chatbot-msg-row--{{ $msg['role'] }}">
                 @if($msg['role'] === 'assistant')
-                <div class="chatbot-avatar">🤖</div>
+                <div class="chatbot-avatar">
+                    <img src="{{ asset('assets/images/chatbot/avatar-idle.gif') }}" alt="AI" style="width: 28px; height: 28px; object-fit: cover; border-radius: 50%; background: #fff;">
+                </div>
                 @endif
                 <div class="chatbot-bubble chatbot-bubble--{{ $msg['role'] }}">
                     @if($msg['role'] === 'assistant')
@@ -166,7 +170,9 @@
             {{-- Loading dots --}}
             @if($isLoading)
             <div class="chatbot-msg-row chatbot-msg-row--assistant">
-                <div class="chatbot-avatar">🤖</div>
+                <div class="chatbot-avatar">
+                    <img src="{{ asset('assets/images/chatbot/avatar-idle.gif') }}" alt="AI" style="width: 28px; height: 28px; object-fit: cover; border-radius: 50%; background: #fff;">
+                </div>
                 <div class="chatbot-bubble chatbot-bubble--assistant chatbot-typing">
                     <span></span><span></span><span></span>
                 </div>
