@@ -16,7 +16,7 @@
     {{-- ── Chat Panel ───────────────────────────────────────────── --}}
     <div
         id="aai-panel"
-        class="hidden w-[370px] max-h-[580px] bg-white dark:bg-gray-900 rounded-2xl shadow-2xl border border-gray-200 dark:border-gray-700 flex flex-col overflow-hidden"
+        class="hidden w-[92vw] md:w-[45vw] max-w-[600px] h-[85vh] max-h-[850px] bg-white dark:bg-gray-900 rounded-2xl shadow-2xl border border-gray-200 dark:border-gray-700 flex flex-col overflow-hidden"
         style="animation:aaiSlideIn .22s cubic-bezier(.4,0,.2,1)"
         role="dialog"
         aria-label="VISITA AI Assistant"
