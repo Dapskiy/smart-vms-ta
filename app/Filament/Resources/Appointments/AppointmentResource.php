@@ -52,8 +52,11 @@ class AppointmentResource extends Resource
     }
 
     // Menampilkan semua data KECUALI yang sudah completed
+    // Eager load relasi untuk mencegah N+1 query di tabel & actions
     public static function getEloquentQuery(): Builder
     {
-        return parent::getEloquentQuery()->where('status', '!=', 'completed');
+        return parent::getEloquentQuery()
+            ->with(['visitor', 'pic', 'room'])
+            ->where('status', '!=', 'completed');
     }
 }

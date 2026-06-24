@@ -36,35 +36,23 @@ class SummaryResource extends Resource
                     ->label('No')
                     ->rowIndex(),
 
+                // Semua kolom di bawah membaca dari relasi yang sudah di-eager load
+                // di getEloquentQuery(), sehingga TIDAK ada query tambahan per baris.
                 TextColumn::make('appointments.visit_date')
                     ->label('Tanggal Berkunjung')
                     ->getStateUsing(function (Visitor $record) {
-                        $lastAppointment = $record->appointments()
-                            ->whereIn('status', ['completed', 'checkout', 'inactive'])
-                            ->latest('visit_date')
-                            ->first();
-
-                        if (!$lastAppointment || !$lastAppointment->visit_date) {
-                            return '-';
-                        }
-
-                        return \Carbon\Carbon::parse($lastAppointment->visit_date)->format('d M Y');
+                        $apt = $record->appointments->first();
+                        if (!$apt?->visit_date) return '-';
+                        return \Carbon\Carbon::parse($apt->visit_date)->format('d M Y');
                     })
                     ->sortable(),
 
                 TextColumn::make('appointments.visit_time')
                     ->label('Checkin')
                     ->getStateUsing(function (Visitor $record) {
-                        $lastAppointment = $record->appointments()
-                            ->whereIn('status', ['completed', 'checkout', 'inactive'])
-                            ->latest('visit_date')
-                            ->first();
-
-                        if (!$lastAppointment || !$lastAppointment->visit_time) {
-                            return '-';
-                        }
-
-                        $time = $lastAppointment->visit_time;
+                        $apt = $record->appointments->first();
+                        if (!$apt?->visit_time) return '-';
+                        $time = $apt->visit_time;
                         return is_string($time)
                             ? \Carbon\Carbon::parse($time)->format('H:i')
                             : $time->format('H:i');
@@ -73,24 +61,15 @@ class SummaryResource extends Resource
                 TextColumn::make('appointments.checkout_time')
                     ->label('Checkout')
                     ->getStateUsing(function (Visitor $record) {
-                        $lastAppointment = $record->appointments()
-                            ->whereIn('status', ['completed', 'checkout', 'inactive'])
-                            ->latest('visit_date')
-                            ->first();
-
-                        if (!$lastAppointment) {
-                            return '-';
-                        }
-
-                        if ($lastAppointment->checkout_time) {
-                            $time = $lastAppointment->checkout_time;
+                        $apt = $record->appointments->first();
+                        if (!$apt) return '-';
+                        if ($apt->checkout_time) {
+                            $time = $apt->checkout_time;
                             return is_string($time)
                                 ? \Carbon\Carbon::parse($time)->format('H:i')
                                 : $time->format('H:i');
                         }
-
-                        // Fallback ke updated_at
-                        return \Carbon\Carbon::parse($lastAppointment->updated_at)->format('H:i');
+                        return \Carbon\Carbon::parse($apt->updated_at)->format('H:i');
                     }),
 
                 TextColumn::make('name')
@@ -106,16 +85,8 @@ class SummaryResource extends Resource
                 TextColumn::make('appointments.pic')
                     ->label('PIC')
                     ->getStateUsing(function (Visitor $record) {
-                        $lastAppointment = $record->appointments()
-                            ->whereIn('status', ['completed', 'checkout', 'inactive'])
-                            ->latest('visit_date')
-                            ->first();
-
-                        if (!$lastAppointment || !$lastAppointment->pic) {
-                            return '-';
-                        }
-
-                        return $lastAppointment->pic->name ?? '-';
+                        $apt = $record->appointments->first();
+                        return $apt?->pic?->name ?? '-';
                     })
                     ->searchable()
                     ->sortable(),
@@ -123,16 +94,9 @@ class SummaryResource extends Resource
                 TextColumn::make('appointments.purpose')
                     ->label('Keperluan')
                     ->getStateUsing(function (Visitor $record) {
-                        $lastAppointment = $record->appointments()
-                            ->whereIn('status', ['completed', 'checkout', 'inactive'])
-                            ->latest('visit_date')
-                            ->first();
-
-                        if (!$lastAppointment || !$lastAppointment->purpose) {
-                            return '-';
-                        }
-
-                        return \Illuminate\Support\Str::limit($lastAppointment->purpose, 50, '...');
+                        $apt = $record->appointments->first();
+                        if (!$apt?->purpose) return '-';
+                        return \Illuminate\Support\Str::limit($apt->purpose, 50, '...');
                     })
                     ->wrap(),
             ])
@@ -205,9 +169,18 @@ class SummaryResource extends Resource
 
     public static function getEloquentQuery(): Builder
     {
-        $query = parent::getEloquentQuery()->whereHas('appointments', function (Builder $query) {
-            $query->whereIn('status', ['completed', 'checkout', 'inactive']);
-        });
+        // Eager load: appointment terbaru (completed/checkout/inactive) beserta relasi PIC
+        // Ini mencegah N+1 query yang sebelumnya terjadi 6x per baris di tabel
+        $query = parent::getEloquentQuery()
+            ->with(['appointments' => function ($q) {
+                $q->whereIn('status', ['completed', 'checkout', 'inactive'])
+                  ->with('pic')
+                  ->latest('visit_date')
+                  ->limit(1);
+            }])
+            ->whereHas('appointments', function (Builder $query) {
+                $query->whereIn('status', ['completed', 'checkout', 'inactive']);
+            });
 
         $type = request('type', empty(request()->all()) ? 'range' : request('type'));
 

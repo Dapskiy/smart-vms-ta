@@ -4,6 +4,7 @@ namespace App\Filament\Widgets;
 
 use App\Models\Appointment;
 use Filament\Widgets\ChartWidget;
+use Illuminate\Support\Facades\Cache;
 
 class VisitPurposeChart extends ChartWidget
 {
@@ -15,17 +16,19 @@ class VisitPurposeChart extends ChartWidget
 
     protected function getData(): array
     {
-        // Agregasi data keperluan dari appointment yang selesai
-        $results = Appointment::query()
-            ->whereIn('status', ['completed', 'checkout', 'inactive'])
-            ->whereNotNull('purpose')
-            ->where('purpose', '!=', '')
-            ->selectRaw('purpose, COUNT(*) as total')
-            ->groupBy('purpose')
-            ->orderByDesc('total')
-            ->limit(8) // Batasi maksimal 8 kategori agar doughnut tidak terlalu penuh
-            ->pluck('total', 'purpose')
-            ->toArray();
+        // Cache 5 menit — data distribusi keperluan berubah jarang
+        $results = Cache::remember('dashboard_visit_purpose', 300, function () {
+            return Appointment::query()
+                ->whereIn('status', ['completed', 'checkout', 'inactive'])
+                ->whereNotNull('purpose')
+                ->where('purpose', '!=', '')
+                ->selectRaw('purpose, COUNT(*) as total')
+                ->groupBy('purpose')
+                ->orderByDesc('total')
+                ->limit(8)
+                ->pluck('total', 'purpose')
+                ->toArray();
+        });
 
         // Jika tidak ada data, tampilkan placeholder
         if (empty($results)) {

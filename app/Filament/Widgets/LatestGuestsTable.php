@@ -17,7 +17,7 @@ class LatestGuestsTable extends BaseWidget
     {
         return $table
             ->query(
-                Appointment::query()->latest()
+                Appointment::query()->with('visitor')->latest()
             )
             ->columns([
                 Tables\Columns\TextColumn::make('visitor.name')

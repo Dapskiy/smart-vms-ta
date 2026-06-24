@@ -6,6 +6,8 @@ use App\Models\Appointment;
 use Carbon\Carbon;
 use Filament\Widgets\StatsOverviewWidget as BaseWidget;
 use Filament\Widgets\StatsOverviewWidget\Stat;
+use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\DB;
 
 class GuestStatsOverview extends BaseWidget
 {
@@ -17,27 +19,35 @@ class GuestStatsOverview extends BaseWidget
         $today = Carbon::today();
         $yesterday = Carbon::yesterday();
 
-        // 1. Hitung Tamu Hari Ini & Kemarin (Trend)
-        $todayCount = Appointment::whereDate('visit_date', $today)->count();
-        $yesterdayCount = Appointment::whereDate('visit_date', $yesterday)->count();
+        // ── Optimisasi: 4 query COUNT terpisah → 1 query conditional count ──
+        // Cache 2 menit agar dashboard tidak overload saat multi-user akses bersamaan
+        $stats = Cache::remember('dashboard_guest_stats_' . $today->toDateString(), 120, function () use ($today) {
+            return DB::table('appointments')
+                ->selectRaw("
+                    COUNT(CASE WHEN visit_date = ? THEN 1 END) as today_total,
+                    COUNT(CASE WHEN status IN ('checked_in', 'active') THEN 1 END) as active_count,
+                    COUNT(CASE WHEN visit_date = ? AND status IN ('pending', 'approved') THEN 1 END) as waiting_count,
+                    COUNT(CASE WHEN status IN ('completed', 'checkout', 'inactive')
+                                AND EXTRACT(MONTH FROM visit_date) = ?
+                                AND EXTRACT(YEAR FROM visit_date) = ? THEN 1 END) as completed_month
+                ", [$today->toDateString(), $today->toDateString(), $today->month, $today->year])
+                ->first();
+        });
+
+        $todayCount = $stats->today_total ?? 0;
+        $activeCount = $stats->active_count ?? 0;
+        $waitingCount = $stats->waiting_count ?? 0;
+        $completedThisMonth = $stats->completed_month ?? 0;
+
+        // Kemarin tetap query terpisah (ringan, 1 COUNT)
+        $yesterdayCount = Cache::remember('dashboard_yesterday_count_' . $yesterday->toDateString(), 300, function () use ($yesterday) {
+            return Appointment::whereDate('visit_date', $yesterday)->count();
+        });
+
         $trendTamu = $todayCount - $yesterdayCount;
         $trendTamuIcon = $trendTamu >= 0 ? 'heroicon-m-arrow-trending-up' : 'heroicon-m-arrow-trending-down';
         $trendTamuColor = $trendTamu >= 0 ? 'success' : 'danger';
         $trendTamuDesc = $trendTamu >= 0 ? abs($trendTamu) . ' naik dari kemarin' : abs($trendTamu) . ' turun dari kemarin';
-
-        // 2. Hitung Sedang Berkunjung (Active / Checked In)
-        $activeCount = Appointment::whereIn('status', ['checked_in', 'active'])->count();
-
-        // 3. Hitung Menunggu Masuk (Pending / Approved hari ini)
-        $waitingCount = Appointment::whereIn('status', ['pending', 'approved'])
-            ->whereDate('visit_date', $today)
-            ->count();
-
-        // 4. Total Selesai Bulan Ini
-        $completedThisMonth = Appointment::whereIn('status', ['completed', 'checkout', 'inactive'])
-            ->whereMonth('visit_date', $today->month)
-            ->whereYear('visit_date', $today->year)
-            ->count();
 
         // 5. Dummy data array untuk Sparkline chart (agar visual lebih keren)
         $sparklineData = [7, 4, 6, 10, 14, 7, $todayCount];

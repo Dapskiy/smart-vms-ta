@@ -5,6 +5,8 @@ namespace App\Filament\Widgets;
 use App\Models\Appointment;
 use Carbon\Carbon;
 use Filament\Widgets\ChartWidget;
+use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\DB;
 
 class VisitTrendChart extends ChartWidget
 {
@@ -18,21 +20,35 @@ class VisitTrendChart extends ChartWidget
     {
         Carbon::setLocale('id');
 
+        $startDate = Carbon::today()->subDays(6);
+        $endDate = Carbon::today();
+
+        // ── Optimisasi: 7 query dalam loop → 1 query GROUP BY ──
+        // Cache 5 menit (data historis berubah jarang)
+        $results = Cache::remember(
+            'dashboard_visit_trend_' . $endDate->toDateString(),
+            300,
+            function () use ($startDate, $endDate) {
+                return DB::table('appointments')
+                    ->selectRaw('visit_date::date as date, COUNT(*) as total')
+                    ->whereIn('status', ['completed', 'checkout', 'inactive'])
+                    ->whereBetween('visit_date', [$startDate->toDateString(), $endDate->toDateString()])
+                    ->groupBy(DB::raw('visit_date::date'))
+                    ->pluck('total', 'date')
+                    ->toArray();
+            }
+        );
+
         $labels = [];
         $data = [];
 
-        // Bangun data untuk 7 hari terakhir
+        // Bangun array 7 hari (termasuk hari tanpa data = 0)
         for ($i = 6; $i >= 0; $i--) {
             $date = Carbon::today()->subDays($i);
+            $dateStr = $date->toDateString();
 
             $labels[] = $date->translatedFormat('d M'); // contoh: "06 Mei"
-
-            $count = Appointment::query()
-                ->whereIn('status', ['completed', 'checkout', 'inactive'])
-                ->whereDate('visit_date', $date->toDateString())
-                ->count();
-
-            $data[] = $count;
+            $data[] = $results[$dateStr] ?? 0;
         }
 
         return [
