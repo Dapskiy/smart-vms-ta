@@ -9,6 +9,8 @@ use App\Models\Visitor;
 use App\Models\Appointment;
 use Illuminate\Support\Str;
 use App\Services\VisitIdService;
+use App\Mail\PicApprovalMail;
+use Illuminate\Support\Facades\Mail;
 use Livewire\Attributes\On;
 
 class KioskWalkinForm extends Component
@@ -40,6 +42,9 @@ class KioskWalkinForm extends Component
     // Auto-fill state
     public $is_verified_returning = false;
     public $verified_visitor_id = null;
+
+    // Pending approval state
+    public $pending_approval_token = null;
 
     #[On('resetWalkinForm')]
     public function resetForm()
@@ -334,39 +339,51 @@ class KioskWalkinForm extends Component
 
     private function createAppointmentRecord(Visitor $visitor)
     {
-        // 4. Buat Appointment
         $isWalkIn = $this->visit_type === 'walk-in';
-        
-        Appointment::create([
-            'visit_id' => VisitIdService::generate(),
-            'visitor_id' => $visitor->id,
-            'pic_id' => $this->selected_pic_id,
-            'type' => $this->visit_type,
-            'status' => $isWalkIn ? 'active' : 'pending', 
-            'visit_date' => $isWalkIn ? now()->toDateString() : $this->visit_date,
-            'visit_time' => $isWalkIn ? now()->toTimeString() : $this->visit_time,
-            'purpose' => $this->purpose,
-            'pax' => $this->pax,
-            'token' => Str::random(10),
-            'check_in_time' => $isWalkIn ? now() : null,
+        $approvalToken = $isWalkIn ? Str::uuid()->toString() : null;
+
+        $appointment = Appointment::create([
+            'visit_id'       => VisitIdService::generate(),
+            'visitor_id'     => $visitor->id,
+            'pic_id'         => $this->selected_pic_id,
+            'type'           => $this->visit_type,
+            'status'         => 'pending', // Walk-in dan appointment mulai dari pending
+            'visit_date'     => $isWalkIn ? now()->toDateString() : $this->visit_date,
+            'visit_time'     => $isWalkIn ? now()->toTimeString() : $this->visit_time,
+            'purpose'        => $this->purpose,
+            'pax'            => $this->pax,
+            'token'          => Str::random(10),
+            'approval_token' => $approvalToken,
         ]);
 
-        // 5. Dispatch event agar UI Modal berubah sukses
-        $appointmentData = [
-            'visitorName' => $this->name,
-            'picName' => $this->selected_pic_name,
-            'visit_date' => \Carbon\Carbon::parse($appointment->visit_date)->translatedFormat('d F Y'),
-            'visit_time' => $appointment->visit_time,
-            'purpose' => $appointment->purpose,
-            'type' => $appointment->type
-        ];
-
         if ($isWalkIn) {
-            $this->dispatch('walkin-success', appt: $appointmentData);
+            // Kirim email approval ke PIC
+            $appointment->load(['visitor', 'pic']);
+            $picEmail = $appointment->pic?->email;
+
+            if ($picEmail) {
+                Mail::to($picEmail)->send(new PicApprovalMail($appointment));
+            }
+
+            // Dispatch event untuk menampilkan layar menunggu di Kiosk
+            $this->dispatch('walkin-pending-approval', 
+                token: $approvalToken,
+                visitorName: $this->name,
+                picName: $this->selected_pic_name,
+            );
         } else {
+            // Appointment biasa — langsung tampilkan konfirmasi
+            $appointmentData = [
+                'visitorName' => $this->name,
+                'picName'     => $this->selected_pic_name,
+                'visit_date'  => \Carbon\Carbon::parse($appointment->visit_date)->translatedFormat('d F Y'),
+                'visit_time'  => $appointment->visit_time,
+                'purpose'     => $appointment->purpose,
+                'type'        => $appointment->type,
+            ];
             $this->dispatch('appointment-success', appt: $appointmentData);
         }
-        
+
         $this->reset(['name', 'company', 'phone', 'purpose', 'pax', 'department_id', 'search_pic', 'selected_pic_id', 'selected_pic_name', 'step', 'pic_results', 'visit_type', 'visit_date', 'visit_time', 'is_verified_returning', 'verified_visitor_id']);
     }
 

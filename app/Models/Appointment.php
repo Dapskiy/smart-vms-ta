@@ -26,6 +26,8 @@ class Appointment extends Model
         'checkin_time'    => 'string',
         'checkout_time'   => 'string',
         'checkout_method' => 'string',
+        'approved_at'     => 'datetime',
+        'rejected_at'     => 'datetime',
     ];
 
     protected static function booted(): void
@@ -46,8 +48,8 @@ class Appointment extends Model
             // Standarisasi type 'walk-in'
             if (in_array($appointment->type, ['walkin', 'walk_in', 'walk-in'])) {
                 $appointment->type = 'walk-in';
-                // Walk-in otomatis active (check-in)
-                $appointment->status = 'active';
+                // Walk-in tetap 'pending' — menunggu persetujuan PIC via email
+                $appointment->status = 'pending';
             } elseif (empty($appointment->status)) {
                 $appointment->status = 'pending';
             }

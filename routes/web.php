@@ -8,6 +8,7 @@ use App\Http\Controllers\Guest\FaceCheckoutController;
 use App\Http\Controllers\Guest\FaceValidationController;
 use App\Http\Controllers\Admin\VisitorFacePhotoController;
 use App\Http\Controllers\Admin\AdminChatController;
+use App\Http\Controllers\AppointmentApprovalController;
 
 Route::get('/', function () {
     return view('welcome');
@@ -49,3 +50,14 @@ Route::post('/kiosk/face-checkout', [FaceCheckoutController::class, 'checkout'])
 // Route validasi duplikasi wajah sebelum registrasi (no auth)
 Route::post('/kiosk/face-check-duplicate', [FaceValidationController::class, 'checkDuplicate'])
     ->name('kiosk.face.check-duplicate');
+
+// ── Approval Kunjungan Walk-In oleh PIC via Email ─────────────────────
+// Public routes (tanpa auth) — PIC mengakses dari link di email
+Route::get('/appointments/approve/{token}', [AppointmentApprovalController::class, 'approve'])
+    ->name('appointments.approve');
+Route::get('/appointments/reject/{token}', [AppointmentApprovalController::class, 'reject'])
+    ->name('appointments.reject');
+
+// Polling endpoint untuk Kiosk real-time status check (no auth)
+Route::get('/appointments/status/{token}', [AppointmentApprovalController::class, 'status'])
+    ->name('appointments.status');

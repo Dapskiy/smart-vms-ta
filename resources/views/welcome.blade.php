@@ -711,6 +711,105 @@
         }
         .countdown-text { font-size: 0.72rem; color: #8899bb; margin-bottom: 0.75rem; }
 
+        /* Waiting approval modal */
+        .waiting-box {
+            width: min(94vw, 440px);
+            text-align: center;
+            padding: 2.5rem 2rem;
+        }
+        .waiting-icon {
+            width: 6rem; height: 6rem;
+            border-radius: 50%;
+            background: rgba(99, 102, 241, 0.1);
+            border: 2px solid rgba(99, 102, 241, 0.4);
+            display: flex; align-items: center; justify-content: center;
+            margin: 0 auto 1.5rem;
+            position: relative;
+        }
+        .waiting-icon::after {
+            content: '';
+            position: absolute;
+            inset: -6px;
+            border-radius: 50%;
+            border: 2px solid transparent;
+            border-top-color: var(--accent-primary);
+            animation: waiting-spin 1.2s linear infinite;
+        }
+        @keyframes waiting-spin {
+            to { transform: rotate(360deg); }
+        }
+        .waiting-icon svg {
+            width: 2.5rem; height: 2.5rem;
+            color: var(--accent-glow);
+            animation: waiting-pulse 2s ease-in-out infinite;
+        }
+        @keyframes waiting-pulse {
+            0%, 100% { opacity: 0.6; transform: scale(0.9); }
+            50%      { opacity: 1;   transform: scale(1.05); }
+        }
+        .waiting-heading {
+            font-size: 1.3rem;
+            font-weight: 700;
+            color: #f0f4ff;
+            margin-bottom: 0.5rem;
+        }
+        .waiting-sub {
+            font-size: 0.85rem;
+            color: #8899bb;
+            margin-bottom: 0.4rem;
+            line-height: 1.5;
+        }
+        .waiting-timer {
+            font-size: 0.75rem;
+            color: #6366f1;
+            margin-bottom: 1.5rem;
+            font-weight: 500;
+        }
+        .waiting-dots::after {
+            content: '';
+            animation: waiting-dots 1.5s steps(4, end) infinite;
+        }
+        @keyframes waiting-dots {
+            0%  { content: ''; }
+            25% { content: '.'; }
+            50% { content: '..'; }
+            75% { content: '...'; }
+        }
+        .btn-cancel-waiting {
+            padding: 0.7rem 2rem;
+            background: transparent;
+            border: 1px solid rgba(244, 63, 94, 0.4);
+            border-radius: 0.75rem;
+            color: #f43f5e;
+            font-size: 0.85rem;
+            font-weight: 600;
+            font-family: 'Poppins', sans-serif;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        .btn-cancel-waiting:hover {
+            background: rgba(244, 63, 94, 0.1);
+            border-color: rgba(244, 63, 94, 0.6);
+        }
+
+        /* Rejected overlay */
+        .rejected-box {
+            width: min(94vw, 440px);
+            text-align: center;
+            padding: 2.5rem 2rem;
+        }
+        .rejected-icon {
+            width: 5rem; height: 5rem;
+            border-radius: 50%;
+            background: rgba(244, 63, 94, 0.15);
+            border: 2px solid #f43f5e;
+            display: flex; align-items: center; justify-content: center;
+            margin: 0 auto 1.2rem;
+        }
+        .rejected-icon svg { width: 2.5rem; height: 2.5rem; color: #f43f5e; }
+        .rejected-heading { font-size: 1.4rem; font-weight: 700; color: #f43f5e; margin-bottom: 0.4rem; }
+        .rejected-sub { font-size: 0.85rem; color: #8899bb; margin-bottom: 1.5rem; line-height: 1.5; }
+
     </style>
     @livewireStyles
 </head>
@@ -965,6 +1064,111 @@
                 if (successSecondsLeft <= 0) closeSuccessPopup();
             }, 1000);
         });
+
+        // Polling state variables for PIC approval
+        let approvalPollInterval = null;
+        let approvalTimerInterval = null;
+        let approvalSecondsElapsed = 0;
+
+        // Event listener for Walk-in pending approval
+        document.addEventListener('walkin-pending-approval', function (e) {
+            closeWalkinForm();
+            
+            const token = e.detail.token;
+            const visitorName = e.detail.visitorName;
+            const picName = e.detail.picName;
+
+            document.getElementById('wa-pic-name').textContent = picName || 'PIC';
+            document.getElementById('wa-timer').textContent = 'Menunggu respon (0 detik)...';
+            document.getElementById('modal-waiting-approval').classList.add('active');
+
+            approvalSecondsElapsed = 0;
+            clearInterval(approvalPollInterval);
+            clearInterval(approvalTimerInterval);
+
+            // Timer display
+            approvalTimerInterval = setInterval(() => {
+                approvalSecondsElapsed++;
+                document.getElementById('wa-timer').textContent = `Menunggu respon (${approvalSecondsElapsed} detik)...`;
+            }, 1000);
+
+            // Poll appointment approval status
+            approvalPollInterval = setInterval(() => {
+                fetch(`/appointments/status/${token}`)
+                    .then(response => {
+                        if (!response.ok) throw new Error('Status check failed');
+                        return response.json();
+                    })
+                    .then(data => {
+                        if (data.status === 'active') {
+                            stopApprovalPolling();
+                            document.getElementById('modal-waiting-approval').classList.remove('active');
+
+                            // Show standard success modal
+                            document.querySelector('#modal-success .success-heading').textContent = 'Registrasi Berhasil! 🎉';
+                            document.querySelector('#modal-success .success-sub').textContent = 'Kunjungan Anda telah disetujui oleh PIC.';
+                            document.getElementById('si-name').textContent = visitorName || '-';
+                            document.getElementById('si-pic').textContent = picName || '-';
+                            document.getElementById('si-room').textContent = '-';
+                            document.getElementById('si-date').textContent = new Date().toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' });
+                            document.getElementById('si-time').textContent = new Date().toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' });
+                            document.getElementById('si-checkin').textContent = data.check_in_time || new Date().toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' });
+                            document.getElementById('si-purpose').textContent = 'Walk-in (Disetujui)';
+
+                            document.getElementById('modal-success').classList.add('active');
+
+                            successSecondsLeft = 15;
+                            updateCountdown();
+                            clearInterval(successTimer);
+                            successTimer = setInterval(() => {
+                                successSecondsLeft--;
+                                updateCountdown();
+                                if (successSecondsLeft <= 0) closeSuccessPopup();
+                            }, 1000);
+                        } else if (data.status === 'rejected') {
+                            stopApprovalPolling();
+                            document.getElementById('modal-waiting-approval').classList.remove('active');
+
+                            // Show rejected modal
+                            document.getElementById('modal-rejected').classList.add('active');
+
+                            let rejectedSecondsLeft = 15;
+                            const updateRejectedCountdown = () => {
+                                const pct = (rejectedSecondsLeft / 15) * 100;
+                                document.getElementById('rejected-countdown-bar').style.width = pct + '%';
+                                document.getElementById('rejected-countdown-text').textContent =
+                                    'Layar akan kembali otomatis dalam ' + rejectedSecondsLeft + ' detik';
+                            };
+
+                            updateRejectedCountdown();
+                            clearInterval(successTimer);
+                            successTimer = setInterval(() => {
+                                rejectedSecondsLeft--;
+                                updateRejectedCountdown();
+                                if (rejectedSecondsLeft <= 0) closeRejectedPopup();
+                            }, 1000);
+                        }
+                    })
+                    .catch(err => console.error('Error polling status:', err));
+            }, 3000);
+        });
+
+        function stopApprovalPolling() {
+            clearInterval(approvalPollInterval);
+            clearInterval(approvalTimerInterval);
+        }
+
+        function cancelWaitingApproval() {
+            stopApprovalPolling();
+            document.getElementById('modal-waiting-approval').classList.remove('active');
+            openWalkinForm();
+        }
+
+        function closeRejectedPopup() {
+            clearInterval(successTimer);
+            document.getElementById('modal-rejected').classList.remove('active');
+        }
+
 
         // Event listener for Appointment scheduling success
         document.addEventListener('appointment-success', function (e) {
@@ -1513,6 +1717,43 @@
         </div>
     </div>
     
+    <!-- ===== MODAL 4: WAITING PIC APPROVAL ===== -->
+    <div id="modal-waiting-approval" class="modal-overlay">
+        <div class="modal-box waiting-box">
+            <div class="waiting-icon">
+                <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/>
+                </svg>
+            </div>
+            <div class="waiting-heading">Menunggu Persetujuan PIC<span class="waiting-dots"></span></div>
+            <p class="waiting-sub">
+                Notifikasi telah dikirim ke <strong id="wa-pic-name">PIC</strong>.<br>
+                Layar ini akan otomatis berubah setelah PIC merespon.
+            </p>
+            <p class="waiting-timer" id="wa-timer">Menunggu respon...</p>
+            <button class="btn-cancel-waiting" onclick="cancelWaitingApproval()">Batalkan</button>
+        </div>
+    </div>
+
+    <!-- ===== MODAL 5: REJECTED BY PIC ===== -->
+    <div id="modal-rejected" class="modal-overlay">
+        <div class="modal-box rejected-box">
+            <div class="rejected-icon">
+                <svg fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/>
+                </svg>
+            </div>
+            <div class="rejected-heading">Kunjungan Ditolak</div>
+            <p class="rejected-sub">
+                Mohon maaf, PIC tidak dapat menerima kunjungan Anda saat ini.<br>
+                Silakan hubungi Resepsionis untuk informasi lebih lanjut.
+            </p>
+            <div class="countdown-bar-wrap"><div id="rejected-countdown-bar" class="countdown-bar" style="width:100%;background:#f43f5e;"></div></div>
+            <p id="rejected-countdown-text" class="countdown-text"></p>
+            <button class="btn-ok" onclick="closeRejectedPopup()">Kembali</button>
+        </div>
+    </div>
+
 
     <style>
         @keyframes kp-spin      { to { transform: rotate(360deg); } }
