@@ -30,7 +30,7 @@ class PicsTable
                 //
             ])
             ->recordActions([
-                \Filament\Tables\Actions\Action::make('register_face')
+                \Filament\Actions\Action::make('register_face')
                     ->label('Scan Wajah')
                     ->icon('heroicon-o-camera')
                     ->color('info')
