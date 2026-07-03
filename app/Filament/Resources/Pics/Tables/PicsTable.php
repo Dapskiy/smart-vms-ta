@@ -9,6 +9,7 @@ use Filament\Tables\Table;
 
 use Filament\Tables\Columns\IconColumn;
 use Filament\Tables\Columns\TextColumn;
+use Filament\Tables\Columns\ToggleColumn;
 
 class PicsTable
 {
@@ -23,8 +24,12 @@ class PicsTable
                     ->searchable(),
                 TextColumn::make('phone')
                     ->searchable(),
-                IconColumn::make('is_available')
-                    ->boolean(),
+                ToggleColumn::make('is_available')
+                    ->label('Status Hadir'),
+                IconColumn::make('face_registered')
+                    ->label('Face ID')
+                    ->boolean()
+                    ->state(fn ($record) => !empty($record->face_features) && is_array($record->face_features) && count($record->face_features) > 0),
             ])
             ->filters([
                 //

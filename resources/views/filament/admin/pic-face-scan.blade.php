@@ -12,8 +12,8 @@
          isCameraReady: false,
          statusText: 'Memuat Model AI...',
          scanMessage: 'Posisikan wajah di dalam lingkaran',
-         msgColor: '#fbbf24',
-         ringColor: '#fbbf24',
+         msgColor: '#10b981',
+         ringColor: '#10b981',
          arrowDir: 'none',
          faceInPlace: false,
          
@@ -27,13 +27,8 @@
          
          async init() {
              try {
-                 this.logDebug('Menginisialisasi scan wajah...');
                  if (typeof window.faceapi === 'undefined') {
-                     this.logDebug('Memuat library face-api...');
                      await this.loadScript('{{ asset('js/face-api.min.js') }}');
-                     this.logDebug('Library face-api berhasil dimuat.');
-                 } else {
-                     this.logDebug('Library face-api sudah tersedia.');
                  }
                  
                  this.statusText = 'Memuat Model AI...';
@@ -42,17 +37,14 @@
                      faceapi.nets.faceLandmark68Net.loadFromUri('/models'),
                      faceapi.nets.faceRecognitionNet.loadFromUri('/models')
                  ]);
-                 this.logDebug('Model AI berhasil dimuat.');
                  
                  this.statusText = 'Membuka Kamera...';
                  this.stream = await navigator.mediaDevices.getUserMedia({ 
                      video: { facingMode: 'user', width: { ideal: 640 } } 
                  });
-                 this.logDebug('Kamera berhasil diakses.');
                  
                  this.$refs.videoElement.srcObject = this.stream;
                  this.$refs.videoElement.onloadedmetadata = () => {
-                     this.logDebug('Metadata video dimuat, memulai scan.');
                      this.$refs.videoElement.play();
                      this.isCameraReady = true;
                      this.scanActive = true;
@@ -63,7 +55,6 @@
                  };
              } catch (error) {
                  console.error('Kamera/AI Error:', error);
-                 this.logDebug('Error: ' + error.message);
                  this.statusText = 'Gagal mengakses kamera atau memuat model AI.';
              }
          },
@@ -81,23 +72,14 @@
              });
          },
          
-         logDebug(msg) {
-             console.log('[SCAN DEBUG]', msg);
-             const el = document.getElementById('pic-scan-debug-logs');
-             if (el) {
-                 el.innerHTML += `<div style='margin-bottom: 2px;'>&gt; ${msg}</div>`;
-                 el.scrollTop = el.scrollHeight;
-             }
-         },
-         
          setMsg(msg, type) {
              this.scanMessage = msg;
-             this.msgColor = type === 'error' ? '#ef4444' : type === 'success' ? '#10b981' : '#fbbf24';
+             this.msgColor = type === 'error' ? '#ef4444' : type === 'success' ? '#10b981' : '#10b981';
          },
          
          setRing(color) {
-             const map = { red: '#ef4444', green: '#10b981', blue: '#fbbf24' };
-             this.ringColor = map[color] || '#fbbf24';
+             const map = { red: '#ef4444', green: '#10b981', blue: '#6366f1' };
+             this.ringColor = map[color] || '#10b981';
          },
          
          async landmarkLoop() {
@@ -286,7 +268,6 @@
              if (this.landmarkRAF) cancelAnimationFrame(this.landmarkRAF);
              if (this.stream) {
                  this.stream.getTracks().forEach(track => track.stop());
-                 this.logDebug('Kamera dihentikan.');
              }
          },
          
@@ -306,14 +287,11 @@
         <p style="font-size: 0.82rem; color: #8899bb; margin-bottom: 0.5rem; text-align: center;">Scan wajah untuk pendaftaran — tengok kanan lalu kiri</p>
 
         <!-- Loading State -->
-        <div x-show="!isCameraReady" style="display: flex; flex-direction: column; align-items: center; justify-content: center; height: 320px; gap: 12px; width: 100%;">
-            <svg style="width: 2.5rem; height: 2.5rem; color: #fbbf24; animation: kp-spin 1s linear infinite;" viewBox="0 0 24 24" fill="none">
+        <div x-show="!isCameraReady" style="display: flex; flex-direction: column; align-items: center; justify-content: center; height: 280px; gap: 1rem; width: 100%;">
+            <svg style="width: 2.5rem; height: 2.5rem; color: #10b981; animation: kp-spin 1s linear infinite;" viewBox="0 0 24 24" fill="none">
                 <circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="3" stroke-dasharray="40" stroke-dashoffset="10"/>
             </svg>
-            <span x-text="statusText" style="font-size: 0.875rem; color: #9ca3af;">Memuat model AI...</span>
-            
-            <!-- Debug logs visible on UI -->
-            <div id="pic-scan-debug-logs" style="font-size: 0.65rem; color: #a5b4fc; max-height: 100px; overflow-y: auto; text-align: left; width: 90%; border: 1px dashed rgba(255,255,255,0.1); padding: 6px; border-radius: 4px; font-family: monospace; background: rgba(0,0,0,0.3); margin-top: 10px;"></div>
+            <span x-text="statusText" style="font-size: 0.85rem; color: #8899bb;">Memuat model AI...</span>
         </div>
 
         <!-- Camera / Face Scan UI -->
@@ -339,11 +317,11 @@
                                 </mask>
                             </defs>
                             <rect width="256" height="256" fill="rgba(0,0,0,0.62)" mask="url(#pic-face-mask)"/>
-                            <use href="#pic-face-shape" fill="none" stroke-width="2.5" stroke-dasharray="10 6" style="animation: kp-pulse 1.4s ease-in-out infinite;" :stroke="ringColor === '#ef4444' ? '#ef4444' : '#fcd34d'"/>
+                            <use href="#pic-face-shape" fill="none" stroke-width="2.5" stroke-dasharray="10 6" style="animation: kp-pulse 1.4s ease-in-out infinite;" :stroke="ringColor === '#ef4444' ? '#ef4444' : '#818cf8'"/>
                         </svg>
                     </div>
                     <!-- Success border overlay -->
-                    <div style="position: absolute; inset: 0; border-radius: 50%; pointer-events: none; transition: box-shadow 0.4s; z-index: 5;" :style="ringColor === '#10b981' ? 'box-shadow: inset 0 0 0 4px #10b981' : ''"></div>
+                    <div style="position: absolute; inset: 0; border-radius: 50%; pointer-events: none; transition: box-shadow 0.4s; z-index: 5;" :style="ringColor === '#10b981' ? 'box-shadow: inset 0 0 0 3px #10b981' : ''"></div>
                 </div>
             </div>
 
@@ -355,12 +333,12 @@
             <!-- Arrows -->
             <div style="display: flex; align-items: center; justify-content: center; gap: 1.5rem; min-height: 52px;">
                 <div style="display: none; flex-direction: column; align-items: center; gap: 4px; animation: kp-bounce-r 0.8s ease-in-out infinite;" :style="arrowDir === 'right' ? 'display: flex' : 'display: none'">
-                    <svg style="width: 2rem; height: 2rem; color: #fcd34d;" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M13 7l5 5m0 0l-5 5m5-5H6"/></svg>
-                    <span style="font-size: 0.68rem; color: #fcd34d; font-weight: 700; letter-spacing: .04em;">KANAN</span>
+                    <svg style="width: 2rem; height: 2rem; color: #818cf8;" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M13 7l5 5m0 0l-5 5m5-5H6"/></svg>
+                    <span style="font-size: 0.68rem; color: #818cf8; font-weight: 700; letter-spacing: .04em;">KANAN</span>
                 </div>
                 <div style="display: none; flex-direction: column; align-items: center; gap: 4px; animation: kp-bounce-l 0.8s ease-in-out infinite;" :style="arrowDir === 'left' ? 'display: flex' : 'display: none'">
-                    <svg style="width: 2rem; height: 2rem; color: #fcd34d;" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M11 17l-5-5m0 0l5-5m-5 5h12"/></svg>
-                    <span style="font-size: 0.68rem; color: #fcd34d; font-weight: 700; letter-spacing: .04em;">KIRI</span>
+                    <svg style="width: 2rem; height: 2rem; color: #818cf8;" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M11 17l-5-5m0 0l5-5m-5 5h12"/></svg>
+                    <span style="font-size: 0.68rem; color: #818cf8; font-weight: 700; letter-spacing: .04em;">KIRI</span>
                 </div>
             </div>
         </div>
