@@ -122,7 +122,6 @@ class KioskWalkinForm extends Component
             // Ambil kandidat dari DB menggunakan pencarian LIKE
             $queryResults = Pic::where('department_id', $this->department_id)
                 ->where('name', 'iLike', '%' . $this->search_pic . '%')
-                ->where('is_available', true)
                 ->limit(10) // Ambil agak banyak untuk difilter
                 ->get()
                 ->toArray();
@@ -175,11 +174,18 @@ class KioskWalkinForm extends Component
 
     public function selectPic($picId, $picName)
     {
+        $pic = Pic::find($picId);
+        if ($pic && !$pic->is_available) {
+            $this->addError('selected_pic_id', 'Maaf, PIC ini belum melakukan Check-In (Tidak Hadir). Silakan pilih PIC lain.');
+            return;
+        }
+
         $this->selected_pic_id = $picId;
         $this->selected_pic_name = $picName;
         $this->search_pic = '';
         $this->pic_results = [];
         $this->search_status = '';
+        $this->resetErrorBag('selected_pic_id');
     }
 
     public function resetPicSelection()

@@ -30,6 +30,14 @@ class PicsTable
                 //
             ])
             ->recordActions([
+                \Filament\Tables\Actions\Action::make('register_face')
+                    ->label('Scan Wajah')
+                    ->icon('heroicon-o-camera')
+                    ->color('info')
+                    ->modalHeading(fn ($record) => 'Registrasi Wajah: ' . $record->name)
+                    ->modalContent(fn ($record) => view('filament.admin.pic-face-scan', ['record' => $record]))
+                    ->modalSubmitAction(false)
+                    ->modalCancelAction(false),
                 EditAction::make(),
             ])
             ->toolbarActions([

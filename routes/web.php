@@ -12,7 +12,7 @@ use App\Http\Controllers\AppointmentApprovalController;
 
 Route::get('/', function () {
     return view('welcome');
-});
+})->name('kiosk.welcome');
 
 // Membuat rute bernama 'login' yang otomatis melempar user ke halaman Filament
 Route::get('/login', function () {
@@ -57,6 +57,10 @@ Route::get('/appointments/approve/{token}', [AppointmentApprovalController::clas
     ->name('appointments.approve');
 Route::get('/appointments/reject/{token}', [AppointmentApprovalController::class, 'reject'])
     ->name('appointments.reject');
+
+Route::get('/kiosk/pic-attendance', function () {
+    return view('livewire.kiosk.pic-attendance');
+})->name('kiosk.pic-attendance');
 
 // Polling endpoint untuk Kiosk real-time status check (no auth)
 Route::get('/appointments/status/{token}', [AppointmentApprovalController::class, 'status'])

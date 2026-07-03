@@ -14,6 +14,14 @@ class Pic extends Model
         'phone',
         'email',
         'is_available',
+        'face_photo',
+        'face_features',
+    ];
+
+    protected $casts = [
+        'is_available' => 'boolean',
+        'face_photo' => 'array',
+        'face_features' => 'array',
     ];
 
     public function department(): BelongsTo

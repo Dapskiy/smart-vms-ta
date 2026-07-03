@@ -297,7 +297,12 @@
                         <div class="pic-search-results">
                             @foreach($pic_results as $pic)
                                 <div class="pic-result-item" wire:click="selectPic({{ $pic['id'] }}, '{{ addslashes($pic['name']) }}')">
-                                    <div style="font-weight: 500;">{{ $pic['name'] }}</div>
+                                    <div style="font-weight: 500; display: flex; justify-content: space-between; align-items: center;">
+                                        {{ $pic['name'] }}
+                                        @if(!$pic['is_available'])
+                                            <span style="font-size: 0.7rem; background: var(--accent-rose); color: white; padding: 2px 6px; border-radius: 4px;">Belum Check-In</span>
+                                        @endif
+                                    </div>
                                     <div style="font-size: 0.75rem; color: var(--text-secondary);">Klik untuk memilih</div>
                                 </div>
                             @endforeach

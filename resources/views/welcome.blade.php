@@ -284,10 +284,11 @@
 
         /* --- Cards row --- */
         .cards-row {
-            display: flex;
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
             gap: clamp(1.5rem, 3vw, 2.5rem);
             width: 100%;
-            max-width: 1000px;
+            max-width: 1200px;
             justify-content: center;
         }
 
@@ -933,6 +934,29 @@
                     </div>
                 </div>
 
+                <!-- Card 4: Absensi Karyawan (PIC) -->
+                <div class="checkin-card card-attendance" onclick="openAttendanceModal()" role="button" tabindex="0" aria-label="Absensi Karyawan">
+                    <div class="card-icon-wrap" style="background: linear-gradient(135deg, rgba(251, 191, 36, 0.2), rgba(251, 191, 36, 0.08)); border: 1px solid rgba(251, 191, 36, 0.28); box-shadow: 0 0 20px rgba(251, 191, 36, 0.12);">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="#fbbf24" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path>
+                            <circle cx="8.5" cy="7" r="4"></circle>
+                            <polyline points="17 11 19 13 23 9"></polyline>
+                        </svg>
+                    </div>
+
+                    <div class="card-body">
+                        <div class="card-title">Absensi Karyawan</div>
+                        <div class="card-sub">Khusus karyawan (PIC) untuk<br>check-in & check-out wajah</div>
+                    </div>
+
+                    <div class="card-cta" style="color: #fbbf24;">
+                        ABSENSI PIC
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M5 12h14M12 5l7 7-7 7"/>
+                        </svg>
+                    </div>
+                </div>
+
             </div>
         </main>
 
@@ -953,6 +977,9 @@
 
     {{-- Chatbot (inside main DOM so Firefox doesn't clip it) --}}
     @livewire('interactive-chatbot')
+
+    {{-- PIC Attendance (invisible event listener) --}}
+    @livewire('kiosk.pic-attendance')
 
     <!-- ==================== JAVASCRIPT ==================== -->
     <script>
@@ -1220,11 +1247,12 @@
         ------------------------------------------------------- */
         let faceScanStream     = null;
         let faceScanActive     = false;
+        let ciLandmarkRAF      = null;  // fast landmark loop handle
         let livenessStep       = 'straight'; // straight -> right -> passed
         let consecutiveNoFace  = 0;
         let faceInPlace        = false;
-        let ciPhotoSnapshot    = null; // foto wajah lurus sebelum liveness
-        let ciPreparingPhoto   = false; // flag agar capture hanya sekali
+        let ciPhotoSnapshot    = null;
+        let ciPreparingPhoto   = false;
         let scanCountdown      = null;
         let faceScanMode       = 'checkin'; // 'checkin' atau 'walkin'
 
@@ -1264,7 +1292,8 @@
                     setFaceMessage('Posisikan wajah di dalam lingkaran', 'info');
                     updateFaceRingColor('blue');
                     faceScanActive = true;
-                    faceScanLoop(video);
+                    ciLandmarkLoop(video);  // fast landmark rendering
+                    faceScanLoop(video);    // slower full detection
                 };
             } catch(e) {
                 setFaceMessage('Kamera tidak dapat diakses. Gunakan HTTPS.', 'error');
@@ -1272,10 +1301,12 @@
         }
 
         function closeFaceScan() {
-            faceScanActive  = false;
-            ciPhotoSnapshot  = null; // reset untuk scan berikutnya
+            faceScanActive   = false;
+            ciPhotoSnapshot  = null;
             ciPreparingPhoto = false;
+            if (ciLandmarkRAF) { cancelAnimationFrame(ciLandmarkRAF); ciLandmarkRAF = null; }
             if (faceScanStream) { faceScanStream.getTracks().forEach(t => t.stop()); faceScanStream = null; }
+            clearKioskLandmarks('ci-landmark-canvas');
             document.getElementById('modal-face').classList.remove('active');
             document.getElementById('face-loading').style.display = 'flex';
             document.getElementById('face-camera-wrap').style.display = 'none';
@@ -1294,6 +1325,18 @@
             } catch(e) { console.warn('captureKioskPhoto failed:', e); return null; }
         }
 
+        /* FAST landmark-only loop (requestAnimationFrame, no descriptor) */
+        async function ciLandmarkLoop(video) {
+            if (!faceScanActive) return;
+            try {
+                const det = await faceapi.detectSingleFace(video, new faceapi.TinyFaceDetectorOptions({ inputSize: 160, scoreThreshold: 0.4 }))
+                    .withFaceLandmarks();
+                if (det) drawKioskLandmarks(det.landmarks.positions, video, 'ci-landmark-canvas');
+                else     clearKioskLandmarks('ci-landmark-canvas');
+            } catch(e) {}
+            if (faceScanActive) ciLandmarkRAF = requestAnimationFrame(() => ciLandmarkLoop(video));
+        }
+
         async function faceScanLoop(video) {
             if (!faceScanActive) return;
             try {
@@ -1306,10 +1349,14 @@
                     consecutiveNoFace++;
                     faceInPlace = false;
                     updateFaceGrid(false);
+                    clearKioskLandmarks('ci-landmark-canvas');
                     if (consecutiveNoFace > 3) setFaceMessage('Wajah tidak terdeteksi. Masukkan ke lingkaran.', 'error');
                     setTimeout(() => faceScanLoop(video), 200); return;
                 }
                 consecutiveNoFace = 0;
+
+                // Draw real landmarks
+                drawKioskLandmarks(det.landmarks.positions, video, 'ci-landmark-canvas');
 
                 const box = det.alignedRect.box;
                 const ratio = box.width / video.videoWidth;
@@ -1657,6 +1704,8 @@
                     <!-- Circular crop -->
                     <div style="position:absolute;inset:8px;border-radius:50%;overflow:hidden;background:#111;z-index:2;">
                         <video id="ci-face-video" autoplay muted playsinline style="width:100%;height:100%;object-fit:cover;transform:scaleX(-1);display:block;"></video>
+                        <!-- Real landmark canvas -->
+                        <canvas id="ci-landmark-canvas" style="position:absolute;inset:0;width:100%;height:100%;pointer-events:none;transform:scaleX(-1);"></canvas>
                         <!-- Face grid -->
                         <div id="ci-face-grid" style="position:absolute;inset:0;pointer-events:none;transition:opacity 0.5s;opacity:1;">
                             <svg xmlns="http://www.w3.org/2000/svg" style="width:100%;height:100%;display:block;" viewBox="0 0 256 256" preserveAspectRatio="xMidYMid slice">
@@ -1763,6 +1812,65 @@
         @keyframes kp-bounce-l  { 0%,100%{transform:translateX(0);}50%{transform:translateX(-6px);} }
     </style>
 
+    <script>
+        /* ---- Shared Real Face Landmark Drawing ---- */
+        function drawKioskLandmarks(pts, video, canvasId) {
+            const canvas = document.getElementById(canvasId);
+            if (!canvas) return;
+            const vw = video.videoWidth  || 256;
+            const vh = video.videoHeight || 256;
+            canvas.width  = vw;
+            canvas.height = vh;
+            const ctx = canvas.getContext('2d');
+            ctx.clearRect(0, 0, vw, vh);
+
+            const groups = [
+                { s:  0, e: 17, close: false, color: 'rgba(99,102,241,0.7)',  lw: 1.2 },
+                { s: 17, e: 22, close: false, color: 'rgba(99,180,241,0.8)',  lw: 1.2 },
+                { s: 22, e: 27, close: false, color: 'rgba(99,180,241,0.8)',  lw: 1.2 },
+                { s: 27, e: 31, close: false, color: 'rgba(255,255,255,0.6)', lw: 1.0 },
+                { s: 30, e: 36, close: true,  color: 'rgba(255,255,255,0.6)', lw: 1.0 },
+                { s: 36, e: 42, close: true,  color: 'rgba(16,185,129,0.85)', lw: 1.2 },
+                { s: 42, e: 48, close: true,  color: 'rgba(16,185,129,0.85)', lw: 1.2 },
+                { s: 48, e: 60, close: true,  color: 'rgba(251,191,36,0.75)', lw: 1.2 },
+                { s: 60, e: 68, close: true,  color: 'rgba(251,191,36,0.65)', lw: 1.0 },
+            ];
+
+            groups.forEach(({ s, e, close, color, lw }) => {
+                const gpts = pts.slice(s, e);
+                if (gpts.length < 2) return;
+                ctx.beginPath();
+                ctx.moveTo(gpts[0].x, gpts[0].y);
+                gpts.slice(1).forEach(p => ctx.lineTo(p.x, p.y));
+                if (close) ctx.closePath();
+                ctx.strokeStyle = color;
+                ctx.lineWidth   = lw;
+                ctx.stroke();
+            });
+
+            pts.forEach((p, i) => {
+                let dotColor, glowColor;
+                if (i < 17)      { dotColor = '#818cf8'; glowColor = 'rgba(99,102,241,0.6)'; }
+                else if (i < 27) { dotColor = '#60c8ff'; glowColor = 'rgba(99,180,241,0.6)'; }
+                else if (i < 36) { dotColor = '#e2e8f0'; glowColor = 'rgba(255,255,255,0.5)'; }
+                else if (i < 48) { dotColor = '#34d399'; glowColor = 'rgba(16,185,129,0.6)'; }
+                else             { dotColor = '#fcd34d'; glowColor = 'rgba(251,191,36,0.6)'; }
+                ctx.shadowColor = glowColor;
+                ctx.shadowBlur  = 5;
+                ctx.beginPath();
+                ctx.arc(p.x, p.y, 1.8, 0, Math.PI * 2);
+                ctx.fillStyle = dotColor;
+                ctx.fill();
+                ctx.shadowBlur = 0;
+            });
+        }
+
+        function clearKioskLandmarks(canvasId) {
+            const canvas = document.getElementById(canvasId);
+            if (canvas) canvas.getContext('2d').clearRect(0, 0, canvas.width, canvas.height);
+        }
+    </script>
+
 
     <!-- ===== MODAL: CHECKOUT FACE SCAN ===== -->
     <div id="modal-checkout-face" class="modal-overlay">
@@ -1784,6 +1892,8 @@
                     <!-- Circular crop -->
                     <div style="position:absolute;inset:8px;border-radius:50%;overflow:hidden;background:#111;z-index:2;">
                         <video id="co-face-video" autoplay muted playsinline style="width:100%;height:100%;object-fit:cover;transform:scaleX(-1);display:block;"></video>
+                        <!-- Real landmark canvas -->
+                        <canvas id="co-landmark-canvas" style="position:absolute;inset:0;width:100%;height:100%;pointer-events:none;transform:scaleX(-1);"></canvas>
                         <!-- Face grid -->
                         <div id="co-face-grid" style="position:absolute;inset:0;pointer-events:none;transition:opacity 0.5s;opacity:1;">
                             <svg xmlns="http://www.w3.org/2000/svg" style="width:100%;height:100%;display:block;" viewBox="0 0 256 256" preserveAspectRatio="xMidYMid slice">
@@ -1843,6 +1953,64 @@
         </div>
     </div>
 
+
+    <!-- ===== MODAL: PIC ATTENDANCE ===== -->
+    <div id="modal-attendance" class="modal-overlay">
+        <div class="modal-box face-modal-box" style="border-color:rgba(251,191,36,0.4);box-shadow:0 0 80px rgba(251,191,36,0.15);">
+            <button class="modal-close" onclick="closeAttendanceModal()">✕</button>
+            <div class="modal-title" style="margin-bottom:0.2rem;">Absensi Karyawan</div>
+            <p class="modal-sub" style="margin-bottom:1rem;">Tengok kanan lalu kiri untuk verifikasi</p>
+            <div id="at-face-loading" style="display:flex;flex-direction:column;align-items:center;justify-content:center;height:280px;gap:1rem;">
+                <svg style="width:2.5rem;height:2.5rem;color:#fbbf24;animation:kp-spin 1s linear infinite;" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="3" stroke-dasharray="40" stroke-dashoffset="10"/></svg>
+                <span style="color:#8899bb;font-size:0.85rem;">Memuat model AI...</span>
+            </div>
+            <div id="at-face-camera-wrap" style="display:none;flex-direction:column;align-items:center;gap:0.5rem;">
+                <div style="position:relative;width:272px;height:272px;flex-shrink:0;">
+                    <svg id="at-ring-svg" style="position:absolute;inset:0;width:100%;height:100%;z-index:4;pointer-events:none;" viewBox="0 0 272 272">
+                        <circle class="at-ring-base" cx="136" cy="136" r="126" fill="none" stroke-width="3" stroke="#fbbf2433"/>
+                        <circle class="at-ring-arc" cx="136" cy="136" r="126" fill="none" stroke-width="5" stroke-linecap="round" stroke="#fbbf24" stroke-dasharray="110 692" style="animation:kp-spin-ring 1.6s linear infinite;transform-origin:center;"/>
+                    </svg>
+                    <div style="position:absolute;inset:8px;border-radius:50%;overflow:hidden;background:#111;z-index:2;">
+                        <video id="at-face-video" autoplay muted playsinline style="width:100%;height:100%;object-fit:cover;transform:scaleX(-1);display:block;"></video>
+                        <canvas id="at-landmark-canvas" style="position:absolute;inset:0;width:100%;height:100%;pointer-events:none;transform:scaleX(-1);z-index:3;"></canvas>
+                        <div id="at-face-grid" style="position:absolute;inset:0;pointer-events:none;transition:opacity 0.5s;opacity:1;z-index:2;">
+                            <svg xmlns="http://www.w3.org/2000/svg" style="width:100%;height:100%;display:block;" viewBox="0 0 256 256" preserveAspectRatio="xMidYMid slice">
+                                <defs>
+                                    <path id="at-face-shape" d="M128,20 C166,20 196,52 196,96 C210,96 210,120 196,122 C188,158 160,192 128,197 C96,192 68,158 60,122 C46,120 46,96 60,96 C60,52 90,20 128,20 Z"/>
+                                    <mask id="at-face-mask">
+                                        <rect width="256" height="256" fill="white"/>
+                                        <use href="#at-face-shape" fill="black"/>
+                                    </mask>
+                                </defs>
+                                <rect width="256" height="256" fill="rgba(0,0,0,0.62)" mask="url(#at-face-mask)"/>
+                                <use id="at-face-border" href="#at-face-shape" fill="none" stroke="#fcd34d" stroke-width="2.5" stroke-dasharray="10 6" style="animation:kp-pulse 1.4s ease-in-out infinite;"/>
+                            </svg>
+                        </div>
+                        <div id="at-inner-ring" style="position:absolute;inset:0;border-radius:50%;pointer-events:none;transition:box-shadow 0.4s;z-index:5;"></div>
+                    </div>
+                </div>
+                <div style="min-height:36px;display:flex;align-items:center;justify-content:center;padding:0 0.5rem;">
+                    <span id="at-face-msg" style="display:inline-block;padding:0.4rem 1.1rem;border-radius:999px;font-size:0.78rem;font-weight:600;color:#fff;text-align:center;max-width:260px;transition:background 0.3s;background:#fbbf24;"></span>
+                </div>
+                <div style="display:flex;align-items:center;justify-content:center;gap:1.5rem;min-height:52px;">
+                    <div id="at-arrow-right" style="display:none;flex-direction:column;align-items:center;gap:4px;animation:kp-bounce-r 0.8s ease-in-out infinite;">
+                        <svg style="width:2rem;height:2rem;color:#fcd34d;" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M13 7l5 5m0 0l-5 5m5-5H6"/></svg>
+                        <span style="font-size:0.68rem;color:#fcd34d;font-weight:700;letter-spacing:.04em;">KANAN</span>
+                    </div>
+                    <div id="at-arrow-left" style="display:none;flex-direction:column;align-items:center;gap:4px;animation:kp-bounce-l 0.8s ease-in-out infinite;">
+                        <svg style="width:2rem;height:2rem;color:#fcd34d;" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M11 17l-5-5m0 0l5-5m-5 5h12"/></svg>
+                        <span style="font-size:0.68rem;color:#fcd34d;font-weight:700;letter-spacing:.04em;">KIRI</span>
+                    </div>
+                </div>
+            </div>
+            <div id="at-result" style="display:none;text-align:center;padding:1rem 0 0.5rem;">
+                <div id="at-result-icon" style="font-size:2.5rem;margin-bottom:0.4rem;"></div>
+                <div id="at-result-name" style="font-size:1.1rem;font-weight:700;color:#f0f4ff;margin-bottom:0.2rem;"></div>
+                <div id="at-result-status" style="font-size:0.82rem;color:#8899bb;"></div>
+            </div>
+        </div>
+    </div>
+
 <script>
         /* -------------------------------------------------------
            CHECKOUT FACE SCAN
@@ -1897,10 +2065,14 @@
                 if (!det) {
                     coNoFace++; coFaceInPlace = false;
                     coGridVisible(false);
+                    clearKioskLandmarks('co-landmark-canvas');
                     if (coNoFace > 3) setCoMsg('Wajah tidak terdeteksi. Masukkan ke lingkaran.', 'error');
                     setTimeout(() => coScanLoop(video), 200); return;
                 }
                 coNoFace = 0;
+
+                // Draw real landmarks
+                drawKioskLandmarks(det.landmarks.positions, video, 'co-landmark-canvas');
                 const box = det.alignedRect.box;
                 const ratio = box.width / video.videoWidth;
                 const offX = Math.abs((box.x + box.width/2) - video.videoWidth/2) / video.videoWidth;
@@ -1999,6 +2171,182 @@
             document.getElementById('co-arrow-left').style.display  = dir==='left' ?'flex':'none';
         }
 
+</script>
+
+<script>
+/* -------------------------------------------------------
+   PIC ATTENDANCE MODAL - Dual-loop: fast landmarks + slow recognition
+------------------------------------------------------- */
+let atScanStream   = null;
+let atLandmarkRAF  = null;
+let atScanActive   = false;
+let atLivenessStep = 'straight';
+let atNoFace       = 0;
+let atFaceInPlace  = false;
+let atProcessing   = false;
+
+async function openAttendanceModal() {
+    document.getElementById('modal-attendance').classList.add('active');
+    setAtMsg('Memuat Model AI...', 'info');
+    if (typeof faceapi === 'undefined') {
+        await loadScript('/js/face-api.min.js?v=' + Date.now());
+    }
+    await Promise.all([
+        faceapi.nets.tinyFaceDetector.loadFromUri('/models'),
+        faceapi.nets.faceLandmark68Net.loadFromUri('/models'),
+        faceapi.nets.faceRecognitionNet.loadFromUri('/models'),
+    ]);
+    const video = document.getElementById('at-face-video');
+    try {
+        atScanStream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'user', width: { ideal: 640 } } });
+        video.srcObject = atScanStream;
+        video.onloadedmetadata = () => {
+            video.play();
+            document.getElementById('at-face-loading').style.display     = 'none';
+            document.getElementById('at-face-camera-wrap').style.display = 'flex';
+            document.getElementById('at-result').style.display           = 'none';
+            atLivenessStep = 'straight'; atFaceInPlace = false; atScanActive = true; atProcessing = false;
+            updateAtRing('blue');
+            setAtMsg('Posisikan wajah di dalam lingkaran', 'info');
+            atLandmarkLoop(video);
+            atDetectionLoop(video);
+        };
+    } catch(e) { setAtMsg('Kamera tidak dapat diakses.', 'error'); }
+}
+
+function closeAttendanceModal() {
+    atScanActive = false;
+    if (atLandmarkRAF) { cancelAnimationFrame(atLandmarkRAF); atLandmarkRAF = null; }
+    if (atScanStream)  { atScanStream.getTracks().forEach(t => t.stop()); atScanStream = null; }
+    clearKioskLandmarks('at-landmark-canvas');
+    document.getElementById('modal-attendance').classList.remove('active');
+    document.getElementById('at-face-loading').style.display     = 'flex';
+    document.getElementById('at-face-camera-wrap').style.display = 'none';
+    document.getElementById('at-result').style.display           = 'none';
+}
+
+/* FAST landmark loop using requestAnimationFrame */
+async function atLandmarkLoop(video) {
+    if (!atScanActive) return;
+    try {
+        const det = await faceapi.detectSingleFace(video, new faceapi.TinyFaceDetectorOptions({ inputSize: 160, scoreThreshold: 0.4 }))
+            .withFaceLandmarks();
+        if (det) drawKioskLandmarks(det.landmarks.positions, video, 'at-landmark-canvas');
+        else     clearKioskLandmarks('at-landmark-canvas');
+    } catch(e) {}
+    if (atScanActive) atLandmarkRAF = requestAnimationFrame(() => atLandmarkLoop(video));
+}
+
+/* SLOW detection loop: liveness + descriptor, every ~150ms */
+async function atDetectionLoop(video) {
+    if (!atScanActive) return;
+    if (atProcessing) { setTimeout(() => atDetectionLoop(video), 150); return; }
+    try {
+        const det = await faceapi.detectSingleFace(video, new faceapi.TinyFaceDetectorOptions())
+            .withFaceLandmarks().withFaceDescriptor();
+        if (!det) {
+            atNoFace++; atFaceInPlace = false;
+            document.getElementById('at-face-grid').style.opacity = '0';
+            updateAtRing('red');
+            if (atNoFace > 3) setAtMsg('Wajah tidak terdeteksi. Masukkan ke lingkaran.', 'error');
+            setTimeout(() => atDetectionLoop(video), 150); return;
+        }
+        atNoFace = 0;
+        const box  = det.alignedRect.box;
+        const ratio = box.width / video.videoWidth;
+        const offX  = Math.abs((box.x + box.width/2) - video.videoWidth/2) / video.videoWidth;
+        const offY  = Math.abs((box.y + box.height/2) - video.videoHeight/2) / video.videoHeight;
+        if (ratio < 0.28) { atFaceInPlace=false; document.getElementById('at-face-grid').style.opacity='0'; updateAtRing('red'); setAtMsg('Wajah terlalu jauh - maju sedikit.','error'); setTimeout(()=>atDetectionLoop(video),150); return; }
+        if (ratio > 0.65) { atFaceInPlace=false; document.getElementById('at-face-grid').style.opacity='0'; updateAtRing('red'); setAtMsg('Wajah terlalu dekat - mundur sedikit.','error'); setTimeout(()=>atDetectionLoop(video),150); return; }
+        if (offX > 0.20 || offY > 0.20) {
+            atFaceInPlace=false; document.getElementById('at-face-grid').style.opacity='0'; updateAtRing('red');
+            setAtMsg('Posisikan wajah di tengah lingkaran.','error');
+            setTimeout(()=>atDetectionLoop(video),150); return;
+        }
+        atFaceInPlace = true;
+        document.getElementById('at-face-grid').style.opacity = '1';
+        updateAtRing('green');
+        const pts = det.landmarks.positions;
+        const nr  = (pts[30].x - pts[0].x) / (pts[16].x - pts[0].x);
+        if (atLivenessStep === 'straight') {
+            setAtMsg('Tengok ke kanan >>>', 'info'); atShowArrow('right');
+            if (nr < 0.38) atLivenessStep = 'right';
+        } else if (atLivenessStep === 'right') {
+            setAtMsg('<<< Sekarang tengok ke kiri', 'info'); atShowArrow('left');
+            if (nr > 0.62) {
+                atLivenessStep = 'passed';
+                setAtMsg('Verifikasi OK! Memproses...', 'success');
+                atShowArrow('none');
+                atScanActive = false;
+                if (atLandmarkRAF) { cancelAnimationFrame(atLandmarkRAF); atLandmarkRAF = null; }
+                atProcessing = true;
+                Livewire.dispatch('process-pic-face', { descriptor: Array.from(det.descriptor) });
+                return;
+            }
+        }
+        setTimeout(() => atDetectionLoop(video), 150);
+    } catch(e) { setTimeout(() => atDetectionLoop(video), 500); }
+}
+
+function setAtMsg(msg, type) {
+    const el = document.getElementById('at-face-msg'); if (!el) return;
+    el.textContent = msg;
+    el.style.background = type==='error'?'#ef4444':type==='success'?'#10b981':'#fbbf24';
+}
+function updateAtRing(color) {
+    const arc  = document.querySelector('#at-ring-svg .at-ring-arc');
+    const base = document.querySelector('#at-ring-svg .at-ring-base');
+    const bdr  = document.getElementById('at-face-border');
+    const ring = document.getElementById('at-inner-ring');
+    const map  = { red:'#ef4444', green:'#10b981', blue:'#fbbf24' };
+    const c    = map[color] || '#fbbf24';
+    if (arc)  arc.setAttribute('stroke', c);
+    if (base) base.setAttribute('stroke', c + '33');
+    if (bdr)  bdr.setAttribute('stroke', color==='red' ? '#ef4444' : '#fcd34d');
+    if (ring) ring.style.boxShadow = color==='green' ? 'inset 0 0 0 3px #10b981' : '';
+}
+function atShowArrow(dir) {
+    document.getElementById('at-arrow-right').style.display = dir==='right'?'flex':'none';
+    document.getElementById('at-arrow-left').style.display  = dir==='left' ?'flex':'none';
+}
+
+window.addEventListener('attendance-success', event => {
+    const d = event.detail;
+    const modal = document.getElementById('modal-attendance');
+    if (!modal || !modal.classList.contains('active')) return;
+    document.getElementById('at-face-camera-wrap').style.display = 'none';
+    const result = document.getElementById('at-result');
+    document.getElementById('at-result-icon').textContent   = d.type === 'checkin' ? '\u2705' : '\uD83D\uDC4B';
+    document.getElementById('at-result-name').textContent   = d.message;
+    document.getElementById('at-result-status').textContent = d.type === 'checkin' ? 'Check-In berhasil dicatat!' : 'Check-Out berhasil dicatat!';
+    result.style.display = 'block';
+    try {
+        const ctx = new (window.AudioContext || window.webkitAudioContext)();
+        const osc = ctx.createOscillator(), gain = ctx.createGain();
+        osc.connect(gain); gain.connect(ctx.destination);
+        osc.frequency.value = d.type === 'checkin' ? 880 : 660;
+        gain.gain.setValueAtTime(0, ctx.currentTime);
+        gain.gain.linearRampToValueAtTime(0.1, ctx.currentTime + 0.1);
+        gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.5);
+        osc.start(ctx.currentTime); osc.stop(ctx.currentTime + 0.5);
+    } catch(e) {}
+    setTimeout(() => closeAttendanceModal(), 3000);
+});
+
+window.addEventListener('attendance-error', event => {
+    const modal = document.getElementById('modal-attendance');
+    if (!modal || !modal.classList.contains('active')) return;
+    setAtMsg(event.detail.message || 'Wajah tidak dikenali dalam sistem.', 'error');
+    updateAtRing('red');
+    setTimeout(() => {
+        atLivenessStep = 'straight'; atFaceInPlace = false; atProcessing = false; atScanActive = true;
+        updateAtRing('blue');
+        setAtMsg('Posisikan wajah di dalam lingkaran', 'info');
+        atShowArrow('none');
+        const video = document.getElementById('at-face-video');
+        if (video) { atLandmarkLoop(video); atDetectionLoop(video); }
+    }, 3000);
+});
 </script>
 
 {{-- Livewire Scripts (includes Alpine.js v3 automatically in Livewire v3) --}}
