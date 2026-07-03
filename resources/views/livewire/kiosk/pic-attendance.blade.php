@@ -292,64 +292,70 @@
             const canvas = document.getElementById('pa-landmark-canvas');
             if (!canvas) return;
 
-            // Sync canvas resolution to video
-            const vw = video.videoWidth  || 256;
-            const vh = video.videoHeight || 256;
-            canvas.width  = vw;
-            canvas.height = vh;
+            // Use display size as canvas resolution for 1:1 pixel accuracy
+            const dw = canvas.offsetWidth  || 256;
+            const dh = canvas.offsetHeight || 256;
+            canvas.width  = dw;
+            canvas.height = dh;
 
             const ctx = canvas.getContext('2d');
-            ctx.clearRect(0, 0, vw, vh);
+            ctx.clearRect(0, 0, dw, dh);
 
-            // Scale factor from video coords → canvas coords (1:1 here, CSS handles display scaling)
-            const sx = vw / vw; // always 1, but explicit for clarity
-            const sy = vh / vh;
+            const vw = video.videoWidth  || 640;
+            const vh = video.videoHeight || 480;
 
-            // Landmark groups (indices for 68-point model)
+            // object-fit: cover — scale to fill, then center-crop
+            const scale   = Math.max(dw / vw, dh / vh);
+            const offsetX = (dw - vw * scale) / 2;
+            const offsetY = (dh - vh * scale) / 2;
+
+            // Transform from video-space → display-space
+            const tx = p => ({ x: p.x * scale + offsetX, y: p.y * scale + offsetY });
+
+            const dotR = Math.max(1.5, dw / 140);
+            const lw   = Math.max(0.8, dw / 200);
+
             const groups = [
-                { pts: pts.slice(0,  17), close: false, color: 'rgba(99,102,241,0.7)',  lw: 1.2 }, // jawline
-                { pts: pts.slice(17, 22), close: false, color: 'rgba(99,180,241,0.8)',  lw: 1.2 }, // right eyebrow
-                { pts: pts.slice(22, 27), close: false, color: 'rgba(99,180,241,0.8)',  lw: 1.2 }, // left eyebrow
-                { pts: pts.slice(27, 31), close: false, color: 'rgba(255,255,255,0.6)', lw: 1.0 }, // nose bridge
-                { pts: pts.slice(30, 36), close: true,  color: 'rgba(255,255,255,0.6)', lw: 1.0 }, // nose bottom
-                { pts: pts.slice(36, 42), close: true,  color: 'rgba(16,185,129,0.85)', lw: 1.2 }, // right eye
-                { pts: pts.slice(42, 48), close: true,  color: 'rgba(16,185,129,0.85)', lw: 1.2 }, // left eye
-                { pts: pts.slice(48, 60), close: true,  color: 'rgba(251,191,36,0.75)', lw: 1.2 }, // outer lips
-                { pts: pts.slice(60, 68), close: true,  color: 'rgba(251,191,36,0.65)', lw: 1.0 }, // inner lips
+                { s:  0, e: 17, close: false, color: 'rgba(99,102,241,0.75)',  lw: lw },        // jawline
+                { s: 17, e: 22, close: false, color: 'rgba(99,180,241,0.85)',  lw: lw },        // right eyebrow
+                { s: 22, e: 27, close: false, color: 'rgba(99,180,241,0.85)',  lw: lw },        // left eyebrow
+                { s: 27, e: 31, close: false, color: 'rgba(220,220,255,0.65)', lw: lw * 0.9 }, // nose bridge
+                { s: 30, e: 36, close: true,  color: 'rgba(220,220,255,0.65)', lw: lw * 0.9 }, // nose bottom
+                { s: 36, e: 42, close: true,  color: 'rgba(52,211,153,0.9)',   lw: lw },        // right eye
+                { s: 42, e: 48, close: true,  color: 'rgba(52,211,153,0.9)',   lw: lw },        // left eye
+                { s: 48, e: 60, close: true,  color: 'rgba(251,191,36,0.8)',   lw: lw },        // outer lips
+                { s: 60, e: 68, close: true,  color: 'rgba(251,191,36,0.65)',  lw: lw * 0.9 }, // inner lips
             ];
 
-            // Draw connecting lines
-            groups.forEach(({ pts: gpts, close, color, lw }) => {
+            // Draw connecting lines (transformed coordinates)
+            groups.forEach(({ s, e, close, color, lw: w }) => {
+                const gpts = pts.slice(s, e).map(tx);
                 if (gpts.length < 2) return;
                 ctx.beginPath();
                 ctx.moveTo(gpts[0].x, gpts[0].y);
                 gpts.slice(1).forEach(p => ctx.lineTo(p.x, p.y));
                 if (close) ctx.closePath();
                 ctx.strokeStyle = color;
-                ctx.lineWidth   = lw;
+                ctx.lineWidth   = w;
                 ctx.stroke();
             });
 
-            // Draw dots at each of the 68 points with glow
-            pts.forEach((p, i) => {
-                // Determine color by region
+            // Draw glowing dots at each landmark
+            pts.forEach((rawP, i) => {
+                const p = tx(rawP);
                 let dotColor, glowColor;
-                if (i < 17)       { dotColor = '#818cf8'; glowColor = 'rgba(99,102,241,0.6)'; }
-                else if (i < 27)  { dotColor = '#60c8ff'; glowColor = 'rgba(99,180,241,0.6)'; }
-                else if (i < 36)  { dotColor = '#e2e8f0'; glowColor = 'rgba(255,255,255,0.5)'; }
-                else if (i < 48)  { dotColor = '#34d399'; glowColor = 'rgba(16,185,129,0.6)'; } // eyes
-                else              { dotColor = '#fcd34d'; glowColor = 'rgba(251,191,36,0.6)'; } // mouth
+                if      (i < 17) { dotColor = '#818cf8'; glowColor = 'rgba(99,102,241,0.7)'; }
+                else if (i < 27) { dotColor = '#60c8ff'; glowColor = 'rgba(99,180,241,0.7)'; }
+                else if (i < 36) { dotColor = '#dde6ff'; glowColor = 'rgba(200,210,255,0.5)'; }
+                else if (i < 48) { dotColor = '#34d399'; glowColor = 'rgba(52,211,153,0.7)'; }
+                else             { dotColor = '#fcd34d'; glowColor = 'rgba(251,191,36,0.7)'; }
 
-                // Glow shadow
                 ctx.shadowColor = glowColor;
-                ctx.shadowBlur  = 5;
-
+                ctx.shadowBlur  = 6;
                 ctx.beginPath();
-                ctx.arc(p.x, p.y, 1.8, 0, Math.PI * 2);
+                ctx.arc(p.x, p.y, dotR, 0, Math.PI * 2);
                 ctx.fillStyle = dotColor;
                 ctx.fill();
-
-                // Reset shadow for next group
                 ctx.shadowBlur = 0;
             });
         }

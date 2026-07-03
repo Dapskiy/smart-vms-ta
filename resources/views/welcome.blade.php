@@ -1814,51 +1814,83 @@
 
     <script>
         /* ---- Shared Real Face Landmark Drawing ---- */
+        /**
+         * drawKioskLandmarks — draws real 68-point face landmarks on canvas.
+         *
+         * The video uses object-fit:cover so the raw landmark coords (in video space)
+         * must be transformed: scale by the cover ratio, then offset for the crop.
+         * Canvas is drawn at display size so CSS doesn't distort dots further.
+         */
         function drawKioskLandmarks(pts, video, canvasId) {
             const canvas = document.getElementById(canvasId);
             if (!canvas) return;
-            const vw = video.videoWidth  || 256;
-            const vh = video.videoHeight || 256;
-            canvas.width  = vw;
-            canvas.height = vh;
-            const ctx = canvas.getContext('2d');
-            ctx.clearRect(0, 0, vw, vh);
 
+            // Display size (CSS rendered size of the canvas/video container)
+            const dw = canvas.offsetWidth  || 256;
+            const dh = canvas.offsetHeight || 256;
+
+            // Set canvas resolution to display size (1:1 pixel mapping)
+            canvas.width  = dw;
+            canvas.height = dh;
+
+            const ctx = canvas.getContext('2d');
+            ctx.clearRect(0, 0, dw, dh);
+
+            const vw = video.videoWidth  || 640;
+            const vh = video.videoHeight || 480;
+
+            // object-fit: cover → scale so that video fills display, then center-crop
+            const scale   = Math.max(dw / vw, dh / vh);
+            const offsetX = (dw - vw * scale) / 2;
+            const offsetY = (dh - vh * scale) / 2;
+
+            // Helper: transform one point from video-space → display-space
+            const tx = p => ({ x: p.x * scale + offsetX, y: p.y * scale + offsetY });
+
+            // Dot radius scales with display size
+            const dotR = Math.max(1.5, dw / 140);
+            const lw   = Math.max(0.8, dw / 200);
+
+            // Landmark groups for 68-point model
             const groups = [
-                { s:  0, e: 17, close: false, color: 'rgba(99,102,241,0.7)',  lw: 1.2 },
-                { s: 17, e: 22, close: false, color: 'rgba(99,180,241,0.8)',  lw: 1.2 },
-                { s: 22, e: 27, close: false, color: 'rgba(99,180,241,0.8)',  lw: 1.2 },
-                { s: 27, e: 31, close: false, color: 'rgba(255,255,255,0.6)', lw: 1.0 },
-                { s: 30, e: 36, close: true,  color: 'rgba(255,255,255,0.6)', lw: 1.0 },
-                { s: 36, e: 42, close: true,  color: 'rgba(16,185,129,0.85)', lw: 1.2 },
-                { s: 42, e: 48, close: true,  color: 'rgba(16,185,129,0.85)', lw: 1.2 },
-                { s: 48, e: 60, close: true,  color: 'rgba(251,191,36,0.75)', lw: 1.2 },
-                { s: 60, e: 68, close: true,  color: 'rgba(251,191,36,0.65)', lw: 1.0 },
+                { s:  0, e: 17, close: false, color: 'rgba(99,102,241,0.75)',  lw: lw },       // jawline
+                { s: 17, e: 22, close: false, color: 'rgba(99,180,241,0.85)',  lw: lw },       // right eyebrow
+                { s: 22, e: 27, close: false, color: 'rgba(99,180,241,0.85)',  lw: lw },       // left eyebrow
+                { s: 27, e: 31, close: false, color: 'rgba(220,220,255,0.65)', lw: lw * 0.9 }, // nose bridge
+                { s: 30, e: 36, close: true,  color: 'rgba(220,220,255,0.65)', lw: lw * 0.9 }, // nose bottom
+                { s: 36, e: 42, close: true,  color: 'rgba(52,211,153,0.9)',   lw: lw },       // right eye
+                { s: 42, e: 48, close: true,  color: 'rgba(52,211,153,0.9)',   lw: lw },       // left eye
+                { s: 48, e: 60, close: true,  color: 'rgba(251,191,36,0.8)',   lw: lw },       // outer lips
+                { s: 60, e: 68, close: true,  color: 'rgba(251,191,36,0.65)',  lw: lw * 0.9 }, // inner lips
             ];
 
-            groups.forEach(({ s, e, close, color, lw }) => {
-                const gpts = pts.slice(s, e);
+            // Draw connecting lines between landmark points
+            groups.forEach(({ s, e, close, color, lw: w }) => {
+                const gpts = pts.slice(s, e).map(tx);
                 if (gpts.length < 2) return;
                 ctx.beginPath();
                 ctx.moveTo(gpts[0].x, gpts[0].y);
                 gpts.slice(1).forEach(p => ctx.lineTo(p.x, p.y));
                 if (close) ctx.closePath();
                 ctx.strokeStyle = color;
-                ctx.lineWidth   = lw;
+                ctx.lineWidth   = w;
                 ctx.stroke();
             });
 
-            pts.forEach((p, i) => {
+            // Draw glowing dot at each of the 68 landmark points
+            pts.forEach((rawP, i) => {
+                const p = tx(rawP);
                 let dotColor, glowColor;
-                if (i < 17)      { dotColor = '#818cf8'; glowColor = 'rgba(99,102,241,0.6)'; }
-                else if (i < 27) { dotColor = '#60c8ff'; glowColor = 'rgba(99,180,241,0.6)'; }
-                else if (i < 36) { dotColor = '#e2e8f0'; glowColor = 'rgba(255,255,255,0.5)'; }
-                else if (i < 48) { dotColor = '#34d399'; glowColor = 'rgba(16,185,129,0.6)'; }
-                else             { dotColor = '#fcd34d'; glowColor = 'rgba(251,191,36,0.6)'; }
+                if      (i < 17) { dotColor = '#818cf8'; glowColor = 'rgba(99,102,241,0.7)'; }
+                else if (i < 27) { dotColor = '#60c8ff'; glowColor = 'rgba(99,180,241,0.7)'; }
+                else if (i < 36) { dotColor = '#dde6ff'; glowColor = 'rgba(200,210,255,0.5)'; }
+                else if (i < 48) { dotColor = '#34d399'; glowColor = 'rgba(52,211,153,0.7)'; }
+                else             { dotColor = '#fcd34d'; glowColor = 'rgba(251,191,36,0.7)'; }
+
                 ctx.shadowColor = glowColor;
-                ctx.shadowBlur  = 5;
+                ctx.shadowBlur  = 6;
                 ctx.beginPath();
-                ctx.arc(p.x, p.y, 1.8, 0, Math.PI * 2);
+                ctx.arc(p.x, p.y, dotR, 0, Math.PI * 2);
                 ctx.fillStyle = dotColor;
                 ctx.fill();
                 ctx.shadowBlur = 0;
@@ -1869,6 +1901,7 @@
             const canvas = document.getElementById(canvasId);
             if (canvas) canvas.getContext('2d').clearRect(0, 0, canvas.width, canvas.height);
         }
+
     </script>
 
 
