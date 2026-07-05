@@ -9,6 +9,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 class Pic extends Model
 {
     protected $fillable = [
+        'user_id',
         'name',
         'department_id',
         'phone',
@@ -24,6 +25,11 @@ class Pic extends Model
         'face_features' => 'array',
     ];
 
+    public function user(): BelongsTo
+    {
+        return $this->belongsTo(User::class);
+    }
+
     public function department(): BelongsTo
     {
         return $this->belongsTo(Department::class);
@@ -32,5 +38,10 @@ class Pic extends Model
     public function appointments(): HasMany
     {
         return $this->hasMany(Appointment::class, 'pic_id');
+    }
+
+    public function attendances(): HasMany
+    {
+        return $this->hasMany(PicAttendance::class);
     }
 }

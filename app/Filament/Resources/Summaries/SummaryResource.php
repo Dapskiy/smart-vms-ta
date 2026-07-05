@@ -169,18 +169,36 @@ class SummaryResource extends Resource
 
     public static function getEloquentQuery(): Builder
     {
-        // Eager load: appointment terbaru (completed/checkout/inactive) beserta relasi PIC
-        // Ini mencegah N+1 query yang sebelumnya terjadi 6x per baris di tabel
-        $query = parent::getEloquentQuery()
-            ->with(['appointments' => function ($q) {
+        $query = parent::getEloquentQuery();
+        $currentUser = auth()->user();
+        
+        if ($currentUser && $currentUser->pic) {
+            $picId = $currentUser->pic->id;
+            
+            $query->with(['appointments' => function ($q) use ($picId) {
+                $q->whereIn('status', ['completed', 'checkout', 'inactive'])
+                  ->where('pic_id', $picId)
+                  ->with('pic')
+                  ->latest('visit_date')
+                  ->limit(1);
+            }])
+            ->whereHas('appointments', function (Builder $q) use ($picId) {
+                $q->whereIn('status', ['completed', 'checkout', 'inactive'])
+                  ->where('pic_id', $picId);
+            });
+        } else {
+            // Eager load: appointment terbaru (completed/checkout/inactive) beserta relasi PIC
+            // Ini mencegah N+1 query yang sebelumnya terjadi 6x per baris di tabel
+            $query->with(['appointments' => function ($q) {
                 $q->whereIn('status', ['completed', 'checkout', 'inactive'])
                   ->with('pic')
                   ->latest('visit_date')
                   ->limit(1);
             }])
-            ->whereHas('appointments', function (Builder $query) {
-                $query->whereIn('status', ['completed', 'checkout', 'inactive']);
+            ->whereHas('appointments', function (Builder $q) {
+                $q->whereIn('status', ['completed', 'checkout', 'inactive']);
             });
+        }
 
         $type = request('type', empty(request()->all()) ? 'range' : request('type'));
 

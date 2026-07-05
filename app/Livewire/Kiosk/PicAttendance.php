@@ -3,6 +3,7 @@
 namespace App\Livewire\Kiosk;
 
 use App\Models\Pic;
+use App\Models\PicAttendance as PicAttendanceLog;
 use Livewire\Component;
 use Livewire\Attributes\On;
 class PicAttendance extends Component
@@ -37,25 +38,44 @@ class PicAttendance extends Component
         }
 
         if ($bestMatch && $bestDistance <= $threshold) {
-            // Prevent spamming the toggle if they just stood in front of the camera
+            // Prevent spamming
             if ($this->lastMatchedPicId === $bestMatch->id && $this->lastMatchedTime && now()->diffInSeconds($this->lastMatchedTime) < 10) {
-                return; // Ignore if scanned within last 10 seconds
+                return;
             }
 
             $this->lastMatchedPicId = $bestMatch->id;
             $this->lastMatchedTime = now();
 
-            // Toggle attendance status
-            $isCheckIn = !$bestMatch->is_available;
-            $bestMatch->is_available = $isCheckIn;
+            // Check if already checked in today
+            $alreadyCheckedIn = PicAttendanceLog::where('pic_id', $bestMatch->id)
+                ->whereDate('checked_at', today())
+                ->where('type', 'checkin')
+                ->exists();
+
+            if ($alreadyCheckedIn) {
+                $this->message = "{$bestMatch->name} sudah melakukan absensi hari ini.";
+                $this->messageType = 'info';
+                $this->dispatch('attendance-error', message: $this->message);
+                return;
+            }
+
+            // Set attendance status to present
+            $bestMatch->is_available = true;
             $bestMatch->save();
 
-            $statusText = $isCheckIn ? 'berhasil Check-in' : 'berhasil Check-out';
-            $this->message = "{$bestMatch->name} {$statusText}!";
+            // Log attendance record
+            PicAttendanceLog::create([
+                'pic_id' => $bestMatch->id,
+                'type' => 'checkin',
+                'method' => 'kiosk',
+                'checked_at' => now(),
+            ]);
+
+            $this->message = "{$bestMatch->name} berhasil Absen!";
             $this->messageType = 'success';
             
             // Dispatch event to show success visually
-            $this->dispatch('attendance-success', message: $this->message, type: $isCheckIn ? 'checkin' : 'checkout');
+            $this->dispatch('attendance-success', message: $this->message, type: 'checkin');
         } else {
             $this->message = "Wajah tidak dikenali dalam sistem PIC.";
             $this->messageType = 'error';

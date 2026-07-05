@@ -51,6 +51,18 @@ class VisitorResource extends Resource
         return [];
     }
 
+    public static function getEloquentQuery(): \Illuminate\Database\Eloquent\Builder
+    {
+        $query = parent::getEloquentQuery();
+        $currentUser = auth()->user();
+        if ($currentUser && $currentUser->pic) {
+            $query->whereHas('appointments', function ($q) use ($currentUser) {
+                $q->where('pic_id', $currentUser->pic->id);
+            });
+        }
+        return $query;
+    }
+
     public static function getPages(): array
     {
         return [

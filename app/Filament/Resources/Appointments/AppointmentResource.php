@@ -55,8 +55,15 @@ class AppointmentResource extends Resource
     // Eager load relasi untuk mencegah N+1 query di tabel & actions
     public static function getEloquentQuery(): Builder
     {
-        return parent::getEloquentQuery()
+        $query = parent::getEloquentQuery()
             ->with(['visitor', 'pic', 'room'])
             ->where('status', '!=', 'completed');
+
+        $currentUser = auth()->user();
+        if ($currentUser && $currentUser->pic) {
+            $query->where('pic_id', $currentUser->pic->id);
+        }
+
+        return $query;
     }
 }
