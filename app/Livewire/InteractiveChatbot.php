@@ -61,7 +61,10 @@ class InteractiveChatbot extends Component
         $prompt .= "*(Data ini diperbarui secara otomatis dari sistem — gunakan sebagai acuan utama)*\n\n";
 
         try {
-            $pics = \App\Models\Pic::with('department')->get();
+            // Eager-load relasi department + log absensi terbaru hari ini
+            $pics = \App\Models\Pic::with(['department', 'attendances' => function ($query) {
+                $query->whereDate('checked_at', today())->latest('checked_at');
+            }])->get();
 
             if ($pics->isEmpty()) {
                 $prompt .= "*(Belum ada data karyawan terdaftar di sistem)*\n";
@@ -72,7 +75,11 @@ class InteractiveChatbot extends Component
                 foreach ($byDept as $deptName => $deptPics) {
                     $prompt .= "**Departemen: {$deptName}**\n";
                     foreach ($deptPics as $pic) {
-                        $status  = $pic->is_available ? '✅ HADIR (Tersedia)' : '❌ TIDAK HADIR';
+                        // Tentukan kehadiran berdasarkan log absensi terbaru hari ini
+                        // (sumber kebenaran yang sama dengan tabel admin Filament)
+                        $latestAttendance = $pic->attendances->first();
+                        $isPresent = ($latestAttendance && $latestAttendance->type === 'checkin');
+                        $status = $isPresent ? '✅ HADIR (Tersedia)' : '❌ TIDAK HADIR';
                         $prompt .= "- {$pic->name} | {$status}\n";
                     }
                     $prompt .= "\n";
