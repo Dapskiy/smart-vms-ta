@@ -140,8 +140,11 @@
                     }
                 @endphp
                 @if($latestAssistantMsg)
+                    {{-- wire:key forces Alpine to fully re-mount when content changes --}}
                     <span
+                        wire:key="ai-reply-{{ md5($latestAssistantMsg) }}"
                         x-data="{ md: @js($latestAssistantMsg) }"
+                        x-init="md = @js($latestAssistantMsg)"
                         x-html="window.marked ? marked.parse(md) : md"
                         class="chatbot-md-inline"
                     ></span>

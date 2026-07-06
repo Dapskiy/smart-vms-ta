@@ -364,7 +364,7 @@ class KioskWalkinForm extends Component
 
         if ($isWalkIn) {
             // Kirim email approval ke PIC
-            $appointment->load(['visitor', 'pic']);
+            $appointment->load(['visitor', 'pic.department']);
             $picEmail = $appointment->pic?->email;
 
             if ($picEmail) {
@@ -375,13 +375,21 @@ class KioskWalkinForm extends Component
             $this->dispatch('walkin-pending-approval', 
                 token: $approvalToken,
                 visitorName: $this->name,
+                company: $this->company,
+                phone: $this->phone,
                 picName: $this->selected_pic_name,
+                department: $appointment->pic?->department?->name ?? '-',
+                visit_date: \Carbon\Carbon::parse($appointment->visit_date)->translatedFormat('d F Y'),
             );
         } else {
             // Appointment biasa — langsung tampilkan konfirmasi
+            $appointment->load(['visitor', 'pic.department']);
             $appointmentData = [
                 'visitorName' => $this->name,
+                'company'     => $this->company,
+                'phone'       => $this->phone,
                 'picName'     => $this->selected_pic_name,
+                'department'  => $appointment->pic?->department?->name ?? '-',
                 'visit_date'  => \Carbon\Carbon::parse($appointment->visit_date)->translatedFormat('d F Y'),
                 'visit_time'  => $appointment->visit_time,
                 'purpose'     => $appointment->purpose,

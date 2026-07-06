@@ -1097,11 +1097,12 @@
             document.querySelector('#modal-success .success-heading').textContent = 'Registrasi Berhasil! 🎉';
             document.querySelector('#modal-success .success-sub').textContent = 'Silakan masuk dan melapor ke pos keamanan';
             document.getElementById('si-name').textContent = data.visitorName || '-';
+            document.getElementById('si-company').textContent = data.company || '-';
+            document.getElementById('si-phone').textContent = data.phone || '-';
             document.getElementById('si-pic').textContent = data.picName || '-';
-            document.getElementById('si-room').textContent = '-';
+            document.getElementById('si-department').textContent = data.department || '-';
             document.getElementById('si-date').textContent = data.visit_date || '-';
-            document.getElementById('si-time').textContent = data.visit_time || '-';
-            document.getElementById('si-checkin').textContent = new Date().toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' });
+            document.getElementById('si-time').textContent = new Date().toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' });
             document.getElementById('si-purpose').textContent = data.purpose || '-';
             
             document.getElementById('modal-success').classList.add('active');
@@ -1125,10 +1126,45 @@
         document.addEventListener('walkin-pending-approval', function (e) {
             closeWalkinForm();
             
-            const token = e.detail.token;
-            const visitorName = e.detail.visitorName;
-            const picName = e.detail.picName;
+            const data = e.detail;
+            const token = data.token;
+            const visitorName = data.visitorName;
+            const picName = data.picName;
 
+            // Show intermediate success modal first
+            document.querySelector('#modal-success .success-heading').textContent = 'Verifikasi Wajah Berhasil! 🎉';
+            document.querySelector('#modal-success .success-sub').textContent = 'Data Anda telah tercatat. Melanjutkan ke proses persetujuan...';
+            document.getElementById('si-name').textContent = visitorName || '-';
+            document.getElementById('si-company').textContent = data.company || '-';
+            document.getElementById('si-phone').textContent = data.phone || '-';
+            document.getElementById('si-pic').textContent = picName || '-';
+            document.getElementById('si-department').textContent = data.department || '-';
+            document.getElementById('si-date').textContent = data.visit_date || new Date().toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' });
+            document.getElementById('si-time').textContent = new Date().toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' });
+            document.getElementById('si-purpose').textContent = 'Bertamu Sekarang (Walk-In)';
+            
+            // Hide action bar for intermediate step
+            document.querySelector('#modal-success .countdown-bar-wrap').style.display = 'none';
+            document.getElementById('countdown-text').style.display = 'none';
+            const okBtn = document.querySelector('#modal-success .btn-ok');
+            if(okBtn) okBtn.style.display = 'none';
+
+            document.getElementById('modal-success').classList.add('active');
+
+            // Wait 3 seconds, then switch to waiting approval modal
+            setTimeout(() => {
+                document.getElementById('modal-success').classList.remove('active');
+                
+                // Restore elements for future use
+                document.querySelector('#modal-success .countdown-bar-wrap').style.display = 'block';
+                document.getElementById('countdown-text').style.display = 'block';
+                if(okBtn) okBtn.style.display = 'inline-block';
+
+                startWaitingApproval(token, picName, data);
+            }, 3000);
+        });
+
+        function startWaitingApproval(token, picName, detailData) {
             document.getElementById('wa-pic-name').textContent = picName || 'PIC';
             document.getElementById('wa-timer').textContent = 'Menunggu respon (0 detik)...';
             document.getElementById('modal-waiting-approval').classList.add('active');
@@ -1156,14 +1192,15 @@
                             document.getElementById('modal-waiting-approval').classList.remove('active');
 
                             // Show standard success modal
-                            document.querySelector('#modal-success .success-heading').textContent = 'Registrasi Berhasil! 🎉';
-                            document.querySelector('#modal-success .success-sub').textContent = 'Kunjungan Anda telah disetujui oleh PIC.';
-                            document.getElementById('si-name').textContent = visitorName || '-';
+                            document.querySelector('#modal-success .success-heading').textContent = 'Kunjungan Disetujui! 🎉';
+                            document.querySelector('#modal-success .success-sub').textContent = 'Silakan masuk dan melapor ke pos keamanan.';
+                            document.getElementById('si-name').textContent = detailData.visitorName || '-';
+                            document.getElementById('si-company').textContent = detailData.company || '-';
+                            document.getElementById('si-phone').textContent = detailData.phone || '-';
                             document.getElementById('si-pic').textContent = picName || '-';
-                            document.getElementById('si-room').textContent = '-';
-                            document.getElementById('si-date').textContent = new Date().toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' });
-                            document.getElementById('si-time').textContent = new Date().toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' });
-                            document.getElementById('si-checkin').textContent = data.check_in_time || new Date().toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' });
+                            document.getElementById('si-department').textContent = detailData.department || '-';
+                            document.getElementById('si-date').textContent = detailData.visit_date || new Date().toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' });
+                            document.getElementById('si-time').textContent = data.check_in_time || new Date().toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' });
                             document.getElementById('si-purpose').textContent = 'Walk-in (Disetujui)';
 
                             document.getElementById('modal-success').classList.add('active');
@@ -1202,7 +1239,7 @@
                     })
                     .catch(err => console.error('Error polling status:', err));
             }, 3000);
-        });
+        }
 
         function stopApprovalPolling() {
             clearInterval(approvalPollInterval);
@@ -1228,11 +1265,12 @@
             document.querySelector('#modal-success .success-heading').textContent = 'Janji Temu Dibuat 📅';
             document.querySelector('#modal-success .success-sub').textContent = 'Menunggu konfirmasi dari karyawan. Token/Tiket akan dikirimkan ke Whatsapp Anda.';
             document.getElementById('si-name').textContent = data.visitorName || '-';
+            document.getElementById('si-company').textContent = data.company || '-';
+            document.getElementById('si-phone').textContent = data.phone || '-';
             document.getElementById('si-pic').textContent = data.picName || '-';
-            document.getElementById('si-room').textContent = '-';
+            document.getElementById('si-department').textContent = data.department || '-';
             document.getElementById('si-date').textContent = data.visit_date || '-';
             document.getElementById('si-time').textContent = data.visit_time || '-';
-            document.getElementById('si-checkin').textContent = '-';
             document.getElementById('si-purpose').textContent = data.purpose || '-';
             
             document.getElementById('modal-success').classList.add('active');
@@ -1770,6 +1808,7 @@
     <!-- ===== MODAL 3: SUCCESS POPUP ===== -->
     <div id="modal-success" class="modal-overlay">
         <div class="modal-box success-box">
+            <button class="modal-close" onclick="closeSuccessPopup()" title="Tutup" style="position: absolute; top: 1rem; right: 1rem; background: #f1f5f9; border: none; color: #475569; border-radius: 0.5rem; width: 2rem; height: 2rem; cursor: pointer; display: flex; align-items: center; justify-content: center;">✕</button>
             <div class="success-icon">
                 <svg fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24" style="width:2.5rem;height:2.5rem;color:#10b981;"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg>
             </div>
@@ -1777,11 +1816,12 @@
             <p class="success-sub">Selamat datang, data kunjungan Anda telah dicatat.</p>
             <div class="info-grid">
                 <div class="info-item"><label>Nama Tamu</label><span id="si-name">-</span></div>
+                <div class="info-item"><label>Instansi</label><span id="si-company">-</span></div>
+                <div class="info-item"><label>No. Telepon</label><span id="si-phone">-</span></div>
                 <div class="info-item"><label>PIC / Host</label><span id="si-pic">-</span></div>
-                <div class="info-item"><label>Ruangan</label><span id="si-room">-</span></div>
-                <div class="info-item"><label>Tanggal Kunjungan</label><span id="si-date">-</span></div>
-                <div class="info-item"><label>Jam Janji</label><span id="si-time">-</span></div>
-                <div class="info-item"><label>Jam Check-in</label><span id="si-checkin">-</span></div>
+                <div class="info-item"><label>Departemen</label><span id="si-department">-</span></div>
+                <div class="info-item"><label>Tanggal</label><span id="si-date">-</span></div>
+                <div class="info-item"><label>Jam</label><span id="si-time">-</span></div>
                 <div class="info-item" style="grid-column:1/-1;"><label>Keperluan</label><span id="si-purpose">-</span></div>
             </div>
             <div class="countdown-bar-wrap"><div id="countdown-bar" class="countdown-bar" style="width:100%;"></div></div>
