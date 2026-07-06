@@ -16,8 +16,8 @@
         }
         .form-control {
             width: 100%;
-            background: rgba(14, 25, 55, 0.6);
-            border: 1px solid var(--border-subtle);
+            background: #ffffff;
+            border: 1px solid #cbd5e1;
             color: var(--text-primary);
             padding: 0.75rem 1rem;
             border-radius: 8px;
@@ -72,7 +72,7 @@
             border: 1px solid var(--text-muted);
         }
         .btn-secondary:hover {
-            background: rgba(255,255,255,0.05);
+            background: #f1f5f9;
             color: var(--text-primary);
         }
         .text-danger {
@@ -92,7 +92,7 @@
         .pic-result-item {
             padding: 0.75rem 1rem;
             cursor: pointer;
-            border-bottom: 1px solid rgba(255,255,255,0.05);
+            border-bottom: 1px solid #e2e8f0;
             transition: background 0.2s;
         }
         .pic-result-item:last-child {
@@ -153,19 +153,19 @@
     </style>
 
     @if (session()->has('general'))
-        <div style="background: rgba(244, 63, 94, 0.1); border: 1px solid var(--accent-rose); padding: 1rem; border-radius: 8px; margin-bottom: 1.5rem; color: #fff;">
+        <div style="background: rgba(244, 63, 94, 0.1); border: 1px solid var(--accent-rose); padding: 1rem; border-radius: 8px; margin-bottom: 1.5rem; color: var(--accent-rose);">
             {{ session('general') }}
         </div>
     @endif
 
     @error('general')
-        <div style="background: rgba(244, 63, 94, 0.1); border: 1px solid var(--accent-rose); padding: 1rem; border-radius: 8px; margin-bottom: 1.5rem; color: #fff;">
+        <div style="background: rgba(244, 63, 94, 0.1); border: 1px solid var(--accent-rose); padding: 1rem; border-radius: 8px; margin-bottom: 1.5rem; color: var(--accent-rose);">
             {{ $message }}
         </div>
     @enderror
     
     @if (session()->has('general_success'))
-        <div style="background: rgba(16, 185, 129, 0.1); border: 1px solid var(--accent-green, #10b981); padding: 1rem; border-radius: 8px; margin-bottom: 1.5rem; color: #fff;">
+        <div style="background: rgba(16, 185, 129, 0.1); border: 1px solid var(--accent-green, #10b981); padding: 1rem; border-radius: 8px; margin-bottom: 1.5rem; color: #10b981;">
             {{ session('general_success') }}
         </div>
     @endif
@@ -184,11 +184,11 @@
         <p style="text-align: center; color: var(--text-secondary); margin-bottom: 2rem;">Apakah Anda sudah pernah berkunjung ke sini sebelumnya?</p>
         
         <div style="display: flex; flex-direction: column; gap: 1rem;">
-            <button type="button" class="btn" style="background: rgba(99, 102, 241, 0.1); border: 1px solid rgba(99, 102, 241, 0.3); color: var(--text-primary); padding: 1.5rem;" wire:click="setReturningVisitor">
+            <button type="button" class="btn" style="background: #e0e7ff; border: 1px solid rgba(79, 70, 229, 0.3); color: #4f46e5; padding: 1.5rem;" wire:click="setReturningVisitor">
                 <div style="font-size: 1.1rem; font-weight: 600; margin-bottom: 0.25rem;">Sudah Pernah Berkunjung</div>
-                <div style="font-size: 0.85rem; color: var(--text-secondary); font-weight: normal;">Gunakan Face Scan untuk isi data otomatis</div>
+                <div style="font-size: 0.85rem; color: #475569; font-weight: normal;">Gunakan Face Scan untuk isi data otomatis</div>
             </button>
-            <button type="button" class="btn" style="background: rgba(255, 255, 255, 0.05); border: 1px solid var(--border-subtle); color: var(--text-primary); padding: 1.5rem;" wire:click="setNewVisitor">
+            <button type="button" class="btn" style="background: #f8fafc; border: 1px solid #cbd5e1; color: var(--text-primary); padding: 1.5rem;" wire:click="setNewVisitor">
                 <div style="font-size: 1.1rem; font-weight: 600; margin-bottom: 0.25rem;">Belum Pernah Berkunjung</div>
                 <div style="font-size: 0.85rem; color: var(--text-secondary); font-weight: normal;">Isi form data diri dan daftar wajah baru</div>
             </button>
@@ -235,7 +235,7 @@
         
         <div class="form-group">
             <label>Tipe Kunjungan</label>
-            <div style="display: flex; gap: 1rem; background: rgba(0,0,0,0.2); padding: 0.8rem 1rem; border-radius: 8px; border: 1px solid var(--border-subtle);">
+            <div style="display: flex; gap: 1rem; background: #f8fafc; padding: 0.8rem 1rem; border-radius: 8px; border: 1px solid #cbd5e1;">
                 <label style="display: flex; align-items: center; gap: 0.5rem; color: var(--text-primary); font-weight: normal; cursor: pointer; margin-bottom: 0;">
                     <input type="radio" wire:model.live="visit_type" value="walk-in" style="accent-color: var(--accent-primary); width: 1.2rem; height: 1.2rem;">
                     Bertamu Sekarang
@@ -252,12 +252,12 @@
             <div style="display: flex; gap: 1rem; margin-bottom: 1.25rem;">
                 <div class="form-group" style="flex: 1; margin-bottom: 0;">
                     <label>Tanggal Kunjungan</label>
-                    <input type="date" wire:model="visit_date" class="form-control" style="color-scheme: dark;">
+                    <input type="date" wire:model="visit_date" class="form-control" style="color-scheme: light;">
                     @error('visit_date') <span class="text-danger">{{ $message }}</span> @enderror
                 </div>
                 <div class="form-group" style="flex: 1; margin-bottom: 0;">
                     <label>Jam</label>
-                    <input type="time" wire:model="visit_time" class="form-control" style="color-scheme: dark;">
+                    <input type="time" wire:model="visit_time" class="form-control" style="color-scheme: light;">
                     @error('visit_time') <span class="text-danger">{{ $message }}</span> @enderror
                 </div>
             </div>
@@ -282,7 +282,7 @@
             @elseif($selected_pic_id)
                 <div class="selected-pic-card">
                     <div>
-                        <div style="font-size: 0.8rem; color: #8899bb;">Karyawan Terpilih:</div>
+                        <div style="font-size: 0.8rem; color: #475569;">Karyawan Terpilih:</div>
                         <div class="name">👤 {{ $selected_pic_name }}</div>
                     </div>
                     <button type="button" wire:click="resetPicSelection">Ubah</button>
@@ -312,7 +312,7 @@
                             Teruskan mengetik nama karyawan secara spesifik...
                         </div>
                     @elseif($search_status === 'not_found')
-                        <div style="font-size: 0.85rem; color: var(--accent-gold); margin-top: 0.5rem; padding: 0.5rem; background: rgba(251, 191, 36, 0.1); border-radius: 4px;">
+                        <div style="font-size: 0.85rem; color: #d97706; margin-top: 0.5rem; padding: 0.5rem; background: rgba(251, 191, 36, 0.1); border-radius: 4px;">
                             Mohon maaf, nama karyawan tidak ditemukan pada departemen tersebut. Silakan hubungi Resepsionis.
                         </div>
                     @endif

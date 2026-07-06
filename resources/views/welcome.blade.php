@@ -20,27 +20,27 @@
         }
 
         :root {
-            --bg-void:        #050a18;
-            --bg-deep:        #080f22;
-            --bg-surface:     #0d1730;
-            --bg-card:        #101d38;
-            --bg-card-hover:  #14234a;
+            --bg-void:        #f8fafc; /* Slate 50 */
+            --bg-deep:        #f1f5f9; /* Slate 100 */
+            --bg-surface:     #ffffff;
+            --bg-card:        #ffffff;
+            --bg-card-hover:  #f8fafc;
 
-            --accent-primary: #6366f1;   /* indigo */
-            --accent-glow:    #818cf8;
-            --accent-rose:    #f43f5e;
-            --accent-gold:    #fbbf24;
+            --accent-primary: #4f46e5;   /* indigo 600 */
+            --accent-glow:    #6366f1;   /* indigo 500 */
+            --accent-rose:    #e11d48;   /* rose 600 */
+            --accent-gold:    #d97706;   /* amber 600 */
 
-            --text-primary:   #f0f4ff;
-            --text-secondary: #8899bb;
-            --text-muted:     #445577;
+            --text-primary:   #0f172a;   /* Slate 900 */
+            --text-secondary: #475569;   /* Slate 600 */
+            --text-muted:     #94a3b8;   /* Slate 400 */
 
-            --border-subtle:  rgba(99, 102, 241, 0.15);
-            --border-card:    rgba(99, 102, 241, 0.25);
-            --border-glow:    rgba(99, 102, 241, 0.6);
+            --border-subtle:  rgba(79, 70, 229, 0.08);
+            --border-card:    rgba(79, 70, 229, 0.12);
+            --border-glow:    rgba(79, 70, 229, 0.3);
 
-            --shadow-card:    0 8px 48px rgba(0, 0, 0, 0.5);
-            --shadow-glow:    0 0 60px rgba(99, 102, 241, 0.18);
+            --shadow-card:    0 10px 30px -10px rgba(0, 0, 0, 0.08), 0 1px 3px rgba(0, 0, 0, 0.03);
+            --shadow-glow:    0 0 40px rgba(79, 70, 229, 0.08);
         }
 
         html, body {
@@ -62,7 +62,7 @@
         #particle-canvas {
             position: fixed;
             inset: 0;
-            z-index: 0;
+            z-index: 2.5; /* Floats over avatar background */
             pointer-events: none;
         }
 
@@ -72,9 +72,32 @@
             z-index: 1;
             pointer-events: none;
             background:
-                radial-gradient(ellipse 80% 50% at 15% 20%, rgba(99, 102, 241, 0.12) 0%, transparent 60%),
-                radial-gradient(ellipse 60% 40% at 85% 75%, rgba(244, 63, 94, 0.07) 0%, transparent 55%),
-                radial-gradient(ellipse 50% 60% at 50% 50%, rgba(14, 25, 55, 0.6) 0%, transparent 80%);
+                radial-gradient(ellipse 80% 50% at 15% 20%, rgba(99, 102, 241, 0.04) 0%, transparent 60%),
+                radial-gradient(ellipse 60% 40% at 85% 75%, rgba(244, 63, 94, 0.03) 0%, transparent 55%);
+        }
+
+        /* Large Centered Looping Video Avatar Backdrop */
+        .kiosk-bg-video-container {
+            position: fixed;
+            inset: 0;
+            z-index: 1.5; /* Above mesh/particles, behind text/buttons */
+            pointer-events: none;
+            display: flex;
+            align-items: flex-end; /* Align the video to the bottom edge */
+            justify-content: center;
+            overflow: hidden;
+            background: #ffffff;
+            mix-blend-mode: multiply;
+        }
+
+        .kiosk-bg-video {
+            height: 108vh; /* Slightly taller than the screen */
+            width: auto;
+            max-width: 100vw;
+            object-fit: contain;
+            opacity: 0.96;
+            margin-bottom: -8vh; /* Push the cut-off chest/shoulders below the screen */
+            filter: brightness(1.12) contrast(1.1); /* Aggressively pushes near-white pixels to pure white for perfect multiply blending */
         }
 
         /* Horizontal scan line shimmer */
@@ -87,8 +110,8 @@
                 0deg,
                 transparent,
                 transparent 3px,
-                rgba(99, 102, 241, 0.012) 3px,
-                rgba(99, 102, 241, 0.012) 4px
+                rgba(99, 102, 241, 0.003) 3px,
+                rgba(99, 102, 241, 0.003) 4px
             );
         }
 
@@ -197,17 +220,7 @@
 
         /* --- Divider line --- */
         .header-divider {
-            height: 1px;
-            background: linear-gradient(90deg,
-                transparent 0%,
-                var(--border-subtle) 20%,
-                var(--accent-primary) 50%,
-                var(--border-subtle) 80%,
-                transparent 100%
-            );
-            flex-shrink: 0;
-            margin: 0 0.5vw;
-            opacity: 0.6;
+            display: none;
         }
 
         /* ============================================================
@@ -218,9 +231,11 @@
             display: flex;
             flex-direction: column;
             align-items: center;
-            justify-content: center;
-            gap: 4vh;
-            padding: 2vh 0;
+            justify-content: space-between;
+            gap: 1vh;
+            padding: 1vh 0 0.5vh;
+            min-height: 0;
+            overflow: hidden;
         }
 
         /* --- Welcome text --- */
@@ -284,26 +299,35 @@
 
         /* --- Cards row --- */
         .cards-row {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
-            gap: clamp(1.5rem, 3vw, 2.5rem);
+            display: flex;
+            flex-direction: row;
+            flex-wrap: wrap;
+            justify-content: center;
+            align-items: center;
+            gap: 1rem;
             width: 100%;
             max-width: 1200px;
-            justify-content: center;
+            margin-top: auto;
+            padding-bottom: 1.5vh;
+            z-index: 10;
         }
 
         .checkin-card {
             flex: 1;
-            max-width: 440px;
-            min-height: 28vh;
-            background: var(--bg-card);
-            border: 1px solid var(--border-card);
-            border-radius: 1.5rem;
-            padding: clamp(1.5rem, 3vh, 2.5rem) clamp(1.5rem, 2.5vw, 2.5rem);
+            min-width: 220px;
+            max-width: 270px;
+            min-height: 80px;
+            height: 85px;
+            background: rgba(255, 255, 255, 0.85);
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            border: 1px solid rgba(79, 70, 229, 0.1);
+            border-radius: 1rem;
+            padding: 0.75rem 1rem;
             display: flex;
-            flex-direction: column;
-            align-items: flex-start;
-            gap: 1rem;
+            flex-direction: row;
+            align-items: center;
+            gap: 0.75rem;
             position: relative;
             overflow: hidden;
             cursor: pointer;
@@ -312,7 +336,7 @@
                 border-color 0.25s ease,
                 box-shadow 0.25s ease,
                 background 0.25s ease;
-            box-shadow: var(--shadow-card);
+            box-shadow: 0 4px 20px -5px rgba(0, 0, 0, 0.05);
         }
 
         /* Card shimmer stripe */
@@ -323,7 +347,7 @@
             left: -60%;
             width: 40%;
             height: 100%;
-            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.04), transparent);
+            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.4), transparent);
             transform: skewX(-15deg);
             transition: left 0.5s ease;
         }
@@ -338,19 +362,19 @@
             position: absolute;
             top: 0;
             right: 0;
-            width: 120px;
-            height: 120px;
-            border-radius: 0 1.5rem 0 0;
+            width: 80px;
+            height: 80px;
+            border-radius: 0 1rem 0 0;
             opacity: 0;
             transition: opacity 0.3s ease;
         }
 
         .card-appointment::after {
-            background: radial-gradient(circle at top right, rgba(99, 102, 241, 0.2), transparent 70%);
+            background: radial-gradient(circle at top right, rgba(99, 102, 241, 0.15), transparent 70%);
         }
 
         .card-walkin::after {
-            background: radial-gradient(circle at top right, rgba(244, 63, 94, 0.18), transparent 70%);
+            background: radial-gradient(circle at top right, rgba(244, 63, 94, 0.15), transparent 70%);
         }
 
         .checkin-card:hover::after {
@@ -359,30 +383,30 @@
 
         /* Hover states */
         .card-appointment:hover {
-            border-color: var(--border-glow);
-            box-shadow: var(--shadow-card), var(--shadow-glow);
-            background: var(--bg-card-hover);
-            transform: translateY(-4px) scale(1.012);
+            border-color: rgba(99, 102, 241, 0.4);
+            box-shadow: var(--shadow-card), 0 0 30px rgba(99, 102, 241, 0.1);
+            background: rgba(255, 255, 255, 0.95);
+            transform: translateY(-2px) scale(1.02);
         }
 
         .card-walkin:hover {
-            border-color: rgba(244, 63, 94, 0.55);
-            box-shadow: var(--shadow-card), 0 0 50px rgba(244, 63, 94, 0.15);
-            background: var(--bg-card-hover);
-            transform: translateY(-4px) scale(1.012);
+            border-color: rgba(244, 63, 94, 0.4);
+            box-shadow: var(--shadow-card), 0 0 30px rgba(244, 63, 94, 0.1);
+            background: rgba(255, 255, 255, 0.95);
+            transform: translateY(-2px) scale(1.02);
         }
 
         /* Active / Touch press */
         .checkin-card:active {
-            transform: scale(0.96) !important;
+            transform: scale(0.97) !important;
             transition: transform 0.08s ease;
         }
 
         /* Card icon bubble */
         .card-icon-wrap {
-            width: clamp(3.5rem, 5vw, 4.5rem);
-            height: clamp(3.5rem, 5vw, 4.5rem);
-            border-radius: 1rem;
+            width: 2.8rem;
+            height: 2.8rem;
+            border-radius: 0.6rem;
             display: flex;
             align-items: center;
             justify-content: center;
@@ -390,20 +414,20 @@
         }
 
         .card-appointment .card-icon-wrap {
-            background: linear-gradient(135deg, rgba(99, 102, 241, 0.25), rgba(99, 102, 241, 0.1));
-            border: 1px solid rgba(99, 102, 241, 0.3);
-            box-shadow: 0 0 20px rgba(99, 102, 241, 0.15);
+            background: #e0e7ff;
+            border: 1px solid rgba(99, 102, 241, 0.2);
+            box-shadow: 0 4px 10px rgba(99, 102, 241, 0.05);
         }
 
         .card-walkin .card-icon-wrap {
-            background: linear-gradient(135deg, rgba(244, 63, 94, 0.2), rgba(244, 63, 94, 0.08));
-            border: 1px solid rgba(244, 63, 94, 0.28);
-            box-shadow: 0 0 20px rgba(244, 63, 94, 0.12);
+            background: #ffe4e6;
+            border: 1px solid rgba(244, 63, 94, 0.2);
+            box-shadow: 0 4px 10px rgba(244, 63, 94, 0.05);
         }
 
         .card-icon-wrap svg {
-            width: clamp(1.6rem, 2.5vw, 2.2rem);
-            height: clamp(1.6rem, 2.5vw, 2.2rem);
+            width: 1.4rem;
+            height: 1.4rem;
         }
 
         .card-appointment .card-icon-wrap svg { color: var(--accent-glow); }
@@ -412,48 +436,35 @@
         /* Card text */
         .card-body {
             flex: 1;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            overflow: hidden;
         }
 
         .card-title {
-            font-size: clamp(1.1rem, 2vw, 1.6rem);
+            font-size: 0.88rem;
             font-weight: 700;
-            letter-spacing: -0.02em;
+            letter-spacing: -0.01em;
             color: var(--text-primary);
-            line-height: 1.2;
+            line-height: 1.25;
         }
 
         .card-sub {
-            margin-top: 0.4rem;
-            font-size: clamp(0.75rem, 1.1vw, 0.95rem);
+            margin-top: 0.15rem;
+            font-size: 0.7rem;
             font-weight: 400;
             color: var(--text-secondary);
-            line-height: 1.4;
+            line-height: 1.3;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
         }
 
         /* Card CTA arrow */
         .card-cta {
-            margin-top: auto;
-            display: flex;
-            align-items: center;
-            gap: 0.4rem;
-            font-size: clamp(0.7rem, 1vw, 0.85rem);
-            font-weight: 600;
-            letter-spacing: 0.06em;
-            transition: gap 0.2s ease;
+            display: none !important;
         }
-
-        .card-appointment .card-cta { color: var(--accent-glow); }
-        .card-walkin    .card-cta { color: #fb7185; }
-
-        .checkin-card:hover .card-cta { gap: 0.7rem; }
-
-        .card-cta svg {
-            width: 1rem;
-            height: 1rem;
-            transition: transform 0.2s ease;
-        }
-
-        .checkin-card:hover .card-cta svg { transform: translateX(3px); }
 
         /* ============================================================
            FOOTER
@@ -496,22 +507,38 @@
         }
 
         .card-checkout::after {
-            background: radial-gradient(circle at top right, rgba(16, 185, 129, 0.18), transparent 70%);
+            background: radial-gradient(circle at top right, rgba(16, 185, 129, 0.15), transparent 70%);
         }
         .card-checkout:hover {
-            border-color: rgba(16, 185, 129, 0.55);
-            box-shadow: var(--shadow-card), 0 0 50px rgba(16, 185, 129, 0.15);
-            background: var(--bg-card-hover);
-            transform: translateY(-4px) scale(1.012);
+            border-color: rgba(16, 185, 129, 0.4);
+            box-shadow: var(--shadow-card), 0 0 30px rgba(16, 185, 129, 0.1);
+            background: rgba(255, 255, 255, 0.95);
+            transform: translateY(-2px) scale(1.02);
         }
         .card-checkout .card-icon-wrap {
-            background: linear-gradient(135deg, rgba(16, 185, 129, 0.2), rgba(16, 185, 129, 0.08));
-            border: 1px solid rgba(16, 185, 129, 0.28);
-            box-shadow: 0 0 20px rgba(16, 185, 129, 0.12);
+            background: #d1fae5;
+            border: 1px solid rgba(16, 185, 129, 0.2);
+            box-shadow: 0 4px 10px rgba(16, 185, 129, 0.05);
         }
         .card-checkout .card-icon-wrap svg { color: #10b981; }
-        .card-checkout .card-cta { color: #10b981; }
-        .card-checkout .ripple { background: rgba(16, 185, 129, 0.18); }
+        .card-checkout .ripple { background: rgba(16, 185, 129, 0.1); }
+
+        .card-attendance::after {
+            background: radial-gradient(circle at top right, rgba(251, 191, 36, 0.15), transparent 70%);
+        }
+        .card-attendance:hover {
+            border-color: rgba(251, 191, 36, 0.4);
+            box-shadow: var(--shadow-card), 0 0 30px rgba(251, 191, 36, 0.1);
+            background: rgba(255, 255, 255, 0.95);
+            transform: translateY(-2px) scale(1.02);
+        }
+        .card-attendance .card-icon-wrap {
+            background: #fef3c7;
+            border: 1px solid rgba(251, 191, 36, 0.2);
+            box-shadow: 0 4px 10px rgba(251, 191, 36, 0.05);
+        }
+        .card-attendance .card-icon-wrap svg { color: var(--accent-gold); }
+        .card-attendance .ripple { background: rgba(251, 191, 36, 0.1); }
 
 
         @keyframes ripple-expand {
@@ -533,7 +560,9 @@
         .welcome-block  { animation: fadeUp 0.6s ease both; animation-delay: 0.2s; }
         .checkin-card:nth-child(1) { animation: fadeUp 0.6s ease both; animation-delay: 0.35s; }
         .checkin-card:nth-child(2) { animation: fadeUp 0.6s ease both; animation-delay: 0.48s; }
-        .kiosk-footer   { animation: fadeUp 0.6s ease both; animation-delay: 0.55s; }
+        .checkin-card:nth-child(3) { animation: fadeUp 0.6s ease both; animation-delay: 0.61s; }
+        .checkin-card:nth-child(4) { animation: fadeUp 0.6s ease both; animation-delay: 0.74s; }
+        .kiosk-footer   { animation: fadeUp 0.6s ease both; animation-delay: 0.85s; }
 
         /* ============================================================
            STATUS BAR (online indicator)
@@ -569,7 +598,7 @@
             position: fixed;
             inset: 0;
             z-index: 100;
-            background: rgba(5, 10, 24, 0.85);
+            background: rgba(15, 23, 42, 0.45);
             backdrop-filter: blur(8px);
             align-items: center;
             justify-content: center;
@@ -577,34 +606,34 @@
         .modal-overlay.active { display: flex; }
 
         .modal-box {
-            background: #0d1730;
-            border: 1px solid rgba(99,102,241,0.3);
+            background: #ffffff;
+            border: 1px solid #e2e8f0;
             border-radius: 1.5rem;
             padding: 2rem;
             width: min(92vw, 480px);
             position: relative;
-            box-shadow: 0 0 80px rgba(99,102,241,0.2);
+            box-shadow: 0 20px 50px rgba(0, 0, 0, 0.1);
             animation: fadeUp 0.3s ease both;
         }
 
         .modal-title {
             font-size: 1.3rem;
             font-weight: 700;
-            color: #f0f4ff;
+            color: #0f172a;
             margin-bottom: 0.4rem;
         }
         .modal-sub {
             font-size: 0.82rem;
-            color: #8899bb;
+            color: #475569;
             margin-bottom: 1.5rem;
         }
 
         .modal-close {
             position: absolute;
             top: 1rem; right: 1rem;
-            background: rgba(255,255,255,0.06);
+            background: #f1f5f9;
             border: none;
-            color: #8899bb;
+            color: #475569;
             border-radius: 0.5rem;
             width: 2rem; height: 2rem;
             cursor: pointer;
@@ -612,7 +641,7 @@
             display: flex; align-items: center; justify-content: center;
             transition: background 0.2s;
         }
-        .modal-close:hover { background: rgba(255,255,255,0.12); color: #f0f4ff; }
+        .modal-close:hover { background: #e2e8f0; color: #0f172a; }
 
         /* Method picker buttons */
         .method-btn {
@@ -621,9 +650,9 @@
             gap: 1rem;
             padding: 1rem 1.2rem;
             border-radius: 1rem;
-            border: 1px solid rgba(99,102,241,0.25);
-            background: rgba(99,102,241,0.07);
-            color: #f0f4ff;
+            border: 1px solid #e2e8f0;
+            background: #f8fafc;
+            color: #0f172a;
             cursor: pointer;
             transition: all 0.2s ease;
             width: 100%;
@@ -632,8 +661,8 @@
             text-align: left;
         }
         .method-btn:hover {
-            border-color: rgba(99,102,241,0.6);
-            background: rgba(99,102,241,0.15);
+            border-color: #cbd5e1;
+            background: #f1f5f9;
             transform: translateX(4px);
         }
         .method-btn .mb-icon {
@@ -644,7 +673,7 @@
         }
         .method-btn .mb-icon svg { width: 1.4rem; height: 1.4rem; }
         .method-btn .mb-text strong { display: block; font-size: 0.95rem; font-weight: 600; }
-        .method-btn .mb-text span  { font-size: 0.75rem; color: #8899bb; }
+        .method-btn .mb-text span  { font-size: 0.75rem; color: #475569; }
         .method-btn.disabled { opacity: 0.4; cursor: not-allowed; pointer-events: none; }
 
         /* Face scan modal */
@@ -667,8 +696,8 @@
             margin: 0 auto 1.2rem;
         }
         .success-icon svg { width: 2.5rem; height: 2.5rem; color: #10b981; }
-        .success-heading { font-size: 1.5rem; font-weight: 700; color: #f0f4ff; margin-bottom: 0.3rem; }
-        .success-sub     { font-size: 0.85rem; color: #8899bb; margin-bottom: 1.5rem; }
+        .success-heading { font-size: 1.5rem; font-weight: 700; color: #0f172a; margin-bottom: 0.3rem; }
+        .success-sub     { font-size: 0.85rem; color: #475569; margin-bottom: 1.5rem; }
         .info-grid {
             display: grid;
             grid-template-columns: 1fr 1fr;
@@ -677,13 +706,13 @@
             margin-bottom: 1.5rem;
         }
         .info-item {
-            background: rgba(255,255,255,0.04);
-            border: 1px solid rgba(255,255,255,0.07);
+            background: #f8fafc;
+            border: 1px solid #e2e8f0;
             border-radius: 0.75rem;
             padding: 0.75rem 1rem;
         }
-        .info-item label { font-size: 0.65rem; letter-spacing: 0.1em; text-transform: uppercase; color: #6366f1; display: block; margin-bottom: 0.2rem; }
-        .info-item span  { font-size: 0.9rem; font-weight: 600; color: #f0f4ff; }
+        .info-item label { font-size: 0.65rem; letter-spacing: 0.1em; text-transform: uppercase; color: #4f46e5; display: block; margin-bottom: 0.2rem; }
+        .info-item span  { font-size: 0.9rem; font-weight: 600; color: #0f172a; }
         .btn-ok {
             padding: 0.9rem 3rem;
             background: linear-gradient(135deg, #6366f1, #4f46e5);
@@ -751,12 +780,12 @@
         .waiting-heading {
             font-size: 1.3rem;
             font-weight: 700;
-            color: #f0f4ff;
+            color: #0f172a;
             margin-bottom: 0.5rem;
         }
         .waiting-sub {
             font-size: 0.85rem;
-            color: #8899bb;
+            color: #475569;
             margin-bottom: 0.4rem;
             line-height: 1.5;
         }
@@ -819,6 +848,11 @@
     <!-- Background layers -->
     <canvas id="particle-canvas"></canvas>
     <div class="bg-mesh"></div>
+    <div class="kiosk-bg-video-container">
+        <video autoplay loop muted playsinline class="kiosk-bg-video">
+            <source src="{{ asset('assets/images/chatbot/avatar-greeting.mp4') }}" type="video/mp4">
+        </video>
+    </div>
     <div class="bg-scanline"></div>
 
     <!-- ==================== KIOSK SHELL ==================== -->
@@ -852,14 +886,7 @@
         <!-- MAIN -->
         <main class="kiosk-main">
 
-            <!-- Welcome text -->
-            <div class="welcome-block">
-                <div class="welcome-label">Sistem Check-in Otomatis</div>
-                <h1 class="welcome-heading">
-                    Selamat Datang di <span class="highlight">VISITA</span>
-                </h1>
-                <p class="welcome-sub">Silakan pilih metode check-in Anda untuk melanjutkan</p>
-            </div>
+            @livewire('interactive-chatbot')
 
             <!-- Action cards -->
             <div class="cards-row">
@@ -936,8 +963,8 @@
 
                 <!-- Card 4: Absensi Karyawan (PIC) -->
                 <div class="checkin-card card-attendance" onclick="openAttendanceModal()" role="button" tabindex="0" aria-label="Absensi Karyawan">
-                    <div class="card-icon-wrap" style="background: linear-gradient(135deg, rgba(251, 191, 36, 0.2), rgba(251, 191, 36, 0.08)); border: 1px solid rgba(251, 191, 36, 0.28); box-shadow: 0 0 20px rgba(251, 191, 36, 0.12);">
-                        <svg viewBox="0 0 24 24" fill="none" stroke="#fbbf24" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+                    <div class="card-icon-wrap">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
                             <path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path>
                             <circle cx="8.5" cy="7" r="4"></circle>
                             <polyline points="17 11 19 13 23 9"></polyline>
@@ -949,7 +976,7 @@
                         <div class="card-sub">Khusus karyawan (PIC) untuk<br>check-in & check-out wajah</div>
                     </div>
 
-                    <div class="card-cta" style="color: #fbbf24;">
+                    <div class="card-cta">
                         ABSENSI PIC
                         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
                             <path d="M5 12h14M12 5l7 7-7 7"/>
@@ -974,9 +1001,6 @@
         <div class="status-dot"></div>
         SISTEM AKTIF &amp; TERHUBUNG
     </div>
-
-    {{-- Chatbot (inside main DOM so Firefox doesn't clip it) --}}
-    @livewire('interactive-chatbot')
 
     {{-- PIC Attendance (invisible event listener) --}}
     @livewire('kiosk.pic-attendance')
