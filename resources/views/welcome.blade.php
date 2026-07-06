@@ -1107,7 +1107,7 @@
             
             document.getElementById('modal-success').classList.add('active');
             
-            successSecondsLeft = 15;
+            successSecondsLeft = 5;
             updateCountdown();
             clearInterval(successTimer);
             successTimer = setInterval(() => {
@@ -1205,7 +1205,7 @@
 
                             document.getElementById('modal-success').classList.add('active');
 
-                            successSecondsLeft = 15;
+                            successSecondsLeft = 5;
                             updateCountdown();
                             clearInterval(successTimer);
                             successTimer = setInterval(() => {
@@ -1220,9 +1220,9 @@
                             // Show rejected modal
                             document.getElementById('modal-rejected').classList.add('active');
 
-                            let rejectedSecondsLeft = 15;
+                            let rejectedSecondsLeft = 5;
                             const updateRejectedCountdown = () => {
-                                const pct = (rejectedSecondsLeft / 15) * 100;
+                                const pct = (rejectedSecondsLeft / 5) * 100;
                                 document.getElementById('rejected-countdown-bar').style.width = pct + '%';
                                 document.getElementById('rejected-countdown-text').textContent =
                                     'Layar akan kembali otomatis dalam ' + rejectedSecondsLeft + ' detik';
@@ -1275,7 +1275,7 @@
             
             document.getElementById('modal-success').classList.add('active');
             
-            successSecondsLeft = 15;
+            successSecondsLeft = 5;
             updateCountdown();
             clearInterval(successTimer);
             successTimer = setInterval(() => {
@@ -1595,7 +1595,7 @@
         }
 
         function updateCountdown() {
-            const maxSec = successSecondsLeft > 15 && successSecondsLeft <= 180 ? 180 : 15;
+            const maxSec = successSecondsLeft > 5 && successSecondsLeft <= 180 ? 180 : 5;
             const pct = (successSecondsLeft / maxSec) * 100;
             document.getElementById('countdown-bar').style.width = pct + '%';
             document.getElementById('countdown-text').textContent =
