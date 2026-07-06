@@ -46,36 +46,32 @@ class PicAttendance extends Component
             $this->lastMatchedPicId = $bestMatch->id;
             $this->lastMatchedTime = now();
 
-            // Check if already checked in today
-            $alreadyCheckedIn = PicAttendanceLog::where('pic_id', $bestMatch->id)
+            // Check latest attendance log today
+            $latest = PicAttendanceLog::where('pic_id', $bestMatch->id)
                 ->whereDate('checked_at', today())
-                ->where('type', 'checkin')
-                ->exists();
+                ->latest('checked_at')
+                ->first();
 
-            if ($alreadyCheckedIn) {
-                $this->message = "{$bestMatch->name} sudah melakukan absensi hari ini.";
-                $this->messageType = 'info';
-                $this->dispatch('attendance-error', message: $this->message);
-                return;
-            }
+            $isCheckingIn = ($latest === null || $latest->type === 'checkout');
 
-            // Set attendance status to present
-            $bestMatch->is_available = true;
+            // Set attendance status to present/absent
+            $bestMatch->is_available = $isCheckingIn;
             $bestMatch->save();
 
             // Log attendance record
             PicAttendanceLog::create([
                 'pic_id' => $bestMatch->id,
-                'type' => 'checkin',
+                'type' => $isCheckingIn ? 'checkin' : 'checkout',
                 'method' => 'kiosk',
                 'checked_at' => now(),
             ]);
 
-            $this->message = "{$bestMatch->name} berhasil Absen!";
+            $statusText = $isCheckingIn ? 'Masuk' : 'Keluar';
+            $this->message = "{$bestMatch->name} berhasil Absen {$statusText}!";
             $this->messageType = 'success';
             
             // Dispatch event to show success visually
-            $this->dispatch('attendance-success', message: $this->message, type: 'checkin');
+            $this->dispatch('attendance-success', message: $this->message, type: $isCheckingIn ? 'checkin' : 'checkout');
         } else {
             $this->message = "Wajah tidak dikenali dalam sistem PIC.";
             $this->messageType = 'error';

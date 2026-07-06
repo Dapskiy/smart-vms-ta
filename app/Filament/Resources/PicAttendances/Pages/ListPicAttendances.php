@@ -89,29 +89,27 @@ class ListPicAttendances extends ListRecords
             }
         }
 
-        // 2. Check if already checked in today
-        $todayAttendanceExists = PicAttendance::where('pic_id', $targetPic->id)
+        // 2. Check latest attendance log today
+        $latest = PicAttendance::where('pic_id', $targetPic->id)
             ->whereDate('checked_at', today())
-            ->where('type', 'checkin')
-            ->exists();
+            ->latest('checked_at')
+            ->first();
 
-        if ($todayAttendanceExists) {
-            $this->dispatch('attendance-scan-error', message: "{$targetPic->name} sudah absen hari ini.");
-            return;
-        }
+        $isCheckingIn = ($latest === null || $latest->type === 'checkout');
 
-        // 3. Log checkin
+        // 3. Log checkin/checkout
         PicAttendance::create([
             'pic_id' => $targetPic->id,
-            'type' => 'checkin',
+            'type' => $isCheckingIn ? 'checkin' : 'checkout',
             'method' => 'admin',
             'checked_at' => now(),
         ]);
 
-        $targetPic->is_available = true;
+        $targetPic->is_available = $isCheckingIn;
         $targetPic->save();
 
-        $this->dispatch('attendance-scan-success', message: "{$targetPic->name} berhasil Absen!");
+        $statusText = $isCheckingIn ? 'Masuk' : 'Keluar';
+        $this->dispatch('attendance-scan-success', message: "{$targetPic->name} berhasil Absen {$statusText}!");
         
         // Refresh table records
         $this->dispatch('refresh-table');

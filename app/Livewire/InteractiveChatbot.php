@@ -86,7 +86,7 @@ class InteractiveChatbot extends Component
     }
 
     /**
-     * Kirim pesan user ke Gemini dan simpan balasannya
+     * Kirim pesan user ke OpenAI dan simpan balasannya
      */
     public function sendMessage(): void
     {
@@ -107,34 +107,33 @@ class InteractiveChatbot extends Component
 
 
         try {
-            $model  = config('services.gemini.model', 'gemini-2.0-flash');
-            $apiKey = config('services.gemini.key');
-            $url    = "https://generativelanguage.googleapis.com/v1beta/models/{$model}:generateContent?key={$apiKey}";
+            $model  = config('services.openai.model', 'gpt-4o-mini');
+            $apiKey = config('services.openai.key');
+            $url    = 'https://api.openai.com/v1/chat/completions';
 
-            // Bangun history dalam format Gemini (role: user / model)
-            $contents = [];
+            // Bangun messages dalam format OpenAI
+            $openaiMessages = [
+                ['role' => 'system', 'content' => $this->getSystemPrompt()],
+            ];
             foreach ($this->messages as $msg) {
-                $contents[] = [
-                    'role'  => $msg['role'] === 'assistant' ? 'model' : 'user',
-                    'parts' => [['text' => $msg['content']]],
+                $openaiMessages[] = [
+                    'role'    => $msg['role'], // 'user' atau 'assistant'
+                    'content' => $msg['content'],
                 ];
             }
 
             $response = Http::timeout(30)
-                ->withoutVerifying()  // bypass SSL cert error di Windows (cURL error 60)
+                ->withoutVerifying()
+                ->withToken($apiKey)
                 ->post($url, [
-                    'systemInstruction' => [
-                        'parts' => [['text' => $this->getSystemPrompt()]],
-                    ],
-                    'contents'         => $contents,
-                    'generationConfig' => [
-                        'temperature'     => 0.7,
-                        'maxOutputTokens' => 500,
-                    ],
+                    'model'       => $model,
+                    'messages'    => $openaiMessages,
+                    'temperature' => 0.7,
+                    'max_tokens'  => 500,
                 ]);
 
             if ($response->successful()) {
-                $reply = $response->json('candidates.0.content.parts.0.text', '...');
+                $reply      = $response->json('choices.0.message.content', '...');
                 $cleanReply = trim($reply);
                 $this->messages[] = [
                     'role'    => 'assistant',

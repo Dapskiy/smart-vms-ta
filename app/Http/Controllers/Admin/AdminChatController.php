@@ -49,32 +49,30 @@ class AdminChatController extends Controller
             . $specificData;
 
         try {
-            $model  = config('services.gemini.model', 'gemini-2.0-flash');
-            $apiKey = config('services.gemini.key');
+            $model  = config('services.openai.model', 'gpt-4o-mini');
+            $apiKey = config('services.openai.key');
 
             if (empty($apiKey)) {
-                return response()->json(['error' => 'Gemini API Key belum dikonfigurasi.'], 500);
+                return response()->json(['error' => 'OpenAI API Key belum dikonfigurasi.'], 500);
             }
 
-            $url = "https://generativelanguage.googleapis.com/v1beta/models/{$model}:generateContent?key={$apiKey}";
+            $url = 'https://api.openai.com/v1/chat/completions';
 
             $response = Http::timeout(30)
                 ->withoutVerifying() // bypass SSL cert di dev (Windows)
+                ->withToken($apiKey)
                 ->post($url, [
-                    'systemInstruction' => [
-                        'parts' => [['text' => $systemPrompt]],
+                    'model'       => $model,
+                    'messages'    => [
+                        ['role' => 'system', 'content' => $systemPrompt],
+                        ['role' => 'user',   'content' => $userMessage],
                     ],
-                    'contents' => [
-                        ['role' => 'user', 'parts' => [['text' => $userMessage]]],
-                    ],
-                    'generationConfig' => [
-                        'temperature'     => 0.4, // Lebih deterministik untuk data faktual
-                        'maxOutputTokens' => 600,
-                    ],
+                    'temperature' => 0.4, // Lebih deterministik untuk data faktual
+                    'max_tokens'  => 600,
                 ]);
 
             if ($response->successful()) {
-                $reply = $response->json('candidates.0.content.parts.0.text', '...');
+                $reply = $response->json('choices.0.message.content', '...');
                 Log::info("[ADMIN-AI] Admin={$adminName} | Q={$userMessage}");
                 return response()->json(['reply' => trim($reply)]);
             }
@@ -83,7 +81,7 @@ class AdminChatController extends Controller
                 return response()->json(['error' => 'Terlalu banyak permintaan. Tunggu sebentar lalu coba lagi.'], 429);
             }
 
-            Log::warning('[ADMIN-AI] Gemini error: HTTP ' . $response->status() . ' — ' . $response->body());
+            Log::warning('[ADMIN-AI] OpenAI error: HTTP ' . $response->status() . ' — ' . $response->body());
             return response()->json(['error' => 'Gagal mendapat respons dari AI. (HTTP ' . $response->status() . ')'], 502);
 
         } catch (\Throwable $e) {

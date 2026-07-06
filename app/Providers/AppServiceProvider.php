@@ -31,6 +31,12 @@ class AppServiceProvider extends ServiceProvider
             return $user->hasRole('super_admin') ? true : null;
         });
 
+        // Reset PIC availability at 00:00 daily
+        if (cache()->get('pic_availability_reset_date') !== today()->toDateString()) {
+            \App\Models\Pic::query()->update(['is_available' => false]);
+            cache()->forever('pic_availability_reset_date', today()->toDateString());
+        }
+
         \Filament\Support\Facades\FilamentView::registerRenderHook(
             'panels::body.end',
             fn () => new \Illuminate\Support\HtmlString("

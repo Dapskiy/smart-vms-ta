@@ -35,7 +35,7 @@ class PicsTable
                 IconColumn::make('is_present')
                     ->label('Status Hadir')
                     ->boolean()
-                    ->state(fn ($record) => $record->attendances()->whereDate('checked_at', today())->where('type', 'checkin')->exists()),
+                    ->state(fn ($record) => $record->attendances()->whereDate('checked_at', today())->latest('checked_at')->first()?->type === 'checkin'),
                 IconColumn::make('face_registered')
                     ->label('Face ID')
                     ->boolean()
@@ -46,26 +46,29 @@ class PicsTable
             ])
             ->recordActions([
                 \Filament\Actions\Action::make('manual_attendance')
-                    ->label('Absen Manual')
-                    ->icon('heroicon-o-arrow-left-end-on-rectangle')
-                    ->color('success')
+                    ->label(fn ($record) => ($record->attendances()->whereDate('checked_at', today())->latest('checked_at')->first()?->type === 'checkin') ? 'Absen Keluar' : 'Absen Masuk')
+                    ->icon(fn ($record) => ($record->attendances()->whereDate('checked_at', today())->latest('checked_at')->first()?->type === 'checkin') ? 'heroicon-o-arrow-right-start-on-rectangle' : 'heroicon-o-arrow-left-end-on-rectangle')
+                    ->color(fn ($record) => ($record->attendances()->whereDate('checked_at', today())->latest('checked_at')->first()?->type === 'checkin') ? 'danger' : 'success')
                     ->requiresConfirmation()
-                    ->disabled(fn ($record) => $record->attendances()->whereDate('checked_at', today())->where('type', 'checkin')->exists())
-                    ->modalHeading(fn ($record) => 'Absen Manual: ' . $record->name)
-                    ->modalDescription(fn ($record) => 'Apakah Anda yakin ingin melakukan absensi manual untuk ' . $record->name . ' hari ini?')
+                    ->modalHeading(fn ($record) => (($record->attendances()->whereDate('checked_at', today())->latest('checked_at')->first()?->type === 'checkin') ? 'Absen Keluar Manual' : 'Absen Masuk Manual') . ': ' . $record->name)
+                    ->modalDescription(fn ($record) => 'Apakah Anda yakin ingin melakukan absensi ' . (($record->attendances()->whereDate('checked_at', today())->latest('checked_at')->first()?->type === 'checkin') ? 'keluar' : 'masuk') . ' manual untuk ' . $record->name . '?')
                     ->action(function ($record) {
-                        $record->is_available = true;
+                        $latest = $record->attendances()->whereDate('checked_at', today())->latest('checked_at')->first();
+                        $isCheckingIn = ($latest?->type !== 'checkin');
+
+                        $record->is_available = $isCheckingIn;
                         $record->save();
 
                         PicAttendance::create([
                             'pic_id' => $record->id,
-                            'type' => 'checkin',
+                            'type' => $isCheckingIn ? 'checkin' : 'checkout',
                             'method' => 'manual',
                             'checked_at' => now(),
                         ]);
 
+                        $statusText = $isCheckingIn ? 'Masuk' : 'Keluar';
                         \Filament\Notifications\Notification::make()
-                            ->title("{$record->name} berhasil Absen!")
+                            ->title("{$record->name} berhasil Absen {$statusText}!")
                             ->success()
                             ->send();
                     }),
