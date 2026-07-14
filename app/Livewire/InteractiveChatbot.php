@@ -175,6 +175,15 @@ class InteractiveChatbot extends Component
     }
 
     /**
+     * Memilih salah satu chip saran dan mengirimkannya langsung ke AI
+     */
+    public function selectSuggestedChip(string $text): void
+    {
+        $this->inputMessage = $text;
+        $this->sendMessage();
+    }
+
+    /**
      * Reset semua riwayat chat
      */
     public function clearHistory(): void

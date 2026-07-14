@@ -1,11 +1,11 @@
 <div
     class="chatbot-wrapper"
     x-data="{
+        hasChatted: {{ empty($messages) ? 'false' : 'true' }},
         ttsEnabled: true,
         isSpeaking: false,
         isPaused: false,
         isListening: false,
-        showKeyboard: false,
         startDictation() {
             if (this.isListening) return;
             const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
@@ -18,11 +18,13 @@
             recognition.interimResults = false;
             recognition.maxAlternatives = 1;
 
-            recognition.onstart = () => { this.isListening = true; };
+            recognition.onstart = () => { 
+                this.isListening = true; 
+                this.hasChatted = true; 
+            };
             recognition.onresult = (event) => {
                 const transcript = event.results[0][0].transcript;
                 this.$wire.set('inputMessage', transcript);
-                // Auto submit when speaking ends
                 this.$wire.sendMessage();
             };
             recognition.onerror = (e) => { console.error('Mic error:', e); this.isListening = false; };
@@ -41,147 +43,158 @@
             window.stopAiSpeech();
             this.isSpeaking = false;
             this.isPaused = false;
-        },
-        pauseResumeSpeech() {
-            if (this.isPaused) {
-                window.resumeAiSpeech();
-                this.isPaused = false;
-            } else {
-                window.pauseAiSpeech();
-                this.isPaused = true;
-            }
         }
     }"
+    :class="{ 'is-chatting': hasChatted }"
     x-on:chatbot-speak.window="if (ttsEnabled) { window.speakText($event.detail.text); }"
     @tts-started.window="isSpeaking = true; isPaused = false"
     @tts-ended.window="isSpeaking = false; isPaused = false"
 >
-    <!-- AI ASSISTANT EMBEDDED LAYOUT -->
-    <div class="chatbot-container">
-
-        <!-- 1. STATUS BADGE -->
-        <div class="chatbot-status-row">
-            <div class="chatbot-status-badge" :class="{ 'speaking': isSpeaking && !isPaused, 'listening': isListening }">
-                <span class="status-dot"></span>
-                <span x-show="isSpeaking && !isPaused" x-cloak>VISITA AI sedang berbicara...</span>
-                <span x-show="isListening" x-cloak>Mendengarkan suara Anda...</span>
-                <span x-show="!isSpeaking && !isListening">VISITA AI siap membantu</span>
-            </div>
-        </div>
-
-        <!-- 2. CONTROL BUTTONS (Mic, Keyboard, Utility) — compact row -->
-        <div class="chatbot-controls">
-            <!-- Mic -->
-            <button
-                type="button"
-                @click="startDictation()"
-                class="ctrl-btn ctrl-mic"
-                :class="{ 'listening': isListening }"
-                title="Bicara dengan AI"
-                @if($isLoading) disabled @endif
-            >
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                    <path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/>
-                    <path d="M19 10v2a7 7 0 0 1-14 0v-2"/>
-                    <line x1="12" y1="19" x2="12" y2="23"/>
-                    <line x1="8" y1="23" x2="16" y2="23"/>
-                </svg>
-            </button>
-
-            <!-- Keyboard toggle -->
-            <button
-                type="button"
-                @click="showKeyboard = !showKeyboard"
-                class="ctrl-btn ctrl-kb"
-                :class="{ 'active': showKeyboard }"
-                title="Ketik Pesan"
-            >
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                    <rect x="2" y="4" width="20" height="16" rx="2" ry="2"/>
-                    <line x1="6" y1="8" x2="6" y2="8"/><line x1="10" y1="8" x2="10" y2="8"/>
-                    <line x1="14" y1="8" x2="14" y2="8"/><line x1="18" y1="8" x2="18" y2="8"/>
-                    <line x1="6" y1="12" x2="6" y2="12"/><line x1="10" y1="12" x2="18" y2="12"/>
-                    <line x1="6" y1="16" x2="18" y2="16"/>
-                </svg>
-            </button>
-
-            <!-- Mute / unmute -->
-            <button @click="toggleTts()" class="ctrl-btn ctrl-util" :title="ttsEnabled ? 'Matikan Suara' : 'Aktifkan Suara'">
-                <span x-show="ttsEnabled">🔊</span>
-                <span x-show="!ttsEnabled">🔇</span>
-            </button>
-
-            <!-- Stop speaking -->
-            <div x-show="isSpeaking" x-transition.opacity>
-                <button @click="stopSpeech()" class="ctrl-btn ctrl-util ctrl-stop" title="Hentikan Suara">🛑</button>
-            </div>
-
-            <!-- Clear history -->
-            @if(count($messages) > 0)
-            <button wire:click="clearHistory" class="ctrl-btn ctrl-util" title="Hapus Riwayat">🗑️</button>
-            @endif
-        </div>
-
-        <!-- 3. GREETING / LATEST MESSAGE — plain text, no card -->
-        <div class="chatbot-greeting">
-            @if($isLoading)
-                <div class="chatbot-typing-inline">
-                    <span></span><span></span><span></span>
+    <div class="kiosk-split-layout">
+        
+        <!-- LEFT PANEL: AI AVATAR -->
+        <div class="kiosk-left-panel">
+            <div class="left-panel-content">
+                <!-- 1. Large Animated AI Avatar Box -->
+                <div class="avatar-box">
+                    <!-- Speech indicator ring around avatar -->
+                    <div class="avatar-speech-ring" :class="{ 'speaking': isSpeaking && !isPaused, 'listening': isListening }"></div>
+                    
+                    <video autoplay loop muted playsinline class="avatar-video-element">
+                        <source src="{{ asset('assets/images/chatbot/avatar-greeting.mp4') }}" type="video/mp4">
+                    </video>
                 </div>
-            @elseif($error)
-                <div class="chatbot-error-inline">⚠️ {{ $error }}</div>
-            @elseif(empty($messages))
-                Halo! Saya <span class="brand-highlight">VISITA Assistant</span>. Ada yang bisa saya bantu?
-            @else
-                @php
-                    $latestAssistantMsg = null;
-                    foreach (array_reverse($messages) as $msg) {
-                        if ($msg['role'] === 'assistant') { $latestAssistantMsg = $msg['content']; break; }
-                    }
-                @endphp
-                @if($latestAssistantMsg)
-                    {{-- wire:key forces Alpine to fully re-mount when content changes --}}
-                    <span
-                        wire:key="ai-reply-{{ md5($latestAssistantMsg) }}"
-                        x-data="{ md: @js($latestAssistantMsg) }"
-                        x-init="md = @js($latestAssistantMsg)"
-                        x-html="window.marked ? marked.parse(md) : md"
-                        class="chatbot-md-inline"
-                    ></span>
-                @else
-                    Halo! Saya <span class="brand-highlight">VISITA Assistant</span>. Ada yang bisa saya bantu?
-                @endif
-            @endif
+                
+                <!-- 2. Status Indicator Badge -->
+                <div class="avatar-status-badge">
+                    <span class="status-badge-dot" :class="{ 'speaking': isSpeaking && !isPaused, 'listening': isListening, 'thinking': $wire.isLoading }"></span>
+                    <span x-show="isListening" x-cloak>Listening</span>
+                    <span x-show="isSpeaking && !isPaused" x-cloak>Speaking</span>
+                    <span x-show="$wire.isLoading" x-cloak>Thinking</span>
+                    <span x-show="!isListening && !(isSpeaking && !isPaused) && !$wire.isLoading">Idle</span>
+                </div>
+                
+                <!-- 3. Greeting Card (only shown initially) -->
+                <div class="avatar-greeting-card" x-show="!hasChatted" x-transition>
+                    @if($isLoading && !empty($messages))
+                        <div class="chatbot-typing-inline">
+                            <span></span><span><span></span>
+                        </div>
+                    @elseif($error)
+                        <div class="chatbot-error-inline">⚠️ {{ $error }}</div>
+                    @elseif(empty($messages))
+                        <h2>Hello!</h2>
+                        <p>I'm <span class="brand-highlight">Visita</span>, your AI Receptionist.</p>
+                        <p class="greeting-subtitle">How may I help you today?</p>
+                    @else
+                        @php
+                            $latestAssistantMsg = null;
+                            foreach (array_reverse($messages) as $msg) {
+                                if ($msg['role'] === 'assistant') { $latestAssistantMsg = $msg['content']; break; }
+                            }
+                        @endphp
+                        @if($latestAssistantMsg)
+                            <span
+                                wire:key="ai-left-reply-{{ md5($latestAssistantMsg) }}"
+                                x-data="{ md: @js($latestAssistantMsg) }"
+                                x-init="md = @js($latestAssistantMsg)"
+                                x-html="window.marked ? marked.parse(md) : md"
+                                class="chatbot-md-inline"
+                            ></span>
+                        @else
+                            <h2>Hello!</h2>
+                            <p>I'm <span class="brand-highlight">Visita</span>, your AI Receptionist.</p>
+                            <p class="greeting-subtitle">How may I help you today?</p>
+                        @endif
+                    @endif
+                </div>
+            </div>
         </div>
         
-        <!-- 4. KEYBOARD TEXT INPUT (slide-down) -->
-        <div
-            x-show="showKeyboard"
-            x-transition:enter="kb-enter"
-            x-transition:enter-start="kb-enter-start"
-            x-transition:enter-end="kb-enter-end"
-            x-transition:leave="kb-leave"
-            x-transition:leave-start="kb-leave-end"
-            x-transition:leave-end="kb-leave-start"
-            class="chatbot-text-input-container"
-            style="display:none;"
-        >
-            <textarea
-                x-ref="inputArea"
-                wire:model="inputMessage"
-                wire:keydown.enter.prevent="sendMessage"
-                class="chatbot-textarea"
-                placeholder="Ketik pesan Anda di sini..."
-                rows="1"
-                x-on:input="$el.style.height='auto'; $el.style.height=$el.scrollHeight+'px'"
-                @if($isLoading) disabled @endif
-            ></textarea>
-            <button wire:click="sendMessage" wire:loading.attr="disabled" class="chatbot-send-msg-btn" title="Kirim">
-                <span wire:loading.remove wire:target="sendMessage">➤</span>
-                <span wire:loading wire:target="sendMessage">⏳</span>
-            </button>
+        <!-- RIGHT PANEL (The morphing input/chat box) -->
+        <div class="kiosk-right-panel">
+            <div class="chat-card-panel">
+                
+                <!-- Chat Conversation Area (Scrollable, hidden initially) -->
+                <div class="chat-history-scroll" x-show="hasChatted" x-transition:enter="transition ease-out duration-400 delay-200" x-transition:enter-start="opacity-0 transform -translate-y-2" x-transition:enter-end="opacity-100 transform translate-y-0" id="chat-history-container" x-init="$el.scrollTop = $el.scrollHeight" @chatbot-scrolled.window="setTimeout(() => { $el.scrollTop = $el.scrollHeight; }, 100)">
+                    @if(empty($messages))
+                        <div class="chat-empty-state">
+                            <div class="empty-avatar-wave">👋</div>
+                            <h3>Welcome!</h3>
+                            <p>Touch the screen, select a quick suggestion, or press the mic to begin.</p>
+                        </div>
+                    @else
+                        @foreach($messages as $msg)
+                            <div class="chat-bubble-row {{ $msg['role'] === 'user' ? 'user-row' : 'assistant-row' }}">
+                                @if($msg['role'] === 'assistant')
+                                    <div class="chat-bubble assistant-bubble">
+                                        <span
+                                            wire:key="msg-{{ md5($msg['content']) }}"
+                                            x-data="{ md: @js($msg['content']) }"
+                                            x-html="window.marked ? window.marked.parse(md) : md"
+                                        ></span>
+                                    </div>
+                                @else
+                                    <div class="chat-bubble user-bubble">
+                                        {{ $msg['content'] }}
+                                    </div>
+                                @endif
+                            </div>
+                        @endforeach
+                    @endif
+                    
+                    @if($isLoading)
+                        <div class="chat-bubble-row assistant-row">
+                            <div class="chat-bubble assistant-bubble typing-bubble">
+                                <div class="typing-indicator">
+                                    <span></span><span></span><span></span>
+                                </div>
+                            </div>
+                        </div>
+                    @endif
+                    
+                    @if($error)
+                        <div class="chat-bubble-row assistant-row">
+                            <div class="chat-bubble error-bubble">
+                                ⚠️ {{ $error }}
+                            </div>
+                        </div>
+                    @endif
+                </div>
+                
+                <!-- Suggested Chips -->
+                <div class="chat-suggested-chips" :class="{ 'centered-chips': !hasChatted }">
+                    <button type="button" class="chip-btn" @click="$wire.selectSuggestedChip('Meet someone'); hasChatted = true">Meet someone</button>
+                    <button type="button" class="chip-btn" @click="$wire.selectSuggestedChip('Book appointment'); hasChatted = true">Book appointment</button>
+                    <button type="button" class="chip-btn" @click="$wire.selectSuggestedChip('Find employee'); hasChatted = true">Find employee</button>
+                    <button type="button" class="chip-btn" @click="$wire.selectSuggestedChip('Check today\'s schedule'); hasChatted = true" x-show="hasChatted">Check schedule</button>
+                </div>
+                
+                <!-- Chat Input Row -->
+                <div class="chat-input-row" :class="{ 'initial-input-row': !hasChatted }">
+                    <textarea 
+                        wire:model="inputMessage" 
+                        wire:keydown.enter.prevent="$wire.sendMessage(); hasChatted = true"
+                        class="chat-textarea-input" 
+                        placeholder="Type your message..."
+                        rows="1"
+                        x-on:input="$el.style.height='auto'; $el.style.height=$el.scrollHeight+'px'"
+                        @if($isLoading) disabled @endif
+                    ></textarea>
+                    
+                    <div class="chat-input-actions">
+                        <button type="button" class="action-btn-kb" @click="startDictation()" @if($isLoading) disabled @endif>
+                            🎤
+                        </button>
+                        <button type="button" class="action-btn-send" @click="$wire.sendMessage(); hasChatted = true" @if($isLoading) disabled @endif>
+                            ➤
+                        </button>
+                    </div>
+                </div>
+                
+            </div>
         </div>
-
+        
     </div>
 
     <!-- marked.js untuk render Markdown -->
@@ -207,108 +220,458 @@
                 window.speechSynthesis.cancel();
                 const plain = text.replace(/[*_`#>~|\-]+/g,' ').replace(/\n+/g,'. ').replace(/\s{2,}/g,' ').trim();
                 if (!plain) return;
-                const utt = new SpeechSynthesisUtterance(plain);
-                utt.lang='id-ID'; utt.rate=1.25; utt.pitch=1.0; utt.volume=1.0;
-                if (indoVoice) utt.voice = indoVoice;
-                utt.onend = () => fireTtsEvent('tts-ended');
-                utt.onerror = () => fireTtsEvent('tts-ended');
+                const $.utterance = new SpeechSynthesisUtterance(plain);
+                $.utterance.lang='id-ID'; $.utterance.rate=1.25; $.utterance.pitch=1.0; $.utterance.volume=1.0;
+                if (indoVoice) $.utterance.voice = indoVoice;
+                $.utterance.onend = () => fireTtsEvent('tts-ended');
+                $.utterance.onerror = () => fireTtsEvent('tts-ended');
                 fireTtsEvent('tts-started');
-                window.speechSynthesis.speak(utt);
+                window.speechSynthesis.speak($.utterance);
             };
             window.stopAiSpeech   = () => { window.speechSynthesis?.cancel(); fireTtsEvent('tts-ended'); };
-            window.pauseAiSpeech  = () => window.speechSynthesis?.pause();
-            window.resumeAiSpeech = () => window.speechSynthesis?.resume();
         })();
     </script>
 
     <style>
-        /* ── Wrapper ── */
+        [x-cloak] { display: none !important; }
+
         .chatbot-wrapper {
             width: 100%;
+            flex: 1;
             display: flex;
-            align-items: flex-end; /* Align the controls and texts near bottom overlaying the avatar */
-            justify-content: center;
+            flex-direction: column;
             font-family: 'Poppins', sans-serif;
             z-index: 10;
-            flex: 1;
             min-height: 0;
-            padding-bottom: 2vh;
         }
 
-        .chatbot-container {
+        .kiosk-split-layout {
+            position: relative;
+            display: flex;
+            flex-direction: row;
+            width: 100%;
+            height: 100%;
+            min-height: 0;
+            overflow: hidden;
+        }
+
+        /* LEFT PANEL styling */
+        .kiosk-left-panel {
+            width: 100%;
             display: flex;
             flex-direction: column;
             align-items: center;
-            gap: 0.85rem;
-            width: 100%;
-            max-width: 560px;
-            z-index: 12;
+            justify-content: flex-start;
+            height: 100%;
+            padding: 1rem;
+            padding-top: 3vh;
+            transition: all 0.6s cubic-bezier(0.34, 1.56, 0.64, 1);
         }
 
-        /* ── Status badge ── */
-        .chatbot-status-row {
-            display: flex;
-            justify-content: center;
-            width: 100%;
+        .chatbot-wrapper.is-chatting .kiosk-left-panel {
+            width: 55%;
+            padding-top: 8vh;
         }
-        .chatbot-status-badge {
+
+        .left-panel-content {
+            width: 100%;
+            max-width: 520px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            transition: all 0.6s ease;
+        }
+
+        .avatar-box {
+            position: relative;
+            width: 100%;
+            height: 38vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            overflow: visible;
+            transition: all 0.5s cubic-bezier(0.34, 1.56, 0.64, 1);
+        }
+
+        /* Enlarge avatar box when actively chatting */
+        .chatbot-wrapper.is-chatting .avatar-box {
+            height: 55vh;
+            max-height: 550px;
+        }
+
+        /* Portrait Aspect Ratios */
+        @media (max-aspect-ratio: 1/1) {
+            .avatar-box {
+                height: 38vh;
+            }
+            .chatbot-wrapper.is-chatting .avatar-box {
+                height: 55vh;
+            }
+        }
+
+        /* Landscape Aspect Ratios (Laptops/PCs) */
+        @media (min-aspect-ratio: 1/1) {
+            .avatar-box {
+                height: 28vh;
+                max-height: 260px;
+            }
+            .chatbot-wrapper.is-chatting .avatar-box {
+                height: 48vh;
+                max-height: 420px;
+            }
+            .avatar-greeting-card {
+                padding: 0.75rem 1.25rem !important;
+                min-height: 80px !important;
+                margin: 0.25rem 0 !important;
+            }
+            .avatar-greeting-card h2 {
+                font-size: 1.3rem !important;
+                margin-bottom: 0.1rem !important;
+            }
+            .avatar-greeting-card p {
+                font-size: 0.88rem !important;
+            }
+            .greeting-subtitle {
+                margin-top: 0.25rem !important;
+            }
+            .avatar-status-badge {
+                margin: 0.3rem auto !important;
+                padding: 0.25rem 0.75rem !important;
+                font-size: 0.78rem !important;
+            }
+        }
+
+        .avatar-video-element {
+            height: 100%;
+            width: auto;
+            max-width: 100%;
+            object-fit: contain;
+            mix-blend-mode: multiply;
+            filter: brightness(1.12) contrast(1.1);
+        }
+
+        .avatar-speech-ring {
+            position: absolute;
+            width: 300px;
+            height: 300px;
+            border-radius: 50%;
+            border: 3px solid transparent;
+            z-index: 1;
+            pointer-events: none;
+            transition: all 0.4s ease;
+        }
+
+        .avatar-speech-ring.speaking {
+            border-color: rgba(37, 99, 235, 0.25);
+            box-shadow: 0 0 40px rgba(37, 99, 235, 0.18);
+            animation: ring-pulse 2s infinite ease-in-out;
+        }
+
+        .avatar-speech-ring.listening {
+            border-color: rgba(244, 63, 94, 0.25);
+            box-shadow: 0 0 40px rgba(244, 63, 94, 0.18);
+            animation: ring-pulse 1.5s infinite ease-in-out;
+        }
+
+        @keyframes ring-pulse {
+            0%, 100% { transform: scale(1); opacity: 0.5; }
+            50% { transform: scale(1.08); opacity: 1; }
+        }
+
+        /* Status Badge */
+        .avatar-status-badge {
             display: inline-flex;
             align-items: center;
-            gap: 0.45rem;
-            padding: 0.3rem 0.85rem;
+            gap: 0.5rem;
+            padding: 0.4rem 1rem;
             border-radius: 9999px;
-            font-size: 0.75rem;
-            font-weight: 600;
-            letter-spacing: 0.02em;
-            background: rgba(255,255,255,0.88);
-            border: 1px solid rgba(79,70,229,0.10);
-            box-shadow: 0 2px 10px rgba(0,0,0,0.04);
-            color: var(--text-secondary);
-            backdrop-filter: blur(8px);
-            -webkit-backdrop-filter: blur(8px);
+            font-size: 0.85rem;
+            font-weight: 500;
+            background: #ffffff;
+            border: 1px solid #e2e8f0;
+            color: #64748B;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.02);
+            margin: 0.75rem auto;
+        }
+
+        .status-badge-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: #94a3b8;
             transition: all 0.3s ease;
         }
-        .chatbot-status-badge.speaking { border-color: rgba(99,102,241,0.3); color: var(--accent-primary); }
-        .chatbot-status-badge.listening { border-color: rgba(244,63,94,0.3); color: var(--accent-rose); }
 
-        .status-dot {
-            width: 7px; height: 7px;
-            border-radius: 50%;
-            background: #22c55e;
-            display: inline-block;
-            flex-shrink: 0;
-            transition: background 0.3s;
+        .status-badge-dot.speaking {
+            background: #2563EB;
+            animation: dot-pulse 1.4s infinite;
         }
-        .chatbot-status-badge.speaking .status-dot  { background: var(--accent-primary); animation: dot-pulse 1.4s infinite; }
-        .chatbot-status-badge.listening .status-dot { background: var(--accent-rose);    animation: dot-pulse 1.4s infinite; }
+
+        .status-badge-dot.listening {
+            background: #f43f5e;
+            animation: dot-pulse 1.4s infinite;
+        }
+
+        .status-badge-dot.thinking {
+            background: #60A5FA;
+            animation: dot-pulse 1.4s infinite;
+        }
+
         @keyframes dot-pulse {
-            0%,100% { transform: scale(1);   opacity: 1; }
-            50%      { transform: scale(1.4); opacity: 0.4; }
+            0%, 100% { transform: scale(1); opacity: 1; }
+            50% { transform: scale(1.4); opacity: 0.4; }
         }
 
-        /* ── Greeting — white card ── */
-        .chatbot-greeting {
-            background: rgba(241, 245, 249, 0.85);
-            backdrop-filter: blur(12px);
-            -webkit-backdrop-filter: blur(12px);
-            border: 1px solid rgba(148, 163, 184, 0.2);
-            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.05);
-            border-radius: 1.25rem;
-            padding: 1rem 1.75rem;
+        /* Greeting Card */
+        .avatar-greeting-card {
+            background: #ffffff;
+            border: 1px solid #e2e8f0;
+            border-radius: 20px;
+            padding: 1.5rem;
             text-align: center;
-            font-size: clamp(0.98rem, 1.25vw, 1.18rem);
-            font-weight: 500;
-            color: var(--text-primary);
-            line-height: 1.55;
-            max-width: 520px;
-            margin: 0.5rem auto;
+            box-shadow: 0 8px 30px rgba(0, 0, 0, 0.04);
+            margin: 0.5rem 0;
+            width: 100%;
+            min-height: 110px;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
         }
-        .brand-highlight { color: var(--accent-primary); font-weight: 700; }
 
-        .chatbot-md-inline p { margin: 0; display: inline; }
-        .chatbot-md-inline ul,
-        .chatbot-md-inline ol { text-align: left; margin: 0.25rem 0 0; padding-left: 1.25rem; }
+        .avatar-greeting-card h2 {
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: #0f172a;
+            margin-bottom: 0.25rem;
+        }
 
+        .avatar-greeting-card p {
+            font-size: 0.95rem;
+            color: #64748b;
+            line-height: 1.5;
+        }
+
+        .greeting-subtitle {
+            margin-top: 0.4rem;
+            font-weight: 500;
+            color: #0f172a !important;
+        }
+
+        .brand-highlight {
+            color: #2563EB;
+            font-weight: 700;
+        }
+
+        /* RIGHT PANEL / MORPHING CARD styling */
+        .kiosk-right-panel {
+            position: absolute;
+            left: 50%;
+            bottom: 1.5vh;
+            transform: translateX(-50%);
+            width: 100%;
+            max-width: 520px;
+            height: auto;
+            display: flex;
+            flex-direction: column;
+            transition: all 0.6s cubic-bezier(0.34, 1.56, 0.64, 1);
+            z-index: 20;
+        }
+
+        .chatbot-wrapper.is-chatting .kiosk-right-panel {
+            left: 55%;
+            width: calc(45% - 1.5rem);
+            max-width: none;
+            height: 100%;
+            bottom: 0;
+            transform: translateX(0);
+        }
+
+        .chat-card-panel {
+            width: 100%;
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+            background: #ffffff;
+            border: 1px solid #e2e8f0;
+            border-radius: 20px;
+            box-shadow: 0 8px 30px rgba(0, 0, 0, 0.04);
+            padding: 1rem 1.25rem;
+            transition: all 0.6s cubic-bezier(0.34, 1.56, 0.64, 1);
+            min-height: 0;
+            position: relative;
+        }
+
+        .chatbot-wrapper.is-chatting .chat-card-panel {
+            border-radius: 24px;
+            padding: 1.5rem;
+        }
+
+        .chat-history-scroll {
+            flex: 1;
+            overflow-y: auto;
+            padding-right: 0.5rem;
+            margin-bottom: 1rem;
+            display: flex;
+            flex-direction: column;
+            gap: 1rem;
+            min-height: 0;
+        }
+
+        .chat-bubble-row {
+            display: flex;
+            width: 100%;
+        }
+
+        .user-row {
+            justify-content: flex-end;
+        }
+
+        .assistant-row {
+            justify-content: flex-start;
+        }
+
+        .chat-bubble {
+            max-width: 85%;
+            padding: 1rem 1.25rem;
+            font-size: 0.95rem;
+            line-height: 1.5;
+        }
+
+        .user-bubble {
+            background: #DBEAFE;
+            color: #0f172a;
+            border-radius: 18px 18px 2px 18px;
+            font-weight: 500;
+        }
+
+        .assistant-bubble {
+            background: #f8fafc;
+            color: #0f172a;
+            border-radius: 18px 18px 18px 2px;
+            border: 1px solid #e2e8f0;
+        }
+
+        .error-bubble {
+            background: #fef2f2;
+            color: #991b1b;
+            border: 1px solid #fee2e2;
+            border-radius: 12px;
+        }
+
+        /* Suggested Chips */
+        .chat-suggested-chips {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.5rem;
+            margin-bottom: 0.75rem;
+            transition: all 0.3s ease;
+        }
+
+        .centered-chips {
+            justify-content: center;
+        }
+
+        .chip-btn {
+            background: #f1f5f9;
+            border: 1px solid #e2e8f0;
+            border-radius: 9999px;
+            padding: 0.4rem 0.85rem;
+            font-size: 0.85rem;
+            font-weight: 500;
+            color: #475569;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .chip-btn:hover {
+            background: #2563EB;
+            color: #ffffff;
+            border-color: #2563EB;
+        }
+
+        /* Input Area styling */
+        .chat-input-row {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            background: #f8fafc;
+            border: 1px solid #e2e8f0;
+            border-radius: 16px;
+            padding: 0.5rem 0.75rem;
+            box-shadow: inset 0 2px 4px rgba(0,0,0,0.01);
+            transition: all 0.4s ease;
+        }
+
+        .initial-input-row {
+            background: #ffffff;
+            border-color: #cbd5e1;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.03);
+            border-radius: 20px;
+        }
+
+        .chat-textarea-input {
+            flex: 1;
+            border: none;
+            background: transparent;
+            resize: none;
+            outline: none;
+            font-family: inherit;
+            font-size: 0.95rem;
+            color: #0f172a;
+            padding: 0.5rem;
+            max-height: 80px;
+            line-height: 1.4;
+        }
+
+        .chat-textarea-input::placeholder {
+            color: #94a3b8;
+        }
+
+        .chat-input-actions {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .action-btn-kb {
+            background: transparent;
+            border: none;
+            font-size: 1.25rem;
+            cursor: pointer;
+            width: 36px;
+            height: 36px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 50%;
+            transition: background 0.2s ease;
+        }
+
+        .action-btn-kb:hover {
+            background: #e2e8f0;
+        }
+
+        .action-btn-send {
+            width: 36px;
+            height: 36px;
+            border-radius: 50%;
+            background: #2563EB;
+            color: #ffffff;
+            border: none;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1rem;
+            cursor: pointer;
+            transition: background 0.2s ease;
+        }
+
+        .action-btn-send:hover {
+            background: #1d4ed8;
+        }
+
+        /* Typings */
         .chatbot-typing-inline {
             display: inline-flex; gap: 4px; align-items: center;
         }
@@ -328,101 +691,15 @@
             color: #e11d48; font-size: 0.85rem;
         }
 
-        /* ── Controls ── */
-        .chatbot-controls {
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: 0.65rem;
-            flex-wrap: wrap;
+        .typing-indicator {
+            display: flex; gap: 4px;
         }
-
-        .ctrl-btn {
-            display: flex; align-items: center; justify-content: center;
-            border: none; cursor: pointer;
-            transition: all 0.22s cubic-bezier(0.34,1.56,0.64,1);
-            flex-shrink: 0;
+        .typing-indicator span {
+            width: 6px; height: 6px; border-radius: 50%;
+            background: #94a3b8;
+            animation: chatbot-bounce 1.2s ease-in-out infinite;
         }
-
-        /* Mic — primary, larger */
-        .ctrl-mic {
-            width: 62px; height: 62px;
-            border-radius: 50%;
-            background: linear-gradient(135deg, var(--accent-primary), #4f46e5);
-            color: #fff;
-            box-shadow: 0 6px 20px rgba(79,70,229,0.35);
-        }
-        .ctrl-mic svg { width: 26px; height: 26px; }
-        .ctrl-mic:hover { transform: scale(1.07); box-shadow: 0 8px 28px rgba(79,70,229,0.45); }
-        .ctrl-mic:active { transform: scale(0.94); }
-        .ctrl-mic.listening {
-            background: linear-gradient(135deg, var(--accent-rose), #e11d48);
-            box-shadow: 0 6px 20px rgba(225,29,72,0.4);
-            animation: mic-pulse 1.5s infinite;
-        }
-        @keyframes mic-pulse {
-            0%   { box-shadow: 0 0 0 0   rgba(225,29,72,0.5); }
-            70%  { box-shadow: 0 0 0 14px rgba(225,29,72,0); }
-            100% { box-shadow: 0 0 0 0   rgba(225,29,72,0); }
-        }
-
-        /* Keyboard — secondary */
-        .ctrl-kb {
-            width: 48px; height: 48px;
-            border-radius: 50%;
-            background: #fff;
-            border: 1px solid #cbd5e1 !important;
-            color: var(--text-secondary);
-            box-shadow: 0 3px 10px rgba(0,0,0,0.05);
-        }
-        .ctrl-kb svg { width: 20px; height: 20px; }
-        .ctrl-kb:hover, .ctrl-kb.active {
-            border-color: var(--accent-primary) !important;
-            color: var(--accent-primary);
-            box-shadow: 0 4px 14px rgba(79,70,229,0.15);
-        }
-
-        /* Utility (emoji) */
-        .ctrl-util {
-            width: 40px; height: 40px;
-            border-radius: 50%;
-            background: rgba(255,255,255,0.85);
-            border: 1px solid #e2e8f0 !important;
-            font-size: 15px;
-            box-shadow: 0 2px 8px rgba(0,0,0,0.04);
-            backdrop-filter: blur(4px);
-        }
-        .ctrl-util:hover { background: #f8fafc; border-color: #cbd5e1 !important; }
-        .ctrl-stop { background: #ffe4e6 !important; border-color: #fecaca !important; }
-
-        /* ── Keyboard text input ── */
-        .chatbot-text-input-container {
-            display: flex; gap: 0.5rem; width: 100%;
-            background: rgba(241, 245, 249, 0.85);
-            backdrop-filter: blur(12px);
-            -webkit-backdrop-filter: blur(12px);
-            border: 1px solid rgba(148, 163, 184, 0.2);
-            border-radius: 12px; padding: 0.5rem;
-            box-shadow: 0 4px 20px rgba(0,0,0,0.05);
-        }
-        .kb-enter { transition: all 0.25s ease-out; }
-        .kb-enter-start { opacity: 0; transform: translateY(-8px); }
-        .kb-enter-end   { opacity: 1; transform: translateY(0); }
-        .kb-leave { transition: all 0.2s ease-in; }
-        .kb-leave-end { opacity: 0; transform: translateY(-8px); }
-
-        .chatbot-textarea {
-            flex: 1; resize: none; border: none; background: transparent;
-            padding: 0.5rem; font-size: 0.95rem; font-family: inherit;
-            outline: none; color: var(--text-primary);
-            max-height: 80px; line-height: 1.4;
-        }
-        .chatbot-send-msg-btn {
-            width: 40px; height: 40px; border-radius: 8px;
-            background: var(--accent-primary); color: #fff; border: none;
-            cursor: pointer; display: flex; align-items: center;
-            justify-content: center; font-size: 16px; transition: background 0.2s;
-        }
-        .chatbot-send-msg-btn:hover { background: var(--accent-glow); }
+        .typing-indicator span:nth-child(2) { animation-delay: .2s; }
+        .typing-indicator span:nth-child(3) { animation-delay: .4s; }
     </style>
 </div>

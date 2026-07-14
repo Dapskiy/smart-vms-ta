@@ -20,28 +20,27 @@
         }
 
         :root {
-            --bg-void:        #F8FAFC; /* Primary backdrop slate-50 */
-            --bg-deep:        #F1F5F9; /* slate-100 */
+            --bg-void:        #f8fafc; /* Slate 50 */
+            --bg-deep:        #f1f5f9; /* Slate 100 */
             --bg-surface:     #ffffff;
             --bg-card:        #ffffff;
-            --bg-card-hover:  #F8FAFC;
+            --bg-card-hover:  #f8fafc;
 
-            --accent-primary: #2563EB;   /* Primary blue */
-            --accent-glow:    #60A5FA;   /* Secondary blue */
-            --accent-light:   #DBEAFE;   /* Light blue accent */
-            --accent-rose:    #ef4444;   
-            --accent-gold:    #f59e0b;   
+            --accent-primary: #4f46e5;   /* indigo 600 */
+            --accent-glow:    #6366f1;   /* indigo 500 */
+            --accent-rose:    #e11d48;   /* rose 600 */
+            --accent-gold:    #d97706;   /* amber 600 */
 
-            --text-primary:   #0F172A;   
-            --text-secondary: #64748B;   
-            --text-muted:     #94A3B8;   
+            --text-primary:   #0f172a;   /* Slate 900 */
+            --text-secondary: #475569;   /* Slate 600 */
+            --text-muted:     #94a3b8;   /* Slate 400 */
 
-            --border-subtle:  #E2E8F0;
-            --border-card:    #E2E8F0;
-            --border-glow:    #DBEAFE;
+            --border-subtle:  rgba(79, 70, 229, 0.08);
+            --border-card:    rgba(79, 70, 229, 0.12);
+            --border-glow:    rgba(79, 70, 229, 0.3);
 
-            --shadow-card:    0 8px 30px rgba(0, 0, 0, 0.04), 0 1px 3px rgba(0, 0, 0, 0.02);
-            --shadow-glow:    0 0 40px rgba(37, 99, 235, 0.05);
+            --shadow-card:    0 10px 30px -10px rgba(0, 0, 0, 0.08), 0 1px 3px rgba(0, 0, 0, 0.03);
+            --shadow-glow:    0 0 40px rgba(79, 70, 229, 0.08);
         }
 
         html, body {
@@ -149,25 +148,25 @@
         }
 
         .logo-icon {
-            width: 2.8rem;
-            height: 2.8rem;
-            border-radius: 0.65rem;
-            background: var(--accent-primary);
+            width: 3.2rem;
+            height: 3.2rem;
+            border-radius: 0.75rem;
+            background: linear-gradient(135deg, var(--accent-primary), #4f46e5);
             display: flex;
             align-items: center;
             justify-content: center;
-            box-shadow: 0 4px 12px rgba(37, 99, 235, 0.2);
+            box-shadow: 0 0 24px rgba(99, 102, 241, 0.5);
             flex-shrink: 0;
         }
 
         .logo-icon svg {
-            width: 1.4rem;
-            height: 1.4rem;
+            width: 1.6rem;
+            height: 1.6rem;
             fill: #fff;
         }
 
         .logo-text {
-            font-size: 1.6rem;
+            font-size: clamp(1.5rem, 2.5vw, 2rem);
             font-weight: 800;
             letter-spacing: -0.02em;
             color: var(--text-primary);
@@ -176,85 +175,16 @@
 
         .logo-dot {
             color: var(--accent-primary);
-            text-shadow: 0 0 10px rgba(37, 99, 235, 0.4);
+            text-shadow: 0 0 12px var(--accent-primary);
         }
 
         .logo-tagline {
-            font-size: 0.62rem;
+            font-size: 0.65rem;
             font-weight: 400;
             letter-spacing: 0.18em;
             text-transform: uppercase;
             color: var(--text-secondary);
             margin-top: 0.2rem;
-        }
-
-        /* --- Header Controls --- */
-        .header-right {
-            display: flex;
-            align-items: center;
-            gap: 1.5rem;
-        }
-
-        .header-controls {
-            display: flex;
-            align-items: center;
-            gap: 1rem;
-            border-left: 1px solid var(--border-subtle);
-            padding-left: 1rem;
-        }
-
-        .lang-switch {
-            display: flex;
-            align-items: center;
-            gap: 0.25rem;
-            background: #ffffff;
-            border: 1px solid #e2e8f0;
-            border-radius: 9999px;
-            padding: 0.25rem 0.5rem;
-            font-size: 0.75rem;
-            font-weight: 600;
-            color: #64748B;
-        }
-
-        .lang-btn {
-            cursor: pointer;
-            padding: 0.15rem 0.4rem;
-            border-radius: 9999px;
-            transition: all 0.2s ease;
-        }
-
-        .lang-btn.active {
-            background: var(--accent-primary);
-            color: #ffffff;
-        }
-
-        .lang-divider {
-            color: #cbd5e1;
-            font-size: 0.7rem;
-        }
-
-        .settings-btn {
-            background: #ffffff;
-            border: 1px solid #e2e8f0;
-            border-radius: 50%;
-            width: 32px;
-            height: 32px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            color: #64748B;
-            cursor: pointer;
-            transition: all 0.2s ease;
-        }
-
-        .settings-btn:hover {
-            border-color: var(--accent-primary);
-            color: var(--accent-primary);
-        }
-
-        .settings-btn svg {
-            width: 16px;
-            height: 16px;
         }
 
         /* --- Clock / Date --- */
@@ -263,7 +193,7 @@
         }
 
         .clock-time {
-            font-size: 2.2rem;
+            font-size: clamp(2rem, 3.5vw, 2.8rem);
             font-weight: 700;
             letter-spacing: -0.02em;
             color: var(--text-primary);
@@ -281,7 +211,7 @@
         }
 
         .clock-date {
-            font-size: 0.8rem;
+            font-size: clamp(0.7rem, 1.1vw, 0.9rem);
             font-weight: 400;
             color: var(--text-secondary);
             margin-top: 0.2rem;
@@ -300,10 +230,10 @@
             flex: 1;
             display: flex;
             flex-direction: column;
-            align-items: stretch;
+            align-items: center;
             justify-content: space-between;
-            gap: 1.5vh;
-            padding: 1.5vh 0 1vh;
+            gap: 1vh;
+            padding: 1vh 0 0.5vh;
             min-height: 0;
             overflow: hidden;
         }
@@ -367,128 +297,248 @@
             letter-spacing: 0.02em;
         }
 
-        .chatbot-livewire-container {
-            flex: 1;
-            display: flex;
-            flex-direction: column;
-            min-height: 0;
-            width: 100%;
-        }
-
-        .chatbot-livewire-container > [wire\:id] {
-            flex: 1;
-            display: flex;
-            flex-direction: column;
-            min-height: 0;
-            width: 100%;
-        }
-
-        /* --- Bottom Dock --- */
+        /* --- Cards row --- */
         .cards-row {
             display: flex;
             flex-direction: row;
+            flex-wrap: wrap;
             justify-content: center;
             align-items: center;
-            gap: 1.25rem;
+            gap: 1rem;
             width: 100%;
-            max-width: 900px;
-            margin: auto auto 1vh;
+            max-width: 1200px;
+            margin-top: auto;
+            padding-bottom: 1.5vh;
             z-index: 10;
-            padding: 0.75rem;
-            background: rgba(255, 255, 255, 0.75);
-            backdrop-filter: blur(20px);
-            -webkit-backdrop-filter: blur(20px);
-            border: 1px solid rgba(226, 232, 240, 0.8);
-            border-radius: 24px;
-            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.03);
         }
 
         .checkin-card {
             flex: 1;
-            height: 90px;
-            background: #ffffff;
-            border: 1px solid #e2e8f0;
-            border-radius: 18px;
-            padding: 0.75rem;
+            min-width: 220px;
+            max-width: 270px;
+            min-height: 80px;
+            height: 85px;
+            background: rgba(255, 255, 255, 0.85);
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            border: 1px solid rgba(79, 70, 229, 0.1);
+            border-radius: 1rem;
+            padding: 0.75rem 1rem;
             display: flex;
-            flex-direction: column;
+            flex-direction: row;
             align-items: center;
-            justify-content: center;
-            gap: 0.4rem;
-            cursor: pointer;
+            gap: 0.75rem;
             position: relative;
             overflow: hidden;
-            transition: all 0.22s cubic-bezier(0.34, 1.56, 0.64, 1);
-            box-shadow: 0 2px 8px rgba(0,0,0,0.01);
+            cursor: pointer;
+            transition:
+                transform 0.18s cubic-bezier(0.34, 1.56, 0.64, 1),
+                border-color 0.25s ease,
+                box-shadow 0.25s ease,
+                background 0.25s ease;
+            box-shadow: 0 4px 20px -5px rgba(0, 0, 0, 0.05);
         }
 
-        .checkin-card:hover {
-            transform: translateY(-4px);
-            border-color: var(--accent-primary);
-            box-shadow: 0 8px 20px rgba(37, 99, 235, 0.08);
+        /* Card shimmer stripe */
+        .checkin-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -60%;
+            width: 40%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.4), transparent);
+            transform: skewX(-15deg);
+            transition: left 0.5s ease;
         }
 
+        .checkin-card:hover::before {
+            left: 130%;
+        }
+
+        /* Corner glow accent */
+        .checkin-card::after {
+            content: '';
+            position: absolute;
+            top: 0;
+            right: 0;
+            width: 80px;
+            height: 80px;
+            border-radius: 0 1rem 0 0;
+            opacity: 0;
+            transition: opacity 0.3s ease;
+        }
+
+        .card-appointment::after {
+            background: radial-gradient(circle at top right, rgba(99, 102, 241, 0.15), transparent 70%);
+        }
+
+        .card-walkin::after {
+            background: radial-gradient(circle at top right, rgba(244, 63, 94, 0.15), transparent 70%);
+        }
+
+        .checkin-card:hover::after {
+            opacity: 1;
+        }
+
+        /* Hover states */
+        .card-appointment:hover {
+            border-color: rgba(99, 102, 241, 0.4);
+            box-shadow: var(--shadow-card), 0 0 30px rgba(99, 102, 241, 0.1);
+            background: rgba(255, 255, 255, 0.95);
+            transform: translateY(-2px) scale(1.02);
+        }
+
+        .card-walkin:hover {
+            border-color: rgba(244, 63, 94, 0.4);
+            box-shadow: var(--shadow-card), 0 0 30px rgba(244, 63, 94, 0.1);
+            background: rgba(255, 255, 255, 0.95);
+            transform: translateY(-2px) scale(1.02);
+        }
+
+        /* Active / Touch press */
         .checkin-card:active {
-            transform: scale(0.96);
+            transform: scale(0.97) !important;
+            transition: transform 0.08s ease;
         }
 
         /* Card icon bubble */
         .card-icon-wrap {
-            width: 2.2rem;
-            height: 2.2rem;
-            border-radius: 10px;
+            width: 2.8rem;
+            height: 2.8rem;
+            border-radius: 0.6rem;
             display: flex;
             align-items: center;
             justify-content: center;
-            background: #f1f5f9;
+            flex-shrink: 0;
+        }
+
+        .card-appointment .card-icon-wrap {
+            background: #e0e7ff;
+            border: 1px solid rgba(99, 102, 241, 0.2);
+            box-shadow: 0 4px 10px rgba(99, 102, 241, 0.05);
+        }
+
+        .card-walkin .card-icon-wrap {
+            background: #ffe4e6;
+            border: 1px solid rgba(244, 63, 94, 0.2);
+            box-shadow: 0 4px 10px rgba(244, 63, 94, 0.05);
         }
 
         .card-icon-wrap svg {
-            width: 1.2rem;
-            height: 1.2rem;
-            color: #475569;
+            width: 1.4rem;
+            height: 1.4rem;
         }
 
-        .card-appointment .card-icon-wrap { background: #eff6ff; }
-        .card-appointment .card-icon-wrap svg { color: #2563EB; }
-        
-        .card-checkout .card-icon-wrap { background: #fef2f2; }
-        .card-checkout .card-icon-wrap svg { color: #ef4444; }
-
-        .card-walkin .card-icon-wrap { background: #ecfdf5; }
-        .card-walkin .card-icon-wrap svg { color: #10b981; }
-
-        .card-attendance .card-icon-wrap { background: #fef3c7; }
-        .card-attendance .card-icon-wrap svg { color: #d97706; }
+        .card-appointment .card-icon-wrap svg { color: var(--accent-glow); }
+        .card-walkin    .card-icon-wrap svg { color: #fb7185; }
 
         /* Card text */
         .card-body {
+            flex: 1;
             display: flex;
             flex-direction: column;
-            align-items: center;
-            text-align: center;
+            justify-content: center;
+            overflow: hidden;
         }
 
         .card-title {
-            font-size: 0.8rem;
-            font-weight: 600;
-            color: #0f172a;
-            margin: 0;
+            font-size: 0.88rem;
+            font-weight: 700;
+            letter-spacing: -0.01em;
+            color: var(--text-primary);
+            line-height: 1.25;
         }
 
-        /* Hide the long subtext and cta on kiosk bottom dock for clean look */
-        .card-sub, .card-cta {
+        .card-sub {
+            margin-top: 0.15rem;
+            font-size: 0.7rem;
+            font-weight: 400;
+            color: var(--text-secondary);
+            line-height: 1.3;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        /* Card CTA arrow */
+        .card-cta {
             display: none !important;
         }
 
+        /* ============================================================
+           FOOTER
+        ============================================================ */
+        .kiosk-footer {
+            flex-shrink: 0;
+            text-align: center;
+            padding: 1.2vh 0 0.5vh;
+            margin-bottom: 2.5rem; /* Prevents collision with fixed status bar */
+        }
+
+        .footer-copy {
+            font-size: clamp(0.6rem, 0.85vw, 0.75rem);
+            color: var(--text-muted);
+            letter-spacing: 0.1em;
+        }
+
+        .footer-copy strong {
+            color: var(--text-secondary);
+            font-weight: 600;
+        }
+
+        /* ============================================================
+           RIPPLE EFFECT (touch feedback)
+        ============================================================ */
         .ripple {
             position: absolute;
             border-radius: 50%;
             transform: scale(0);
             animation: ripple-expand 0.55s linear;
             pointer-events: none;
-            background: rgba(37, 99, 235, 0.15);
         }
+
+        .card-appointment .ripple {
+            background: rgba(99, 102, 241, 0.2);
+        }
+
+        .card-walkin .ripple {
+            background: rgba(244, 63, 94, 0.18);
+        }
+
+        .card-checkout::after {
+            background: radial-gradient(circle at top right, rgba(16, 185, 129, 0.15), transparent 70%);
+        }
+        .card-checkout:hover {
+            border-color: rgba(16, 185, 129, 0.4);
+            box-shadow: var(--shadow-card), 0 0 30px rgba(16, 185, 129, 0.1);
+            background: rgba(255, 255, 255, 0.95);
+            transform: translateY(-2px) scale(1.02);
+        }
+        .card-checkout .card-icon-wrap {
+            background: #d1fae5;
+            border: 1px solid rgba(16, 185, 129, 0.2);
+            box-shadow: 0 4px 10px rgba(16, 185, 129, 0.05);
+        }
+        .card-checkout .card-icon-wrap svg { color: #10b981; }
+        .card-checkout .ripple { background: rgba(16, 185, 129, 0.1); }
+
+        .card-attendance::after {
+            background: radial-gradient(circle at top right, rgba(251, 191, 36, 0.15), transparent 70%);
+        }
+        .card-attendance:hover {
+            border-color: rgba(251, 191, 36, 0.4);
+            box-shadow: var(--shadow-card), 0 0 30px rgba(251, 191, 36, 0.1);
+            background: rgba(255, 255, 255, 0.95);
+            transform: translateY(-2px) scale(1.02);
+        }
+        .card-attendance .card-icon-wrap {
+            background: #fef3c7;
+            border: 1px solid rgba(251, 191, 36, 0.2);
+            box-shadow: 0 4px 10px rgba(251, 191, 36, 0.05);
+        }
+        .card-attendance .card-icon-wrap svg { color: var(--accent-gold); }
+        .card-attendance .ripple { background: rgba(251, 191, 36, 0.1); }
 
 
         @keyframes ripple-expand {
@@ -798,6 +848,11 @@
     <!-- Background layers -->
     <canvas id="particle-canvas"></canvas>
     <div class="bg-mesh"></div>
+    <div class="kiosk-bg-video-container">
+        <video autoplay loop muted playsinline class="kiosk-bg-video">
+            <source src="{{ asset('assets/images/chatbot/avatar-greeting.mp4') }}" type="video/mp4">
+        </video>
+    </div>
     <div class="bg-scanline"></div>
 
     <!-- ==================== KIOSK SHELL ==================== -->
@@ -818,26 +873,11 @@
                 </div>
             </div>
 
-            <div class="header-right">
-                <div class="header-clock">
-                    <div class="clock-time">
-                        <span id="clock-h">--</span><span class="clock-colon">:</span><span id="clock-m">--</span>
-                    </div>
-                    <div class="clock-date" id="clock-date">Memuat tanggal...</div>
+            <div class="header-clock">
+                <div class="clock-time">
+                    <span id="clock-h">--</span><span class="clock-colon">:</span><span id="clock-m">--</span>
                 </div>
-                <div class="header-controls">
-                    <div class="lang-switch">
-                        <span class="lang-btn active">ID</span>
-                        <span class="lang-divider">|</span>
-                        <span class="lang-btn">EN</span>
-                    </div>
-                    <button class="settings-btn" title="Settings">
-                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-                            <circle cx="12" cy="12" r="3"/>
-                            <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/>
-                        </svg>
-                    </button>
-                </div>
+                <div class="clock-date" id="clock-date">Memuat tanggal...</div>
             </div>
         </header>
 
@@ -846,9 +886,7 @@
         <!-- MAIN -->
         <main class="kiosk-main">
 
-            <div class="chatbot-livewire-container">
-                @livewire('interactive-chatbot')
-            </div>
+            @livewire('interactive-chatbot')
 
             <!-- Action cards -->
             <div class="cards-row">
