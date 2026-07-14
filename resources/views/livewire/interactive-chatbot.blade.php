@@ -174,20 +174,20 @@
                 <div class="chat-input-row" :class="{ 'initial-input-row': !hasChatted }">
                     <textarea 
                         wire:model="inputMessage" 
-                        wire:keydown.enter.prevent="$wire.sendMessage(); hasChatted = true"
                         class="chat-textarea-input" 
                         placeholder="Type your message..."
                         rows="1"
+                        x-on:keydown.enter.prevent="if (!$event.shiftKey) { $wire.sendMessage(); hasChatted = true; }"
                         x-on:input="$el.style.height='auto'; $el.style.height=$el.scrollHeight+'px'"
                         @if($isLoading) disabled @endif
                     ></textarea>
                     
                     <div class="chat-input-actions">
-                        <button type="button" class="action-btn-kb" @click="startDictation()" @if($isLoading) disabled @endif>
-                            🎤
+                        <button type="button" class="action-btn-mic" @click="startDictation()" :class="{ 'is-listening': isListening }" @if($isLoading) disabled @endif>
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3Z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" y1="19" x2="12" y2="22"/></svg>
                         </button>
                         <button type="button" class="action-btn-send" @click="$wire.sendMessage(); hasChatted = true" @if($isLoading) disabled @endif>
-                            ➤
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
                         </button>
                     </div>
                 </div>
@@ -658,41 +658,57 @@
             gap: 0.5rem;
         }
 
-        .action-btn-kb {
-            background: transparent;
+        .action-btn-mic,
+        .action-btn-send {
+            width: 38px;
+            height: 38px;
+            border-radius: 50%;
             border: none;
-            font-size: 1.25rem;
-            cursor: pointer;
-            width: 36px;
-            height: 36px;
             display: flex;
             align-items: center;
             justify-content: center;
-            border-radius: 50%;
-            transition: background 0.2s ease;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            flex-shrink: 0;
         }
 
-        .action-btn-kb:hover {
+        .action-btn-mic svg,
+        .action-btn-send svg {
+            width: 18px;
+            height: 18px;
+        }
+
+        .action-btn-mic {
+            background: #f1f5f9;
+            color: #475569;
+            border: 1px solid #e2e8f0;
+        }
+
+        .action-btn-mic:hover {
             background: #e2e8f0;
+            color: #1e293b;
+        }
+
+        .action-btn-mic.is-listening {
+            background: #fee2e2;
+            color: #ef4444;
+            border-color: #fca5a5;
+            animation: mic-pulse 1.5s ease-in-out infinite;
+        }
+
+        @keyframes mic-pulse {
+            0%, 100% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.3); }
+            50% { box-shadow: 0 0 0 8px rgba(239, 68, 68, 0); }
         }
 
         .action-btn-send {
-            width: 36px;
-            height: 36px;
-            border-radius: 50%;
             background: #2563EB;
             color: #ffffff;
-            border: none;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 1rem;
-            cursor: pointer;
-            transition: background 0.2s ease;
         }
 
         .action-btn-send:hover {
             background: #1d4ed8;
+            transform: scale(1.05);
         }
 
         /* Typings */
