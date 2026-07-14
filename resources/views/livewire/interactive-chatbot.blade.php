@@ -177,17 +177,24 @@
                         class="chat-textarea-input" 
                         placeholder="Type your message..."
                         rows="1"
-                        x-on:keydown.enter.prevent="if (!$event.shiftKey) { $wire.sendMessage(); hasChatted = true; }"
                         x-on:input="$el.style.height='auto'; $el.style.height=$el.scrollHeight+'px'"
+                        x-on:keydown.enter.prevent="if (!$event.shiftKey) { $wire.sendMessage(); hasChatted = true; }"
                         @if($isLoading) disabled @endif
                     ></textarea>
                     
                     <div class="chat-input-actions">
                         <button type="button" class="action-btn-mic" @click="startDictation()" :class="{ 'is-listening': isListening }" @if($isLoading) disabled @endif>
-                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3Z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" y1="19" x2="12" y2="22"/></svg>
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <path d="M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3Z"/>
+                                <path d="M19 10v2a7 7 0 0 1-14 0v-2"/>
+                                <line x1="12" y1="19" x2="12" y2="22"/>
+                            </svg>
                         </button>
                         <button type="button" class="action-btn-send" @click="$wire.sendMessage(); hasChatted = true" @if($isLoading) disabled @endif>
-                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                                <line x1="22" y1="2" x2="11" y2="13"/>
+                                <polygon points="22 2 15 22 11 13 2 9 22 2"/>
+                            </svg>
                         </button>
                     </div>
                 </div>
@@ -668,7 +675,7 @@
             align-items: center;
             justify-content: center;
             cursor: pointer;
-            transition: all 0.2s ease;
+            transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
             flex-shrink: 0;
         }
 
@@ -680,20 +687,20 @@
 
         .action-btn-mic {
             background: #f1f5f9;
-            color: #475569;
+            color: #64748b;
             border: 1px solid #e2e8f0;
         }
 
         .action-btn-mic:hover {
             background: #e2e8f0;
-            color: #1e293b;
+            color: #334155;
         }
 
         .action-btn-mic.is-listening {
-            background: #fee2e2;
+            background: #fef2f2;
             color: #ef4444;
-            border-color: #fca5a5;
-            animation: mic-pulse 1.5s ease-in-out infinite;
+            border-color: #fecaca;
+            animation: mic-pulse 1.4s infinite;
         }
 
         @keyframes mic-pulse {
@@ -709,6 +716,10 @@
         .action-btn-send:hover {
             background: #1d4ed8;
             transform: scale(1.05);
+        }
+
+        .action-btn-send:active {
+            transform: scale(0.95);
         }
 
         /* Typings */
