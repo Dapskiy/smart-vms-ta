@@ -43,6 +43,20 @@
             window.stopAiSpeech();
             this.isSpeaking = false;
             this.isPaused = false;
+        },
+        pauseResumeSpeech() {
+            if (this.isPaused) {
+                window.resumeAiSpeech();
+                this.isPaused = false;
+            } else {
+                window.pauseAiSpeech();
+                this.isPaused = true;
+            }
+        },
+        closeChatbot() {
+            this.hasChatted = false;
+            this.stopSpeech();
+            this.$wire.clearHistory();
         }
     }"
     :class="{ 'is-chatting': hasChatted }"
@@ -52,6 +66,18 @@
 >
     <div class="kiosk-split-layout">
         
+        <!-- CLOSE / BACK BUTTON (pojok kanan atas) -->
+        <button
+            class="chatbot-close-btn"
+            @click="closeChatbot()"
+            x-show="hasChatted"
+            x-transition.opacity.duration.300ms
+            title="Kembali ke Menu Utama"
+            style="display:none;"
+        >
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+        </button>
+
         <!-- LEFT PANEL: AI AVATAR -->
         <div class="kiosk-left-panel">
             <div class="left-panel-content">
@@ -60,9 +86,43 @@
                     <!-- Speech indicator ring around avatar -->
                     <div class="avatar-speech-ring" :class="{ 'speaking': isSpeaking && !isPaused, 'listening': isListening }"></div>
                     
-                    <video autoplay loop muted playsinline class="avatar-video-element">
+                    <!-- Idle: static image -->
+                    <img
+                        src="{{ asset('assets/images/chatbot/avatar-idle.jpeg') }}"
+                        alt="AI Avatar Idle"
+                        class="avatar-video-element"
+                        x-show="!(isSpeaking && !isPaused)"
+                        x-transition.opacity.duration.400ms
+                    >
+                    <!-- Speaking: animated video -->
+                    <video
+                        autoplay loop muted playsinline
+                        class="avatar-video-element"
+                        x-show="isSpeaking && !isPaused"
+                        x-transition.opacity.duration.400ms
+                        x-ref="avatarVideo"
+                        style="display:none;"
+                    >
                         <source src="{{ asset('assets/images/chatbot/avatar-greeting.mp4') }}" type="video/mp4">
                     </video>
+                </div>
+
+                <!-- FLOATING SOUND CONTROLS (di bawah avatar) -->
+                <div class="avatar-sound-controls" x-show="hasChatted" x-transition.opacity.duration.300ms style="display:none;">
+                    <!-- Mute/Unmute -->
+                    <button @click="toggleTts()" class="snd-ctrl-btn" :class="{ 'active': !ttsEnabled }" :title="ttsEnabled ? 'Bisukan Suara' : 'Aktifkan Suara'">
+                        <svg x-show="ttsEnabled" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><path d="M19.07 4.93a10 10 0 0 1 0 14.14M15.54 8.46a5 5 0 0 1 0 7.07"/></svg>
+                        <svg x-show="!ttsEnabled" x-cloak viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><line x1="23" y1="9" x2="17" y2="15"/><line x1="17" y1="9" x2="23" y2="15"/></svg>
+                    </button>
+                    <!-- Pause/Resume (only when speaking) -->
+                    <button @click="pauseResumeSpeech()" class="snd-ctrl-btn" x-show="isSpeaking" x-cloak :title="isPaused ? 'Lanjutkan' : 'Jeda'">
+                        <svg x-show="!isPaused" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="6" y="4" width="4" height="16"/><rect x="14" y="4" width="4" height="16"/></svg>
+                        <svg x-show="isPaused" x-cloak viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+                    </button>
+                    <!-- Stop (only when speaking) -->
+                    <button @click="stopSpeech()" class="snd-ctrl-btn snd-ctrl-stop" x-show="isSpeaking" x-cloak title="Hentikan Suara">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"/></svg>
+                    </button>
                 </div>
                 
                 <!-- 2. Status Indicator Badge -->
@@ -227,15 +287,17 @@
                 window.speechSynthesis.cancel();
                 const plain = text.replace(/[*_`#>~|\-]+/g,' ').replace(/\n+/g,'. ').replace(/\s{2,}/g,' ').trim();
                 if (!plain) return;
-                const $.utterance = new SpeechSynthesisUtterance(plain);
-                $.utterance.lang='id-ID'; $.utterance.rate=1.25; $.utterance.pitch=1.0; $.utterance.volume=1.0;
-                if (indoVoice) $.utterance.voice = indoVoice;
-                $.utterance.onend = () => fireTtsEvent('tts-ended');
-                $.utterance.onerror = () => fireTtsEvent('tts-ended');
+                const utt = new SpeechSynthesisUtterance(plain);
+                utt.lang='id-ID'; utt.rate=1.25; utt.pitch=1.0; utt.volume=1.0;
+                if (indoVoice) utt.voice = indoVoice;
+                utt.onend = () => fireTtsEvent('tts-ended');
+                utt.onerror = () => fireTtsEvent('tts-ended');
                 fireTtsEvent('tts-started');
-                window.speechSynthesis.speak($.utterance);
+                window.speechSynthesis.speak(utt);
             };
-            window.stopAiSpeech   = () => { window.speechSynthesis?.cancel(); fireTtsEvent('tts-ended'); };
+            window.stopAiSpeech    = () => { window.speechSynthesis?.cancel(); fireTtsEvent('tts-ended'); };
+            window.pauseAiSpeech   = () => { window.speechSynthesis?.pause(); };
+            window.resumeAiSpeech  = () => { window.speechSynthesis?.resume(); };
         })();
     </script>
 
@@ -250,6 +312,79 @@
             font-family: 'Poppins', sans-serif;
             z-index: 10;
             min-height: 0;
+        }
+
+        /* ── Close / Back Button ──────────────────────── */
+        .chatbot-close-btn {
+            position: absolute;
+            top: 0.75rem;
+            right: 0.75rem;
+            z-index: 50;
+            width: 40px;
+            height: 40px;
+            border-radius: 12px;
+            border: 1px solid #e2e8f0;
+            background: rgba(255,255,255,0.92);
+            backdrop-filter: blur(8px);
+            color: #475569;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: all 0.25s ease;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.06);
+        }
+        .chatbot-close-btn:hover {
+            background: #f1f5f9;
+            color: #0f172a;
+            transform: scale(1.08);
+        }
+        .chatbot-close-btn svg {
+            width: 18px;
+            height: 18px;
+        }
+
+        /* ── Floating Sound Controls ──────────────────── */
+        .avatar-sound-controls {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.5rem;
+            margin-top: 0.25rem;
+            margin-bottom: 0.25rem;
+        }
+        .snd-ctrl-btn {
+            width: 36px;
+            height: 36px;
+            border-radius: 50%;
+            border: 1px solid #e2e8f0;
+            background: #ffffff;
+            color: #475569;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            box-shadow: 0 2px 6px rgba(0,0,0,0.04);
+        }
+        .snd-ctrl-btn:hover {
+            background: #f1f5f9;
+            color: #0f172a;
+            transform: scale(1.1);
+        }
+        .snd-ctrl-btn.active {
+            background: #fef2f2;
+            color: #ef4444;
+            border-color: #fecaca;
+        }
+        .snd-ctrl-btn.snd-ctrl-stop:hover {
+            background: #fef2f2;
+            color: #ef4444;
+            border-color: #fecaca;
+        }
+        .snd-ctrl-btn svg {
+            width: 16px;
+            height: 16px;
         }
 
         .kiosk-split-layout {
