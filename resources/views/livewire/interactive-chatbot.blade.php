@@ -288,10 +288,10 @@
 
         /* ── Greeting — white card ── */
         .chatbot-greeting {
-            background: rgba(255, 255, 255, 0.9);
+            background: rgba(241, 245, 249, 0.85);
             backdrop-filter: blur(12px);
             -webkit-backdrop-filter: blur(12px);
-            border: 1px solid rgba(79, 70, 229, 0.1);
+            border: 1px solid rgba(148, 163, 184, 0.2);
             box-shadow: 0 8px 32px rgba(0, 0, 0, 0.05);
             border-radius: 1.25rem;
             padding: 1rem 1.75rem;
@@ -398,7 +398,10 @@
         /* ── Keyboard text input ── */
         .chatbot-text-input-container {
             display: flex; gap: 0.5rem; width: 100%;
-            background: #fff; border: 1px solid #e2e8f0;
+            background: rgba(241, 245, 249, 0.85);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border: 1px solid rgba(148, 163, 184, 0.2);
             border-radius: 12px; padding: 0.5rem;
             box-shadow: 0 4px 20px rgba(0,0,0,0.05);
         }
