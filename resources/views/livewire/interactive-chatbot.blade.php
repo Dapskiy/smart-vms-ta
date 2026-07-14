@@ -265,7 +265,7 @@
             height: 100%;
             padding: 1rem;
             padding-top: 3vh;
-            transition: all 0.6s cubic-bezier(0.34, 1.56, 0.64, 1);
+            transition: width 0.7s cubic-bezier(0.4, 0, 0.2, 1), padding 0.7s cubic-bezier(0.4, 0, 0.2, 1);
         }
 
         .chatbot-wrapper.is-chatting .kiosk-left-panel {
@@ -290,7 +290,7 @@
             align-items: center;
             justify-content: center;
             overflow: visible;
-            transition: all 0.5s cubic-bezier(0.34, 1.56, 0.64, 1);
+            transition: height 0.7s cubic-bezier(0.4, 0, 0.2, 1), max-height 0.7s cubic-bezier(0.4, 0, 0.2, 1);
         }
 
         /* Enlarge avatar box when actively chatting */
@@ -469,19 +469,26 @@
             left: 50%;
             bottom: 1.5vh;
             transform: translateX(-50%);
-            width: 100%;
-            max-width: 520px;
+            width: 520px;
+            max-width: 90%;
             height: auto;
             display: flex;
             flex-direction: column;
-            transition: all 0.6s cubic-bezier(0.34, 1.56, 0.64, 1);
             z-index: 20;
+            animation: panel-rise 0.8s cubic-bezier(0.4, 0, 0.2, 1) 0.3s both;
+            transition:
+                left 0.7s cubic-bezier(0.4, 0, 0.2, 1),
+                bottom 0.7s cubic-bezier(0.4, 0, 0.2, 1),
+                width 0.7s cubic-bezier(0.4, 0, 0.2, 1),
+                max-width 0.7s cubic-bezier(0.4, 0, 0.2, 1),
+                height 0.7s cubic-bezier(0.4, 0, 0.2, 1),
+                transform 0.7s cubic-bezier(0.4, 0, 0.2, 1);
         }
 
         .chatbot-wrapper.is-chatting .kiosk-right-panel {
             left: 55%;
             width: calc(45% - 1.5rem);
-            max-width: none;
+            max-width: calc(45% - 1.5rem);
             height: 100%;
             bottom: 0;
             transform: translateX(0);
@@ -497,14 +504,18 @@
             border-radius: 20px;
             box-shadow: 0 8px 30px rgba(0, 0, 0, 0.04);
             padding: 1rem 1.25rem;
-            transition: all 0.6s cubic-bezier(0.34, 1.56, 0.64, 1);
             min-height: 0;
             position: relative;
+            transition:
+                border-radius 0.7s cubic-bezier(0.4, 0, 0.2, 1),
+                padding 0.7s cubic-bezier(0.4, 0, 0.2, 1),
+                box-shadow 0.7s cubic-bezier(0.4, 0, 0.2, 1);
         }
 
         .chatbot-wrapper.is-chatting .chat-card-panel {
             border-radius: 24px;
             padding: 1.5rem;
+            box-shadow: 0 12px 40px rgba(0, 0, 0, 0.06);
         }
 
         .chat-history-scroll {
@@ -521,14 +532,27 @@
         .chat-bubble-row {
             display: flex;
             width: 100%;
+            animation: bubble-slide-in 0.4s cubic-bezier(0.4, 0, 0.2, 1) both;
         }
 
         .user-row {
             justify-content: flex-end;
+            animation-name: bubble-slide-right;
         }
 
         .assistant-row {
             justify-content: flex-start;
+            animation-name: bubble-slide-left;
+        }
+
+        @keyframes bubble-slide-left {
+            from { opacity: 0; transform: translateX(-16px) translateY(8px); }
+            to   { opacity: 1; transform: translateX(0) translateY(0); }
+        }
+
+        @keyframes bubble-slide-right {
+            from { opacity: 0; transform: translateX(16px) translateY(8px); }
+            to   { opacity: 1; transform: translateX(0) translateY(0); }
         }
 
         .chat-bubble {
@@ -701,5 +725,16 @@
         }
         .typing-indicator span:nth-child(2) { animation-delay: .2s; }
         .typing-indicator span:nth-child(3) { animation-delay: .4s; }
+
+        @keyframes panel-rise {
+            from {
+                opacity: 0;
+                transform: translateX(-50%) translateY(40px);
+            }
+            to {
+                opacity: 1;
+                transform: translateX(-50%) translateY(0);
+            }
+        }
     </style>
 </div>
