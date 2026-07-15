@@ -86,25 +86,29 @@
                     <!-- Speech indicator ring around avatar -->
                     <div class="avatar-speech-ring" :class="{ 'speaking': isSpeaking && !isPaused, 'listening': isListening }"></div>
                     
-                    <!-- Idle: static image -->
-                    <img
-                        src="{{ asset('assets/images/chatbot/avatar-idle.jpeg') }}"
-                        alt="AI Avatar Idle"
-                        class="avatar-video-element"
-                        x-show="!(isSpeaking && !isPaused)"
-                        x-transition.opacity.duration.400ms
+                    <!-- GREETING SEQUENCE (Shown before chat starts) -->
+                    <div 
+                        class="avatar-video-element speaking-sequence"
+                        :class="{ 'is-speaking': !hasChatted }"
+                        x-show="!hasChatted"
                     >
-                    <!-- Speaking: animated video -->
-                    <video
-                        autoplay loop muted playsinline
-                        class="avatar-video-element"
-                        x-show="isSpeaking && !isPaused"
-                        x-transition.opacity.duration.400ms
-                        x-ref="avatarVideo"
+                        <!-- Image 1 (Idle & First frame) -->
+                        <img src="{{ asset('assets/images/chatbot/avatar-greeting-1.png') }}" class="avatar-seq img-1" alt="AI Avatar">
+                        <!-- Image 2 (Second frame) -->
+                        <img src="{{ asset('assets/images/chatbot/avatar-greeting-2.png') }}" class="avatar-seq img-2" alt="AI Avatar">
+                    </div>
+
+                    <!-- CHATTING SEQUENCE (Shown after chat starts) -->
+                    <div 
+                        class="avatar-video-element speaking-sequence-3"
+                        :class="{ 'is-speaking': isSpeaking && !isPaused }"
+                        x-show="hasChatted"
                         style="display:none;"
                     >
-                        <source src="{{ asset('assets/images/chatbot/avatar-greeting.mp4') }}" type="video/mp4">
-                    </video>
+                        <img src="{{ asset('assets/images/chatbot/avatar-speaking-1.png') }}" class="avatar-seq img-3-1" alt="AI Avatar">
+                        <img src="{{ asset('assets/images/chatbot/avatar-speaking-2.png') }}" class="avatar-seq img-3-2" alt="AI Avatar">
+                        <img src="{{ asset('assets/images/chatbot/avatar-speaking-3.png') }}" class="avatar-seq img-3-3" alt="AI Avatar">
+                    </div>
                 </div>
 
                 <!-- FLOATING SOUND CONTROLS (di bawah avatar) -->
@@ -521,6 +525,85 @@
             object-fit: contain;
             mix-blend-mode: multiply;
             filter: brightness(1.12) contrast(1.1);
+        }
+
+        .avatar-video-element.speaking-sequence {
+            position: relative;
+            width: 100%;
+        }
+
+        .avatar-seq {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            object-fit: contain;
+        }
+
+        /* Initial Idle state: Image 1 is visible, Image 2 is hidden */
+        .avatar-seq.img-1 {
+            opacity: 1;
+        }
+        .avatar-seq.img-2 {
+            opacity: 0;
+        }
+
+        /* Speaking animation with empty gap (kosong) between fades */
+        /* Total duration 12s: 5s hold -> 0.4s fade-out -> 0.2s gap -> 0.4s fade-in -> 5s hold -> 0.4s fade-out -> 0.2s gap -> 0.4s fade-in */
+        .avatar-video-element.speaking-sequence.is-speaking .avatar-seq.img-1 {
+            animation: avatar-img1 12s infinite linear;
+        }
+        .avatar-video-element.speaking-sequence.is-speaking .avatar-seq.img-2 {
+            animation: avatar-img2 12s infinite linear;
+        }
+
+        @keyframes avatar-img1 {
+            0%, 41.7%    { opacity: 1; }
+            45%, 96.7%   { opacity: 0; }
+            100%         { opacity: 1; }
+        }
+
+        @keyframes avatar-img2 {
+            0%, 46.7%    { opacity: 0; }
+            50%, 91.7%   { opacity: 1; }
+            95%, 100%    { opacity: 0; }
+        }
+
+        /* 3-Frame Speaking Animation */
+        .avatar-video-element.speaking-sequence-3 {
+            position: relative;
+            width: 100%;
+        }
+
+        .avatar-seq.img-3-1 { opacity: 1; }
+        .avatar-seq.img-3-2 { opacity: 0; }
+        .avatar-seq.img-3-3 { opacity: 0; }
+
+        .avatar-video-element.speaking-sequence-3.is-speaking .avatar-seq.img-3-1 {
+            animation: speak-frame-1 18s infinite linear;
+        }
+        .avatar-video-element.speaking-sequence-3.is-speaking .avatar-seq.img-3-2 {
+            animation: speak-frame-2 18s infinite linear;
+        }
+        .avatar-video-element.speaking-sequence-3.is-speaking .avatar-seq.img-3-3 {
+            animation: speak-frame-3 18s infinite linear;
+        }
+
+        @keyframes speak-frame-1 { 
+            0%, 27.78%    { opacity: 1; }
+            30%, 97.77%   { opacity: 0; }
+            100%          { opacity: 1; }
+        }
+        @keyframes speak-frame-2 { 
+            0%, 31.1%     { opacity: 0; }
+            33.33%, 61.11%{ opacity: 1; }
+            63.33%, 100%  { opacity: 0; }
+        }
+        @keyframes speak-frame-3 { 
+            0%, 64.43%    { opacity: 0; }
+            66.67%, 94.44%{ opacity: 1; }
+            96.67%, 100%  { opacity: 0; }
         }
 
         .avatar-speech-ring {
