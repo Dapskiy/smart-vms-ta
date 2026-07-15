@@ -59,6 +59,15 @@ class InteractiveChatbot extends Component
         $prompt .= "- Informasi yang **BOLEH** kamu bagikan tentang PIC hanya: **Nama**, **Departemen**, dan **Status Kehadiran** (Hadir/Tidak Hadir).\n";
         $prompt .= "- Jika pengunjung meminta kontak PIC, tolak dengan sopan: *\"Mohon maaf, demi alasan privasi, kontak langsung karyawan tidak dapat kami berikan. Silakan lakukan pendaftaran di Kiosk ini agar karyawan mendapat notifikasi secara otomatis.\"*\n\n";
 
+        // ── SHORTCUT ACTIONS (INTEGRASI KAMERA) ──
+        $prompt .= "## SHORTCUT TINDAKAN / KAMERA PENGENALAN WAJAH\n";
+        $prompt .= "Kiosk ini memiliki integrasi kamera pengenalan wajah untuk 4 tindakan khusus. Jika pengunjung meminta salah satu dari 4 hal ini, kamu WAJIB menyisipkan MARKER di akhir balasanmu agar sistem otomatis memunculkan layar kamera:\n";
+        $prompt .= "1. Check-in Janji Temu (sudah ada janji) -> tambahkan marker: <!--ACTION:appointment-->\n";
+        $prompt .= "2. Check-out -> tambahkan marker: <!--ACTION:checkout-->\n";
+        $prompt .= "3. Tamu Baru / Walk-in langsung via kamera -> tambahkan marker: <!--ACTION:walkin-->\n";
+        $prompt .= "4. Absensi Karyawan -> tambahkan marker: <!--ACTION:attendance-->\n";
+        $prompt .= "Contoh balasan: \"Baik, silakan arahkan wajah Anda ke layar untuk proses absensi. <!--ACTION:attendance-->\"\n\n";
+
         // ── Logika Rekomendasi & Alur Kunjungan ──────────────────────────────
         $prompt .= "## LOGIKA REKOMENDASI KUNJUNGAN\n";
         $prompt .= "Gunakan data kehadiran PIC di bawah ini untuk memberikan saran yang tepat:\n\n";
@@ -195,6 +204,13 @@ class InteractiveChatbot extends Component
                 // ── Detect markers ───────────────────────────────────
                 $regMarkerData = null;
                 $faceLookup = false;
+                $actionTrigger = null;
+
+                // Check for ACTION marker (Direct UI Trigger)
+                if (preg_match('/<!--ACTION:(.*?)-->/s', $cleanReply, $actionMatch)) {
+                    $cleanReply = trim(preg_replace('/<!--ACTION:.*?-->/s', '', $cleanReply));
+                    $actionTrigger = $actionMatch[1];
+                }
 
                 // Check for FACE_LOOKUP marker (returning visitor)
                 if (str_contains($cleanReply, '<!--FACE_LOOKUP-->')) {
@@ -223,6 +239,11 @@ class InteractiveChatbot extends Component
                 // Trigger face lookup for returning visitor
                 if ($faceLookup) {
                     $this->dispatch('chatbot-trigger-face-lookup');
+                }
+
+                // Trigger direct action (appointment, checkout, walkin, attendance)
+                if ($actionTrigger) {
+                    $this->dispatch('chatbot-trigger-action', type: $actionTrigger);
                 }
 
                 // Process registration if marker found

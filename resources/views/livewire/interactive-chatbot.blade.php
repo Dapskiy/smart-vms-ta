@@ -67,6 +67,7 @@
         }
     }"
     :class="{ 'is-chatting': hasChatted }"
+    @chatbot-trigger-action.window="handleCheckin($event.detail.type)"
     x-on:chatbot-speak.window="if (ttsEnabled) { window.speakText($event.detail.text); }"
     @tts-started.window="isSpeaking = true; isPaused = false"
     @tts-ended.window="isSpeaking = false; isPaused = false"
@@ -520,6 +521,18 @@
             align-items: center;
             justify-content: center;
             z-index: 1;
+        }
+
+        .avatar-box::after {
+            content: '';
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            width: 100%;
+            height: 20%;
+            background: linear-gradient(to top, rgba(255, 255, 255, 1) 0%, rgba(255, 255, 255, 0) 100%);
+            z-index: 2;
+            pointer-events: none;
         }
 
         /* Removed legacy landscape aspect ratio restrictions to allow full maximization of the avatar */
