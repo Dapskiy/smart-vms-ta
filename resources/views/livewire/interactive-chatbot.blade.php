@@ -1,11 +1,15 @@
 <div
     class="chatbot-wrapper"
+    data-init-chatted="{{ empty($messages) ? 'false' : 'true' }}"
     x-data="{
-        hasChatted: {{ empty($messages) ? 'false' : 'true' }},
+        hasChatted: false,
         ttsEnabled: true,
         isSpeaking: false,
         isPaused: false,
         isListening: false,
+        init() {
+            this.hasChatted = this.$el.dataset.initChatted === 'true';
+        },
         startDictation() {
             if (this.isListening) return;
             const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
@@ -56,7 +60,10 @@
         closeChatbot() {
             this.hasChatted = false;
             this.stopSpeech();
-            this.$wire.clearHistory();
+            // Delay server history clearance to allow shrink animation (0.7s) to finish without DOM interruption
+            setTimeout(() => {
+                this.$wire.clearHistory();
+            }, 700);
         }
     }"
     :class="{ 'is-chatting': hasChatted }"
@@ -73,7 +80,7 @@
             x-show="hasChatted"
             x-transition.opacity.duration.300ms
             title="Kembali ke Menu Utama"
-            style="display:none;"
+            style="{{ empty($messages) ? 'display: none;' : '' }}"
         >
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
         </button>
@@ -217,7 +224,7 @@
             <div class="chat-card-panel">
                 
                 <!-- Chat Conversation Area (Scrollable, hidden initially) -->
-                <div class="chat-history-scroll" x-show="hasChatted" x-transition:enter="transition ease-out duration-400 delay-200" x-transition:enter-start="opacity-0 transform -translate-y-2" x-transition:enter-end="opacity-100 transform translate-y-0" id="chat-history-container" x-init="$el.scrollTop = $el.scrollHeight" @chatbot-scrolled.window="setTimeout(() => { $el.scrollTop = $el.scrollHeight; }, 100)">
+                <div class="chat-history-scroll" x-show="hasChatted" style="{{ empty($messages) ? 'display: none;' : '' }}" x-transition:enter="transition ease-out duration-400 delay-200" x-transition:enter-start="opacity-0 transform -translate-y-2" x-transition:enter-end="opacity-100 transform translate-y-0" id="chat-history-container" x-init="$el.scrollTop = $el.scrollHeight" @chatbot-scrolled.window="setTimeout(() => { $el.scrollTop = $el.scrollHeight; }, 100)">
                     @if(empty($messages))
                         <div class="chat-empty-state">
                             <div class="empty-avatar-wave">👋</div>
@@ -850,6 +857,9 @@
 
         .chat-card-panel {
             width: 100%;
+            flex-grow: 0;
+            flex-shrink: 1;
+            flex-basis: auto;
             display: flex;
             flex-direction: column;
             background: #ffffff;
@@ -860,14 +870,14 @@
             min-height: 0;
             position: relative;
             transition:
-                flex 0.7s cubic-bezier(0.4, 0, 0.2, 1),
+                flex-grow 0.7s cubic-bezier(0.4, 0, 0.2, 1),
                 border-radius 0.7s cubic-bezier(0.4, 0, 0.2, 1),
                 padding 0.7s cubic-bezier(0.4, 0, 0.2, 1),
                 box-shadow 0.7s cubic-bezier(0.4, 0, 0.2, 1);
         }
 
         .chatbot-wrapper.is-chatting .chat-card-panel {
-            flex: 1;
+            flex-grow: 1;
             border-radius: 24px;
             box-shadow: 0 12px 40px rgba(0, 0, 0, 0.06);
         }
