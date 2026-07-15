@@ -216,7 +216,7 @@
             
             <!-- Greeting Card (Moved from left panel, no box, large text) -->
             <div class="right-panel-greeting">
-                <h2>Hallo</h2>
+                <h2>Hola!</h2>
                 <p>Saya <span class="brand-highlight">Visita</span>, AI Assistant Anda</p>
                 <p class="greeting-subtitle">Saya bisa membantu Anda membuat pertemuan dengan PIC yang sesuai dengan kebutuhan Anda</p>
             </div>
@@ -303,9 +303,6 @@
                 
                 <!-- Suggested Chips -->
                 <div class="chat-suggested-chips" :class="{ 'centered-chips': !hasChatted }">
-                    <button type="button" class="chip-btn" @click="$wire.selectSuggestedChip('Meet someone'); hasChatted = true">Meet someone</button>
-                    <button type="button" class="chip-btn" @click="$wire.selectSuggestedChip('Book appointment'); hasChatted = true">Book appointment</button>
-                    <button type="button" class="chip-btn" @click="$wire.selectSuggestedChip('Find employee'); hasChatted = true">Find employee</button>
                     <button type="button" class="chip-btn" @click="$wire.selectSuggestedChip('Check today\'s schedule'); hasChatted = true" x-show="hasChatted">Check schedule</button>
                 </div>
                 
@@ -638,9 +635,8 @@
         /* Status Badge */
         .avatar-status-badge {
             position: absolute;
-            top: 1.5rem;
-            left: 50%;
-            transform: translateX(-50%);
+            top: 0.75rem;
+            left: 2.5%;
             display: inline-flex;
             align-items: center;
             gap: 0.5rem;
@@ -730,7 +726,7 @@
         .cards-grid .checkin-card {
             background: rgba(255, 255, 255, 0.9);
             backdrop-filter: blur(10px);
-            border: 1px solid rgba(226, 232, 240, 0.8);
+            border: 1.5px solid #2563EB;
             border-radius: 16px;
             padding: 1rem 0.5rem;
             display: flex;
@@ -747,8 +743,9 @@
         
         .cards-grid .checkin-card:hover {
             transform: translateY(-5px);
-            border-color: #3b82f6;
-            box-shadow: 0 10px 25px rgba(37, 99, 235, 0.15);
+            background: #ffffff;
+            border-color: #1D4ED8;
+            box-shadow: 0 10px 25px rgba(37, 99, 235, 0.25);
         }
         
         .cards-grid .card-icon-wrap {
@@ -782,12 +779,6 @@
         
         .cards-grid .card-cta {
             display: none;
-        }
-
-        .greeting-subtitle {
-            margin-top: 0.4rem;
-            font-weight: 500;
-            color: #0f172a !important;
         }
 
         .brand-highlight {
