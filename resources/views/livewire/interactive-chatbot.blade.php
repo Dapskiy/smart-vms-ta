@@ -67,7 +67,16 @@
         }
     }"
     :class="{ 'is-chatting': hasChatted }"
-    @chatbot-trigger-action.window="handleCheckin($event.detail.type)"
+    @chatbot-trigger-action.window="
+        const actionType = $event.detail.type;
+        if (actionType === 'checkout') {
+            if (typeof openCheckoutFaceScan === 'function') openCheckoutFaceScan();
+        } else if (actionType === 'attendance') {
+            if (typeof openAttendanceModal === 'function') openAttendanceModal();
+        } else {
+            if (typeof handleCheckin === 'function') handleCheckin(actionType);
+        }
+    "
     x-on:chatbot-speak.window="if (ttsEnabled) { window.speakText($event.detail.text); }"
     @tts-started.window="isSpeaking = true; isPaused = false"
     @tts-ended.window="isSpeaking = false; isPaused = false"

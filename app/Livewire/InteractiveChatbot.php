@@ -60,13 +60,13 @@ class InteractiveChatbot extends Component
         $prompt .= "- Jika pengunjung meminta kontak PIC, tolak dengan sopan: *\"Mohon maaf, demi alasan privasi, kontak langsung karyawan tidak dapat kami berikan. Silakan lakukan pendaftaran di Kiosk ini agar karyawan mendapat notifikasi secara otomatis.\"*\n\n";
 
         // ── SHORTCUT ACTIONS (INTEGRASI KAMERA) ──
-        $prompt .= "## SHORTCUT TINDAKAN / KAMERA PENGENALAN WAJAH\n";
-        $prompt .= "Kiosk ini memiliki integrasi kamera pengenalan wajah untuk 4 tindakan khusus. Jika pengunjung meminta salah satu dari 4 hal ini, kamu WAJIB menyisipkan MARKER di akhir balasanmu agar sistem otomatis memunculkan layar kamera:\n";
+        $prompt .= "## SHORTCUT TINDAKAN / KAMERA PENGENALAN WAJAH (PRIORITAS TERTINGGI)\n";
+        $prompt .= "Jika maksud/permintaan pengunjung sesuai dengan 4 tindakan di bawah ini, kamu WAJIB LANGSUNG mengeksekusi marker yang sesuai dan ABAIKAN SEMUA aturan pertanyaan lain (termasuk pertanyaan tamu lama/baru):\n";
         $prompt .= "1. Check-in Janji Temu (sudah ada janji) -> tambahkan marker: <!--ACTION:appointment-->\n";
         $prompt .= "2. Check-out -> tambahkan marker: <!--ACTION:checkout-->\n";
-        $prompt .= "3. Tamu Baru / Walk-in langsung via kamera -> tambahkan marker: <!--ACTION:walkin-->\n";
-        $prompt .= "4. Absensi Karyawan -> tambahkan marker: <!--ACTION:attendance-->\n";
-        $prompt .= "Contoh balasan: \"Baik, silakan arahkan wajah Anda ke layar untuk proses absensi. <!--ACTION:attendance-->\"\n\n";
+        $prompt .= "3. Registrasi via Kamera (Tamu Baru) -> tambahkan marker: <!--ACTION:walkin-->\n";
+        $prompt .= "4. Absensi / Absen (Karyawan) -> tambahkan marker: <!--ACTION:attendance-->\n";
+        $prompt .= "Contoh balasan Absensi: \"Baik, silakan arahkan wajah Anda ke layar untuk proses absensi. <!--ACTION:attendance-->\"\n\n";
 
         // ── Logika Rekomendasi & Alur Kunjungan ──────────────────────────────
         $prompt .= "## LOGIKA REKOMENDASI KUNJUNGAN\n";
@@ -85,7 +85,8 @@ class InteractiveChatbot extends Component
         $prompt .= "Kamu BISA mendaftarkan pengunjung langsung melalui percakapan ini.\n\n";
 
         // ── ALUR TAMU LAMA (RETURNING VISITOR) ──
-        $prompt .= "### LANGKAH PERTAMA — WAJIB DITANYA DULU:\n";
+        $prompt .= "### LANGKAH PERTAMA PADA PENDAFTARAN MANUAL:\n";
+        $prompt .= "(Abaikan langkah ini jika pengunjung menggunakan salah satu SHORTCUT TINDAKAN di atas)\n";
         $prompt .= "Sebelum mengumpulkan data, SELALU tanyakan dulu: **\"Apakah Bapak/Ibu pernah berkunjung sebelumnya?\"**\n\n";
         $prompt .= "Jika pengunjung menjawab **YA/SUDAH PERNAH**, sertakan marker ini di akhir respons:\n";
         $prompt .= "<!--FACE_LOOKUP-->\n";
