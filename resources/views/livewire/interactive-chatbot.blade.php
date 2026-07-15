@@ -425,12 +425,13 @@
 
         /* ── Floating Sound Controls ──────────────────── */
         .avatar-sound-controls {
+            position: absolute;
+            bottom: 9.5rem;
+            left: 2.5%;
             display: flex;
             align-items: center;
-            justify-content: center;
             gap: 0.5rem;
-            margin-top: 0.25rem;
-            margin-bottom: 0.25rem;
+            z-index: 10;
         }
         .snd-ctrl-btn {
             width: 36px;
