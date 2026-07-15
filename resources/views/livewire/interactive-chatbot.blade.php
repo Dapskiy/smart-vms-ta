@@ -326,10 +326,13 @@
                                 <line x1="12" y1="19" x2="12" y2="22"/>
                             </svg>
                         </button>
-                        <button type="button" class="action-btn-send" @click="$wire.sendMessage(); hasChatted = true" @if($isLoading) disabled @endif>
-                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                        <button type="button" class="action-btn-send" @click="$wire.sendMessage(); hasChatted = true" wire:loading.attr="disabled" wire:target="sendMessage">
+                            <svg wire:loading.remove wire:target="sendMessage" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
                                 <line x1="22" y1="2" x2="11" y2="13"/>
                                 <polygon points="22 2 15 22 11 13 2 9 22 2"/>
+                            </svg>
+                            <svg wire:loading wire:target="sendMessage" class="animate-spin" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                                <path d="M21 12a9 9 0 1 1-6.219-8.56"></path>
                             </svg>
                         </button>
                     </div>
@@ -1061,13 +1064,28 @@
             color: #ffffff;
         }
 
-        .action-btn-send:hover {
+        .action-btn-send:hover:not(:disabled) {
             background: #1d4ed8;
             transform: scale(1.05);
         }
 
-        .action-btn-send:active {
+        .action-btn-send:active:not(:disabled) {
             transform: scale(0.95);
+        }
+
+        .action-btn-send:disabled {
+            background: #94a3b8;
+            cursor: not-allowed;
+            opacity: 0.7;
+        }
+
+        .animate-spin {
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            from { transform: rotate(0deg); }
+            to { transform: rotate(360deg); }
         }
 
         /* Typings */
