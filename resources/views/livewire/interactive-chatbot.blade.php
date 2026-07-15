@@ -303,7 +303,10 @@
                 
                 <!-- Suggested Chips -->
                 <div class="chat-suggested-chips" :class="{ 'centered-chips': !hasChatted }">
-                    <button type="button" class="chip-btn" @click="$wire.selectSuggestedChip('Check today\'s schedule'); hasChatted = true" x-show="hasChatted">Check schedule</button>
+                    <button type="button" class="chip-btn" @click="$wire.selectSuggestedChip('Saya ingin bertemu karyawan'); hasChatted = true" x-show="hasChatted">Bertemu Karyawan</button>
+                    <button type="button" class="chip-btn" @click="$wire.selectSuggestedChip('Bagaimana cara check-in?'); hasChatted = true" x-show="hasChatted">Cara Check-in</button>
+                    <button type="button" class="chip-btn" @click="$wire.selectSuggestedChip('Buat janji temu baru'); hasChatted = true" x-show="hasChatted">Buat Janji Temu</button>
+                    <button type="button" class="chip-btn" @click="$wire.selectSuggestedChip('Tolong jelaskan aturan kunjungan di sini'); hasChatted = true" x-show="hasChatted">Aturan Kunjungan</button>
                 </div>
                 
                 <!-- Chat Input Row -->
