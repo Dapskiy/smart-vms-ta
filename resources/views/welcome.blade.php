@@ -1256,6 +1256,20 @@
             openFaceScan('walkin-search');
         });
 
+        // Chatbot registration → open face scan in chatbot mode
+        document.addEventListener('chatbot-trigger-face-scan', function () {
+            openFaceScan('chatbot');
+        });
+
+        // Chatbot returning visitor → open face scan for lookup
+        document.addEventListener('chatbot-trigger-face-lookup', function () {
+            openFaceScan('chatbot-lookup');
+        });
+
+        document.addEventListener('chatbot-face-error', function () {
+            closeFaceScan();
+        });
+
         document.addEventListener('walkin-error', function () {
             closeFaceScan();
             openWalkinForm(); // Kembali ke form walkin untuk melihat error
@@ -1460,6 +1474,25 @@
                 closeFaceScan();
                 Livewire.dispatch('findVisitorByFace', { 
                     descriptor: Array.from(descriptor) 
+                });
+                return;
+            }
+
+            if (faceScanMode === 'chatbot') {
+                // Return data to InteractiveChatbot Livewire component
+                closeFaceScan();
+                Livewire.dispatch('finalizeChatbotRegistration', { 
+                    descriptor: Array.from(descriptor), 
+                    photoBase64: ciPhotoSnapshot 
+                });
+                return;
+            }
+
+            if (faceScanMode === 'chatbot-lookup') {
+                // Return data to InteractiveChatbot Livewire component for lookup
+                closeFaceScan();
+                Livewire.dispatch('chatbotLookupVisitorByFace', { 
+                    descriptor: Array.from(descriptor)
                 });
                 return;
             }

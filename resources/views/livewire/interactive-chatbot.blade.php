@@ -222,6 +222,37 @@
                     @endif
                 </div>
                 
+                <!-- Registration Confirmation Card -->
+                @if($showConfirmation && !empty($regData))
+                <div class="reg-confirm-card" wire:key="reg-confirm">
+                    <div class="reg-confirm-header">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>
+                        <span>Konfirmasi Pendaftaran</span>
+                    </div>
+                    <div class="reg-confirm-grid">
+                        <div class="reg-item"><label>Nama</label><span>{{ $regData['name'] ?? '-' }}</span></div>
+                        <div class="reg-item"><label>Perusahaan</label><span>{{ $regData['company'] ?? '-' }}</span></div>
+                        <div class="reg-item"><label>Telepon</label><span>{{ $regData['phone'] ?? '-' }}</span></div>
+                        <div class="reg-item"><label>Tujuan</label><span>{{ $regData['purpose'] ?? '-' }}</span></div>
+                        <div class="reg-item"><label>Menemui</label><span>{{ $regData['pic_name'] ?? '-' }}</span></div>
+                        <div class="reg-item"><label>Departemen</label><span>{{ $regData['department'] ?? '-' }}</span></div>
+                        <div class="reg-item"><label>Tipe</label><span>{{ $regData['type'] === 'walk-in' ? 'Walk-In (Sekarang)' : 'Janji Temu' }}</span></div>
+                        @if(($regData['type'] ?? '') === 'appointment')
+                        <div class="reg-item"><label>Tanggal</label><span>{{ $regData['visit_date'] ?? '-' }}</span></div>
+                        @endif
+                    </div>
+                    <div class="reg-confirm-actions">
+                        <button type="button" class="reg-btn-confirm" wire:click="confirmRegistration">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3Z"/><circle cx="12" cy="12" r="10" opacity=".2"/></svg>
+                            Konfirmasi & Scan Wajah
+                        </button>
+                        <button type="button" class="reg-btn-cancel" wire:click="cancelRegistration">
+                            Batal
+                        </button>
+                    </div>
+                </div>
+                @endif
+                
                 <!-- Suggested Chips -->
                 <div class="chat-suggested-chips" :class="{ 'centered-chips': !hasChatted }">
                     <button type="button" class="chip-btn" @click="$wire.selectSuggestedChip('Meet someone'); hasChatted = true">Meet someone</button>
@@ -891,12 +922,120 @@
         @keyframes panel-rise {
             from {
                 opacity: 0;
-                transform: translateX(-50%) translateY(40px);
+                transform: translateY(40px);
             }
             to {
                 opacity: 1;
-                transform: translateX(-50%) translateY(0);
+                transform: translateY(0);
             }
+        }
+
+        /* Registration Confirmation Card */
+        .reg-confirm-card {
+            background: linear-gradient(135deg, #f0f9ff 0%, #ffffff 100%);
+            border: 1px solid #bfdbfe;
+            border-radius: 16px;
+            padding: 1.25rem;
+            margin-bottom: 0.75rem;
+            animation: bubble-slide-left 0.4s cubic-bezier(0.4, 0, 0.2, 1) both;
+        }
+
+        .reg-confirm-header {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            font-size: 0.9rem;
+            font-weight: 700;
+            color: #1e40af;
+            margin-bottom: 1rem;
+        }
+
+        .reg-confirm-header svg {
+            width: 18px;
+            height: 18px;
+            color: #2563eb;
+        }
+
+        .reg-confirm-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 0.6rem;
+            margin-bottom: 1rem;
+        }
+
+        .reg-item {
+            background: rgba(255, 255, 255, 0.8);
+            border: 1px solid #e2e8f0;
+            border-radius: 10px;
+            padding: 0.5rem 0.75rem;
+        }
+
+        .reg-item label {
+            display: block;
+            font-size: 0.65rem;
+            font-weight: 600;
+            letter-spacing: 0.08em;
+            text-transform: uppercase;
+            color: #2563eb;
+            margin-bottom: 0.15rem;
+        }
+
+        .reg-item span {
+            font-size: 0.85rem;
+            font-weight: 600;
+            color: #0f172a;
+        }
+
+        .reg-confirm-actions {
+            display: flex;
+            gap: 0.5rem;
+        }
+
+        .reg-btn-confirm {
+            flex: 1;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.5rem;
+            padding: 0.7rem 1rem;
+            background: #2563eb;
+            color: #fff;
+            border: none;
+            border-radius: 12px;
+            font-size: 0.85rem;
+            font-weight: 600;
+            font-family: inherit;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .reg-btn-confirm:hover {
+            background: #1d4ed8;
+            transform: translateY(-1px);
+        }
+
+        .reg-btn-confirm svg {
+            width: 16px;
+            height: 16px;
+        }
+
+        .reg-btn-cancel {
+            padding: 0.7rem 1.25rem;
+            background: transparent;
+            color: #64748b;
+            border: 1px solid #e2e8f0;
+            border-radius: 12px;
+            font-size: 0.85rem;
+            font-weight: 500;
+            font-family: inherit;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .reg-btn-cancel:hover {
+            background: #fee2e2;
+            color: #ef4444;
+            border-color: #fca5a5;
         }
     </style>
 </div>
