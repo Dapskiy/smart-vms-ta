@@ -138,45 +138,82 @@
                     <span x-show="!isListening && !(isSpeaking && !isPaused) && !$wire.isLoading">Idle</span>
                 </div>
                 
-                <!-- 3. Greeting Card (only shown initially) -->
-                <div class="avatar-greeting-card" x-show="!hasChatted" x-transition>
-                    @if($isLoading && !empty($messages))
-                        <div class="chatbot-typing-inline">
-                            <span></span><span><span></span>
+                <!-- 4 Action Cards (Moved from Welcome) -->
+                <div class="cards-grid">
+                    <!-- Card 1: Sudah Ada Janji (Check-In) -->
+                    <div class="checkin-card card-appointment" onclick="handleCheckin('appointment')" role="button" tabindex="0" aria-label="Check-in dengan janji temu">
+                        <div class="card-icon-wrap">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" xmlns="http://www.w3.org/2000/svg">
+                                <rect x="3" y="3" width="7" height="7" rx="1"/>
+                                <rect x="14" y="3" width="7" height="7" rx="1"/>
+                                <rect x="3" y="14" width="7" height="7" rx="1"/>
+                                <path d="M14 14h.01M18 14h.01M14 18h.01M18 18h.01M16 16v.01"/>
+                            </svg>
                         </div>
-                    @elseif($error)
-                        <div class="chatbot-error-inline">⚠️ {{ $error }}</div>
-                    @elseif(empty($messages))
-                        <h2>Hello!</h2>
-                        <p>I'm <span class="brand-highlight">Visita</span>, your AI Receptionist.</p>
-                        <p class="greeting-subtitle">How may I help you today?</p>
-                    @else
-                        @php
-                            $latestAssistantMsg = null;
-                            foreach (array_reverse($messages) as $msg) {
-                                if ($msg['role'] === 'assistant') { $latestAssistantMsg = $msg['content']; break; }
-                            }
-                        @endphp
-                        @if($latestAssistantMsg)
-                            <span
-                                wire:key="ai-left-reply-{{ md5($latestAssistantMsg) }}"
-                                x-data="{ md: @js($latestAssistantMsg) }"
-                                x-init="md = @js($latestAssistantMsg)"
-                                x-html="window.marked ? marked.parse(md) : md"
-                                class="chatbot-md-inline"
-                            ></span>
-                        @else
-                            <h2>Hello!</h2>
-                            <p>I'm <span class="brand-highlight">Visita</span>, your AI Receptionist.</p>
-                            <p class="greeting-subtitle">How may I help you today?</p>
-                        @endif
-                    @endif
+                        <div class="card-body">
+                            <div class="card-title">Sudah Ada Janji</div>
+                            <div class="card-sub">Scan QR Code</div>
+                        </div>
+                    </div>
+
+                    <!-- Card 2: Check-Out Mandiri -->
+                    <div class="checkin-card card-checkout" onclick="openCheckoutFaceScan()" role="button" tabindex="0" aria-label="Check-out mandiri via wajah">
+                        <div class="card-icon-wrap">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+                                <path d="M17 16l4-4m0 0l-4-4m4 4H7"/>
+                                <path d="M3 12a9 9 0 1 0 18 0 9 9 0 0 0-18 0" opacity=".3"/>
+                            </svg>
+                        </div>
+                        <div class="card-body">
+                            <div class="card-title">Check-Out</div>
+                            <div class="card-sub">Check-out mandiri</div>
+                        </div>
+                    </div>
+
+                    <!-- Card 3: Tamu Baru / Walk-in -->
+                    <div class="checkin-card card-walkin" onclick="handleCheckin('walkin')" role="button" tabindex="0" aria-label="Registrasi tamu baru walk-in">
+                        <div class="card-icon-wrap">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" xmlns="http://www.w3.org/2000/svg">
+                                <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/>
+                                <circle cx="9" cy="7" r="4"/>
+                                <line x1="19" y1="8" x2="19" y2="14"/>
+                                <line x1="22" y1="11" x2="16" y2="11"/>
+                            </svg>
+                        </div>
+                        <div class="card-body">
+                            <div class="card-title">Tamu Baru</div>
+                            <div class="card-sub">Walk-in</div>
+                        </div>
+                    </div>
+
+                    <!-- Card 4: Absensi Karyawan (PIC) -->
+                    <div class="checkin-card card-attendance" onclick="openAttendanceModal()" role="button" tabindex="0" aria-label="Absensi Karyawan">
+                        <div class="card-icon-wrap">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+                                <path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path>
+                                <circle cx="8.5" cy="7" r="4"></circle>
+                                <polyline points="17 11 19 13 23 9"></polyline>
+                            </svg>
+                        </div>
+                        <div class="card-body">
+                            <div class="card-title">Absensi</div>
+                            <div class="card-sub">Khusus Karyawan</div>
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>
         
         <!-- RIGHT PANEL (The morphing input/chat box) -->
         <div class="kiosk-right-panel">
+            
+            <!-- Greeting Card (Moved from left panel, no box, large text) -->
+            <div class="right-panel-greeting">
+                <h2>Hallo</h2>
+                <p>Saya <span class="brand-highlight">Visita</span>, AI Assistant Anda</p>
+                <p class="greeting-subtitle">Saya bisa membantu Anda membuat pertemuan dengan PIC yang sesuai dengan kebutuhan Anda</p>
+            </div>
+
             <div class="chat-card-panel">
                 
                 <!-- Chat Conversation Area (Scrollable, hidden initially) -->
@@ -432,96 +469,53 @@
             overflow: hidden;
         }
 
-        /* LEFT PANEL styling */
+        /* LEFT PANEL styling overriding (cleaning up old redundant styles) */
         .kiosk-left-panel {
-            width: 100%;
+            flex: 0 0 50%;
             display: flex;
-            flex-direction: column;
             align-items: center;
-            justify-content: flex-start;
-            height: 100%;
-            padding: 1rem;
-            padding-top: 3vh;
-            transition: width 0.7s cubic-bezier(0.4, 0, 0.2, 1), padding 0.7s cubic-bezier(0.4, 0, 0.2, 1);
+            justify-content: center;
+            background: rgba(255, 255, 255, 0.5);
+            padding: 2rem;
+            border-right: 1px solid rgba(226, 232, 240, 0.6);
+            backdrop-filter: blur(10px);
+            z-index: 2;
+            transition: flex 0.7s cubic-bezier(0.4, 0, 0.2, 1), padding 0.7s cubic-bezier(0.4, 0, 0.2, 1);
         }
 
         .chatbot-wrapper.is-chatting .kiosk-left-panel {
-            width: 55%;
-            padding-top: 8vh;
+            flex: 0 0 40%;
+            padding-top: 1rem;
         }
 
         .left-panel-content {
             width: 100%;
-            max-width: 520px;
+            height: 100%;
             display: flex;
             flex-direction: column;
             align-items: center;
+            justify-content: center;
             transition: all 0.6s ease;
+            position: relative;
         }
 
         .avatar-box {
-            position: relative;
+            position: absolute;
+            top: 0;
+            left: 0;
             width: 100%;
-            height: 38vh;
+            height: 100%;
             display: flex;
             align-items: center;
             justify-content: center;
-            overflow: visible;
-            transition: height 0.7s cubic-bezier(0.4, 0, 0.2, 1), max-height 0.7s cubic-bezier(0.4, 0, 0.2, 1);
+            z-index: 1;
         }
 
-        /* Enlarge avatar box when actively chatting */
-        .chatbot-wrapper.is-chatting .avatar-box {
-            height: 55vh;
-            max-height: 550px;
-        }
-
-        /* Portrait Aspect Ratios */
-        @media (max-aspect-ratio: 1/1) {
-            .avatar-box {
-                height: 38vh;
-            }
-            .chatbot-wrapper.is-chatting .avatar-box {
-                height: 55vh;
-            }
-        }
-
-        /* Landscape Aspect Ratios (Laptops/PCs) */
-        @media (min-aspect-ratio: 1/1) {
-            .avatar-box {
-                height: 28vh;
-                max-height: 260px;
-            }
-            .chatbot-wrapper.is-chatting .avatar-box {
-                height: 48vh;
-                max-height: 420px;
-            }
-            .avatar-greeting-card {
-                padding: 0.75rem 1.25rem !important;
-                min-height: 80px !important;
-                margin: 0.25rem 0 !important;
-            }
-            .avatar-greeting-card h2 {
-                font-size: 1.3rem !important;
-                margin-bottom: 0.1rem !important;
-            }
-            .avatar-greeting-card p {
-                font-size: 0.88rem !important;
-            }
-            .greeting-subtitle {
-                margin-top: 0.25rem !important;
-            }
-            .avatar-status-badge {
-                margin: 0.3rem auto !important;
-                padding: 0.25rem 0.75rem !important;
-                font-size: 0.78rem !important;
-            }
-        }
+        /* Removed legacy landscape aspect ratio restrictions to allow full maximization of the avatar */
 
         .avatar-video-element {
             height: 100%;
-            width: auto;
-            max-width: 100%;
+            width: 100%;
             object-fit: contain;
             mix-blend-mode: multiply;
             filter: brightness(1.12) contrast(1.1);
@@ -636,6 +630,10 @@
 
         /* Status Badge */
         .avatar-status-badge {
+            position: absolute;
+            top: 1.5rem;
+            left: 50%;
+            transform: translateX(-50%);
             display: inline-flex;
             align-items: center;
             gap: 0.5rem;
@@ -643,11 +641,12 @@
             border-radius: 9999px;
             font-size: 0.85rem;
             font-weight: 500;
-            background: #ffffff;
-            border: 1px solid #e2e8f0;
+            background: rgba(255, 255, 255, 0.85);
+            backdrop-filter: blur(8px);
+            border: 1px solid rgba(226, 232, 240, 0.8);
             color: #64748B;
-            box-shadow: 0 2px 8px rgba(0,0,0,0.02);
-            margin: 0.75rem auto;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.05);
+            z-index: 10;
         }
 
         .status-badge-dot {
@@ -708,6 +707,76 @@
             line-height: 1.5;
         }
 
+        /* 4 Cards Grid - Horizontal Layout Over Avatar */
+        .cards-grid {
+            position: absolute;
+            bottom: 2rem;
+            left: 50%;
+            transform: translateX(-50%);
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 1rem;
+            width: 95%;
+            z-index: 10;
+        }
+        
+        .cards-grid .checkin-card {
+            background: rgba(255, 255, 255, 0.9);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(226, 232, 240, 0.8);
+            border-radius: 16px;
+            padding: 1rem 0.5rem;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            gap: 0.5rem;
+            cursor: pointer;
+            text-align: center;
+            transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+            box-shadow: 0 4px 15px rgba(0,0,0,0.04);
+            height: 100%;
+        }
+        
+        .cards-grid .checkin-card:hover {
+            transform: translateY(-5px);
+            border-color: #3b82f6;
+            box-shadow: 0 10px 25px rgba(37, 99, 235, 0.15);
+        }
+        
+        .cards-grid .card-icon-wrap {
+            width: 2.5rem;
+            height: 2.5rem;
+            border-radius: 12px;
+            background: #f1f5f9;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #475569;
+        }
+        
+        .cards-grid .card-icon-wrap svg {
+            width: 1.25rem;
+            height: 1.25rem;
+        }
+        
+        .cards-grid .card-title {
+            font-size: 0.85rem;
+            font-weight: 700;
+            color: #0f172a;
+            line-height: 1.2;
+        }
+        
+        .cards-grid .card-sub {
+            font-size: 0.7rem;
+            color: #64748b;
+            line-height: 1.3;
+        }
+        
+        .cards-grid .card-cta {
+            display: none;
+        }
+
         .greeting-subtitle {
             margin-top: 0.4rem;
             font-weight: 500;
@@ -719,58 +788,87 @@
             font-weight: 700;
         }
 
-        /* RIGHT PANEL / MORPHING CARD styling */
+        /* RIGHT PANEL GREETING ANIMATION */
+        .right-panel-greeting {
+            padding: 1rem 0;
+            text-align: left;
+            margin: 0 0 1rem 0;
+            width: 100%;
+            transition: all 0.7s cubic-bezier(0.4, 0, 0.2, 1);
+            overflow: hidden;
+            max-height: 400px;
+            opacity: 1;
+            transform: translateY(0);
+        }
+
+        .chatbot-wrapper.is-chatting .right-panel-greeting {
+            max-height: 0;
+            padding: 0;
+            margin: 0;
+            opacity: 0;
+            transform: translateY(-2rem);
+        }
+        
+        .right-panel-greeting h2 {
+            font-size: 3.5rem;
+            font-weight: 800;
+            color: #0f172a;
+            margin-bottom: 0.5rem;
+            letter-spacing: -0.03em;
+        }
+
+        .right-panel-greeting p {
+            font-size: 1.4rem;
+            color: #475569;
+            margin: 0.2rem 0;
+            font-weight: 500;
+        }
+
+        .right-panel-greeting .greeting-subtitle {
+            font-size: 1.1rem;
+            color: #64748b;
+            margin-top: 0.8rem;
+            line-height: 1.5;
+        }
+
+        /* RIGHT PANEL styling */
         .kiosk-right-panel {
-            position: absolute;
-            left: 50%;
-            bottom: 1.5vh;
-            transform: translateX(-50%);
-            width: 520px;
-            max-width: 90%;
-            height: auto;
+            flex: 1;
+            height: 100%;
             display: flex;
             flex-direction: column;
+            justify-content: center;
+            padding: 3rem 2.5rem;
             z-index: 20;
-            animation: panel-rise 0.8s cubic-bezier(0.4, 0, 0.2, 1) 0.3s both;
-            transition:
-                left 0.7s cubic-bezier(0.4, 0, 0.2, 1),
-                bottom 0.7s cubic-bezier(0.4, 0, 0.2, 1),
-                width 0.7s cubic-bezier(0.4, 0, 0.2, 1),
-                max-width 0.7s cubic-bezier(0.4, 0, 0.2, 1),
-                height 0.7s cubic-bezier(0.4, 0, 0.2, 1),
-                transform 0.7s cubic-bezier(0.4, 0, 0.2, 1);
+            background: rgba(255, 255, 255, 0.3);
+            transition: padding 0.7s cubic-bezier(0.4, 0, 0.2, 1);
         }
 
         .chatbot-wrapper.is-chatting .kiosk-right-panel {
-            left: 55%;
-            width: calc(45% - 1.5rem);
-            max-width: calc(45% - 1.5rem);
-            height: 100%;
-            bottom: 0;
-            transform: translateX(0);
+            padding: 2rem 2.5rem;
         }
 
         .chat-card-panel {
             width: 100%;
-            height: 100%;
             display: flex;
             flex-direction: column;
             background: #ffffff;
             border: 1px solid #e2e8f0;
             border-radius: 20px;
             box-shadow: 0 8px 30px rgba(0, 0, 0, 0.04);
-            padding: 1rem 1.25rem;
+            padding: 1.5rem;
             min-height: 0;
             position: relative;
             transition:
+                flex 0.7s cubic-bezier(0.4, 0, 0.2, 1),
                 border-radius 0.7s cubic-bezier(0.4, 0, 0.2, 1),
                 padding 0.7s cubic-bezier(0.4, 0, 0.2, 1),
                 box-shadow 0.7s cubic-bezier(0.4, 0, 0.2, 1);
         }
 
         .chatbot-wrapper.is-chatting .chat-card-panel {
+            flex: 1;
             border-radius: 24px;
-            padding: 1.5rem;
             box-shadow: 0 12px 40px rgba(0, 0, 0, 0.06);
         }
 
