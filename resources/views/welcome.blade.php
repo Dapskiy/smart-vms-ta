@@ -44,6 +44,28 @@
             --shadow-glow:    0 0 40px rgba(37, 99, 235, 0.05);
         }
 
+        /* ============================================================
+           DARK MODE OVERRIDES
+        ============================================================ */
+        html.dark-mode {
+            --bg-void:        #0F172A;
+            --bg-deep:        #1E293B;
+            --bg-surface:     #1E293B;
+            --bg-card:        #1E293B;
+            --bg-card-hover:  #334155;
+
+            --text-primary:   #F1F5F9;
+            --text-secondary: #94A3B8;
+            --text-muted:     #64748B;
+
+            --border-subtle:  #334155;
+            --border-card:    #334155;
+            --border-glow:    rgba(37, 99, 235, 0.3);
+
+            --shadow-card:    0 8px 30px rgba(0, 0, 0, 0.25), 0 1px 3px rgba(0, 0, 0, 0.15);
+            --shadow-glow:    0 0 40px rgba(37, 99, 235, 0.15);
+        }
+
         html, body {
             width: 100vw;
             height: 100vh;
@@ -55,6 +77,7 @@
             -webkit-user-select: none;
             -webkit-tap-highlight-color: transparent;
             cursor: default;
+            transition: background-color 0.4s ease, color 0.4s ease;
         }
 
         /* ============================================================
@@ -139,6 +162,8 @@
             flex-shrink: 0;
             padding: 0 0.5vw;
             height: 9vh;
+            position: relative;
+            z-index: 50;
         }
 
         /* --- Logo --- */
@@ -801,6 +826,181 @@
         .rejected-heading { font-size: 1.4rem; font-weight: 700; color: #f43f5e; margin-bottom: 0.4rem; }
         .rejected-sub { font-size: 0.85rem; color: #8899bb; margin-bottom: 1.5rem; line-height: 1.5; }
 
+        /* ============================================================
+           SETTINGS DROPDOWN
+        ============================================================ */
+        .settings-wrap {
+            position: relative;
+        }
+
+        .settings-dropdown {
+            position: absolute;
+            top: calc(100% + 0.5rem);
+            right: 0;
+            background: var(--bg-card);
+            border: 1px solid var(--border-subtle);
+            border-radius: 1rem;
+            padding: 0.75rem;
+            min-width: 200px;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.12);
+            z-index: 999;
+            opacity: 0;
+            visibility: hidden;
+            transform: translateY(-8px);
+            transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        .settings-dropdown.open {
+            opacity: 1;
+            visibility: visible;
+            transform: translateY(0);
+        }
+
+        .settings-dropdown-title {
+            font-size: 0.65rem;
+            font-weight: 600;
+            letter-spacing: 0.15em;
+            text-transform: uppercase;
+            color: var(--text-muted);
+            padding: 0.25rem 0.5rem 0.5rem;
+        }
+
+        .theme-option {
+            display: flex;
+            align-items: center;
+            gap: 0.6rem;
+            width: 100%;
+            padding: 0.6rem 0.75rem;
+            border: none;
+            background: transparent;
+            border-radius: 0.6rem;
+            cursor: pointer;
+            font-family: 'Poppins', sans-serif;
+            font-size: 0.82rem;
+            font-weight: 500;
+            color: var(--text-primary);
+            transition: background 0.2s ease;
+        }
+
+        .theme-option:hover {
+            background: var(--bg-deep);
+        }
+
+        .theme-option svg {
+            width: 1.1rem;
+            height: 1.1rem;
+            color: var(--text-secondary);
+            flex-shrink: 0;
+        }
+
+        .theme-option span {
+            flex: 1;
+            text-align: left;
+        }
+
+        .theme-check {
+            width: 1.2rem;
+            height: 1.2rem;
+            border-radius: 50%;
+            background: var(--accent-primary);
+            color: #fff;
+            font-size: 0.65rem;
+            display: none;
+            align-items: center;
+            justify-content: center;
+            font-weight: 700;
+        }
+
+        .theme-option.active .theme-check {
+            display: flex;
+        }
+
+        /* ============================================================
+           DARK MODE — HARDCODED ELEMENT OVERRIDES
+        ============================================================ */
+        html.dark-mode .checkin-card {
+            background: var(--bg-card);
+            border-color: var(--border-card);
+        }
+
+        html.dark-mode .cards-row {
+            background: rgba(30, 41, 59, 0.85);
+            border-color: var(--border-card);
+        }
+
+        html.dark-mode .card-icon-wrap {
+            background: rgba(255, 255, 255, 0.08);
+        }
+
+        html.dark-mode .card-title {
+            color: var(--text-primary);
+        }
+
+        html.dark-mode .lang-switch {
+            background: var(--bg-deep);
+            border-color: var(--border-subtle);
+            color: var(--text-secondary);
+        }
+
+        html.dark-mode .settings-btn {
+            background: var(--bg-deep);
+            border-color: var(--border-subtle);
+            color: var(--text-secondary);
+        }
+
+        html.dark-mode .modal-box,
+        html.dark-mode .success-box,
+        html.dark-mode .waiting-box {
+            background: var(--bg-card);
+            border-color: var(--border-card);
+        }
+
+        html.dark-mode .modal-title,
+        html.dark-mode .success-heading,
+        html.dark-mode .waiting-heading {
+            color: var(--text-primary);
+        }
+
+        html.dark-mode .modal-sub,
+        html.dark-mode .success-sub,
+        html.dark-mode .waiting-sub {
+            color: var(--text-secondary);
+        }
+
+        html.dark-mode .modal-close {
+            background: var(--bg-deep);
+            color: var(--text-secondary);
+        }
+
+        html.dark-mode .modal-close:hover {
+            background: var(--bg-card-hover);
+            color: var(--text-primary);
+        }
+
+        html.dark-mode .method-btn {
+            background: var(--bg-deep);
+            border-color: var(--border-card);
+            color: var(--text-primary);
+        }
+
+        html.dark-mode .method-btn:hover {
+            background: var(--bg-card-hover);
+            border-color: var(--border-subtle);
+        }
+
+        html.dark-mode .info-item {
+            background: var(--bg-deep);
+            border-color: var(--border-card);
+        }
+
+        html.dark-mode .info-item span {
+            color: var(--text-primary);
+        }
+
+        html.dark-mode .bg-mesh {
+            opacity: 0.3;
+        }
+
     </style>
     @livewireStyles
 </head>
@@ -842,12 +1042,28 @@
                         <span class="lang-divider">|</span>
                         <span class="lang-btn">EN</span>
                     </div>
-                    <button class="settings-btn" title="Settings">
-                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-                            <circle cx="12" cy="12" r="3"/>
-                            <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/>
-                        </svg>
-                    </button>
+                    <div class="settings-wrap">
+                        <button class="settings-btn" id="settings-toggle" title="Settings">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                                <circle cx="12" cy="12" r="3"/>
+                                <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/>
+                            </svg>
+                        </button>
+                        <!-- Settings Dropdown -->
+                        <div class="settings-dropdown" id="settings-dropdown">
+                            <div class="settings-dropdown-title">Tampilan</div>
+                            <button class="theme-option" id="theme-light" onclick="setTheme('light')">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>
+                                <span>Light Mode</span>
+                                <div class="theme-check" id="check-light">✓</div>
+                            </button>
+                            <button class="theme-option" id="theme-dark" onclick="setTheme('dark')">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
+                                <span>Dark Mode</span>
+                                <div class="theme-check" id="check-dark">✓</div>
+                            </button>
+                        </div>
+                    </div>
                 </div>
             </div>
         </header>
@@ -908,6 +1124,48 @@
 
         updateClock();
         setInterval(updateClock, 1000);
+
+        /* -------------------------------------------------------
+           SETTINGS DROPDOWN & THEME TOGGLE
+        ------------------------------------------------------- */
+        const settingsToggle = document.getElementById('settings-toggle');
+        const settingsDropdown = document.getElementById('settings-dropdown');
+
+        settingsToggle.addEventListener('click', (e) => {
+            e.stopPropagation();
+            settingsDropdown.classList.toggle('open');
+        });
+
+        document.addEventListener('click', (e) => {
+            if (!settingsDropdown.contains(e.target) && !settingsToggle.contains(e.target)) {
+                settingsDropdown.classList.remove('open');
+            }
+        });
+
+        function setTheme(theme) {
+            if (theme === 'dark') {
+                document.documentElement.classList.add('dark-mode');
+            } else {
+                document.documentElement.classList.remove('dark-mode');
+            }
+            localStorage.setItem('kiosk-theme', theme);
+            updateThemeChecks(theme);
+            settingsDropdown.classList.remove('open');
+        }
+
+        function updateThemeChecks(theme) {
+            document.getElementById('theme-light').classList.toggle('active', theme === 'light');
+            document.getElementById('theme-dark').classList.toggle('active', theme === 'dark');
+        }
+
+        // Restore saved theme on load
+        (function() {
+            const saved = localStorage.getItem('kiosk-theme') || 'light';
+            if (saved === 'dark') {
+                document.documentElement.classList.add('dark-mode');
+            }
+            updateThemeChecks(saved);
+        })();
 
         /* -------------------------------------------------------
            RIPPLE EFFECT

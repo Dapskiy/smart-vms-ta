@@ -1263,5 +1263,202 @@
             color: #ef4444;
             border-color: #fca5a5;
         }
+
+        /* ============================================================
+           DARK MODE OVERRIDES FOR CHATBOT
+        ============================================================ */
+        html.dark-mode .kiosk-left-panel {
+            background: rgba(30, 41, 59, 0.5);
+            border-right-color: rgba(51, 65, 85, 0.6);
+        }
+
+        html.dark-mode .kiosk-right-panel {
+            background: rgba(30, 41, 59, 0.3);
+        }
+
+        /* Avatar: disable multiply blend & white-fade gradient in dark mode */
+        html.dark-mode .avatar-video-element {
+            mix-blend-mode: normal;
+            filter: brightness(1) contrast(1);
+        }
+
+        html.dark-mode .avatar-box::after {
+            background: linear-gradient(to top, rgba(30, 41, 59, 0.8) 0%, transparent 100%);
+        }
+
+        /* Chat card panel */
+        html.dark-mode .chat-card-panel {
+            background: #1E293B;
+            border-color: #334155;
+            box-shadow: 0 8px 30px rgba(0, 0, 0, 0.2);
+        }
+
+        /* Chat bubbles */
+        html.dark-mode .assistant-bubble {
+            background: #334155;
+            color: #F1F5F9;
+            border-color: #475569;
+        }
+
+        html.dark-mode .user-bubble {
+            background: #1e40af;
+            color: #F1F5F9;
+        }
+
+        html.dark-mode .error-bubble {
+            background: rgba(239, 68, 68, 0.15);
+            color: #fca5a5;
+            border-color: rgba(239, 68, 68, 0.3);
+        }
+
+        /* Input area */
+        html.dark-mode .chat-input-row {
+            background: #334155;
+            border-color: #475569;
+        }
+
+        html.dark-mode .initial-input-row {
+            background: #1E293B;
+            border-color: #475569;
+        }
+
+        html.dark-mode .chat-textarea-input {
+            color: #F1F5F9;
+        }
+
+        html.dark-mode .chat-textarea-input::placeholder {
+            color: #64748B;
+        }
+
+        /* Mic button */
+        html.dark-mode .action-btn-mic {
+            background: #475569;
+            color: #94A3B8;
+            border-color: #475569;
+        }
+
+        html.dark-mode .action-btn-mic:hover {
+            background: #64748B;
+            color: #F1F5F9;
+        }
+
+        /* Chip buttons */
+        html.dark-mode .chip-btn {
+            background: #334155;
+            border-color: #475569;
+            color: #94A3B8;
+        }
+
+        html.dark-mode .chip-btn:hover {
+            background: #2563EB;
+            color: #ffffff;
+            border-color: #2563EB;
+        }
+
+        /* Greeting text */
+        html.dark-mode .right-panel-greeting h2 {
+            color: #F1F5F9;
+        }
+
+        html.dark-mode .right-panel-greeting p {
+            color: #94A3B8;
+        }
+
+        html.dark-mode .right-panel-greeting .greeting-subtitle {
+            color: #64748B;
+        }
+
+        /* Avatar status badge */
+        html.dark-mode .avatar-status-badge {
+            background: rgba(30, 41, 59, 0.85);
+            border-color: rgba(51, 65, 85, 0.8);
+            color: #94A3B8;
+        }
+
+        /* Sound control buttons */
+        html.dark-mode .snd-ctrl-btn {
+            background: #334155;
+            border-color: #475569;
+            color: #94A3B8;
+        }
+
+        html.dark-mode .snd-ctrl-btn:hover {
+            background: #475569;
+            color: #F1F5F9;
+        }
+
+        /* Close button */
+        html.dark-mode .chatbot-close-btn {
+            background: rgba(30, 41, 59, 0.92);
+            border-color: #334155;
+            color: #94A3B8;
+        }
+
+        html.dark-mode .chatbot-close-btn:hover {
+            background: #334155;
+            color: #F1F5F9;
+        }
+
+        /* Cards grid */
+        html.dark-mode .cards-grid .checkin-card {
+            background: rgba(30, 41, 59, 0.9);
+            border-color: #2563EB;
+        }
+
+        html.dark-mode .cards-grid .checkin-card:hover {
+            background: rgba(30, 41, 59, 1);
+            box-shadow: 0 10px 25px rgba(37, 99, 235, 0.3);
+        }
+
+        html.dark-mode .cards-grid .card-icon-wrap {
+            background: rgba(255, 255, 255, 0.08);
+        }
+
+        html.dark-mode .cards-grid .card-title {
+            color: #F1F5F9;
+        }
+
+        html.dark-mode .cards-grid .card-sub {
+            color: #94A3B8;
+        }
+
+        /* Registration confirmation card */
+        html.dark-mode .reg-confirm-card {
+            background: linear-gradient(135deg, #1e293b 0%, #334155 100%);
+            border-color: #3b82f6;
+        }
+
+        html.dark-mode .reg-item {
+            background: rgba(15, 23, 42, 0.6);
+            border-color: #475569;
+        }
+
+        html.dark-mode .reg-item span {
+            color: #F1F5F9;
+        }
+
+        html.dark-mode .reg-btn-cancel {
+            color: #94A3B8;
+            border-color: #475569;
+        }
+
+        html.dark-mode .reg-btn-cancel:hover {
+            background: rgba(239, 68, 68, 0.15);
+        }
+
+        /* Greeting card (if used) */
+        html.dark-mode .avatar-greeting-card {
+            background: #1E293B;
+            border-color: #334155;
+        }
+
+        html.dark-mode .avatar-greeting-card h2 {
+            color: #F1F5F9;
+        }
+
+        html.dark-mode .avatar-greeting-card p {
+            color: #94A3B8;
+        }
+
     </style>
 </div>
