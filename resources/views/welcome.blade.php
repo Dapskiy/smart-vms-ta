@@ -512,23 +512,34 @@
         .checkin-card:nth-child(2) { animation: fadeUp 0.6s ease both; animation-delay: 0.48s; }
         .checkin-card:nth-child(3) { animation: fadeUp 0.6s ease both; animation-delay: 0.61s; }
         .checkin-card:nth-child(4) { animation: fadeUp 0.6s ease both; animation-delay: 0.74s; }
-        .kiosk-footer   { animation: fadeUp 0.6s ease both; animation-delay: 0.85s; }
+        .kiosk-footer   {
+            animation: fadeUp 0.6s ease both;
+            animation-delay: 0.85s;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            width: 100%;
+            padding: 0.5vh 1vw;
+            margin-top: auto;
+            flex-shrink: 0;
+        }
+
+        .footer-copy {
+            font-size: 0.7rem;
+            color: var(--text-muted);
+            letter-spacing: 0.02em;
+        }
 
         /* ============================================================
            STATUS BAR (online indicator)
         ============================================================ */
         .status-bar {
-            position: fixed;
-            bottom: 1.2rem;
-            left: 50%;
-            transform: translateX(-50%);
             display: flex;
             align-items: center;
             gap: 0.4rem;
             font-size: 0.65rem;
             color: var(--text-muted);
             letter-spacing: 0.12em;
-            z-index: 20;
         }
 
         .status-dot {
@@ -855,17 +866,15 @@
 
         <!-- FOOTER -->
         <footer class="kiosk-footer">
-            <p class="footer-copy">
-                &copy; <span id="footer-year"></span> <strong>VISITA</strong> — Enterprise Visitor Management System &nbsp;·&nbsp; Semua hak dilindungi undang-undang
-            </p>
+            <div class="footer-copy">
+                &copy; <span id="footer-year"></span> <strong>VISITA</strong> — Visitor Management System
+            </div>
+            <div class="status-bar">
+                <div class="status-dot"></div>
+                SISTEM AKTIF &amp; TERHUBUNG
+            </div>
         </footer>
 
-    </div>
-
-    <!-- Online status bar -->
-    <div class="status-bar">
-        <div class="status-dot"></div>
-        SISTEM AKTIF &amp; TERHUBUNG
     </div>
 
     {{-- PIC Attendance (invisible event listener) --}}
