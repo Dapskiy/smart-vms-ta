@@ -72,8 +72,10 @@
     :class="{ 'is-chatting': hasChatted }"
     @chatbot-trigger-action.window="
         const actionType = $event.detail.type;
-        if (window.showOffsiteRestriction && !window.isKioskLocal) {
-            window.showOffsiteRestriction();
+        if (!window.isKioskLocal && (actionType === 'checkout' || actionType === 'attendance')) {
+            if (window.showOffsiteRestriction) {
+                window.showOffsiteRestriction();
+            }
             return;
         }
         if (actionType === 'checkout') {
@@ -162,68 +164,86 @@
                     <span x-show="!isListening && !(isSpeaking && !isPaused) && !$wire.isLoading">Idle</span>
                 </div>
                 
-                <!-- 4 Action Cards (Moved from Welcome) -->
-                <div class="cards-grid">
-                    <!-- Card 1: Sudah Ada Janji (Check-In) -->
-                    <div class="checkin-card card-appointment {{ $isLocal ? '' : 'card-disabled-offsite' }}" @if($isLocal) onclick="handleCheckin('appointment')" @else onclick="showOffsiteRestriction()" @endif role="button" tabindex="0" aria-label="Check-in dengan janji temu">
-                        <div class="card-icon-wrap">
-                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" xmlns="http://www.w3.org/2000/svg">
-                                <rect x="3" y="3" width="7" height="7" rx="1"/>
-                                <rect x="14" y="3" width="7" height="7" rx="1"/>
-                                <rect x="3" y="14" width="7" height="7" rx="1"/>
-                                <path d="M14 14h.01M18 14h.01M14 18h.01M18 18h.01M16 16v.01"/>
-                            </svg>
+                <!-- Action Cards (Moved from Welcome) -->
+                <div class="cards-grid" @if(!$isLocal) style="grid-template-columns: 1fr;" @endif>
+                    @if($isLocal)
+                        <!-- Card 1: Sudah Ada Janji (Check-In) -->
+                        <div class="checkin-card card-appointment" onclick="handleCheckin('appointment')" role="button" tabindex="0" aria-label="Check-in dengan janji temu">
+                            <div class="card-icon-wrap">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" xmlns="http://www.w3.org/2000/svg">
+                                    <rect x="3" y="3" width="7" height="7" rx="1"/>
+                                    <rect x="14" y="3" width="7" height="7" rx="1"/>
+                                    <rect x="3" y="14" width="7" height="7" rx="1"/>
+                                    <path d="M14 14h.01M18 14h.01M14 18h.01M18 18h.01M16 16v.01"/>
+                                </svg>
+                            </div>
+                            <div class="card-body">
+                                <div class="card-title">Sudah Ada Janji</div>
+                                <div class="card-sub">Scan QR Code</div>
+                            </div>
                         </div>
-                        <div class="card-body">
-                            <div class="card-title">Sudah Ada Janji</div>
-                            <div class="card-sub">Scan QR Code</div>
-                        </div>
-                    </div>
 
-                    <!-- Card 2: Check-Out Mandiri -->
-                    <div class="checkin-card card-checkout {{ $isLocal ? '' : 'card-disabled-offsite' }}" @if($isLocal) onclick="openCheckoutFaceScan()" @else onclick="showOffsiteRestriction()" @endif role="button" tabindex="0" aria-label="Check-out mandiri via wajah">
-                        <div class="card-icon-wrap">
-                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
-                                <path d="M17 16l4-4m0 0l-4-4m4 4H7"/>
-                                <path d="M3 12a9 9 0 1 0 18 0 9 9 0 0 0-18 0" opacity=".3"/>
-                            </svg>
+                        <!-- Card 2: Check-Out Mandiri -->
+                        <div class="checkin-card card-checkout" onclick="openCheckoutFaceScan()" role="button" tabindex="0" aria-label="Check-out mandiri via wajah">
+                            <div class="card-icon-wrap">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+                                    <path d="M17 16l4-4m0 0l-4-4m4 4H7"/>
+                                    <path d="M3 12a9 9 0 1 0 18 0 9 9 0 0 0-18 0" opacity=".3"/>
+                                </svg>
+                            </div>
+                            <div class="card-body">
+                                <div class="card-title">Check-Out</div>
+                                <div class="card-sub">Check-out mandiri</div>
+                            </div>
                         </div>
-                        <div class="card-body">
-                            <div class="card-title">Check-Out</div>
-                            <div class="card-sub">Check-out mandiri</div>
-                        </div>
-                    </div>
 
-                    <!-- Card 3: Tamu Baru / Walk-in -->
-                    <div class="checkin-card card-walkin {{ $isLocal ? '' : 'card-disabled-offsite' }}" @if($isLocal) onclick="handleCheckin('walkin')" @else onclick="showOffsiteRestriction()" @endif role="button" tabindex="0" aria-label="Registrasi tamu baru walk-in">
-                        <div class="card-icon-wrap">
-                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" xmlns="http://www.w3.org/2000/svg">
-                                <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/>
-                                <circle cx="9" cy="7" r="4"/>
-                                <line x1="19" y1="8" x2="19" y2="14"/>
-                                <line x1="22" y1="11" x2="16" y2="11"/>
-                            </svg>
+                        <!-- Card 3: Tamu Baru / Walk-in -->
+                        <div class="checkin-card card-walkin" onclick="handleCheckin('walkin')" role="button" tabindex="0" aria-label="Registrasi tamu baru walk-in">
+                            <div class="card-icon-wrap">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" xmlns="http://www.w3.org/2000/svg">
+                                    <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/>
+                                    <circle cx="9" cy="7" r="4"/>
+                                    <line x1="19" y1="8" x2="19" y2="14"/>
+                                    <line x1="22" y1="11" x2="16" y2="11"/>
+                                </svg>
+                            </div>
+                            <div class="card-body">
+                                <div class="card-title">Tamu Baru</div>
+                                <div class="card-sub">Walk-in</div>
+                            </div>
                         </div>
-                        <div class="card-body">
-                            <div class="card-title">Tamu Baru</div>
-                            <div class="card-sub">Walk-in</div>
-                        </div>
-                    </div>
 
-                    <!-- Card 4: Absensi Karyawan (PIC) -->
-                    <div class="checkin-card card-attendance {{ $isLocal ? '' : 'card-disabled-offsite' }}" @if($isLocal) onclick="openAttendanceModal()" @else onclick="showOffsiteRestriction()" @endif role="button" tabindex="0" aria-label="Absensi Karyawan">
-                        <div class="card-icon-wrap">
-                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
-                                <path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path>
-                                <circle cx="8.5" cy="7" r="4"></circle>
-                                <polyline points="17 11 19 13 23 9"></polyline>
-                            </svg>
+                        <!-- Card 4: Absensi Karyawan (PIC) -->
+                        <div class="checkin-card card-attendance" onclick="openAttendanceModal()" role="button" tabindex="0" aria-label="Absensi Karyawan">
+                            <div class="card-icon-wrap">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+                                    <path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path>
+                                    <circle cx="8.5" cy="7" r="4"></circle>
+                                    <polyline points="17 11 19 13 23 9"></polyline>
+                                </svg>
+                            </div>
+                            <div class="card-body">
+                                <div class="card-title">Absensi</div>
+                                <div class="card-sub">Khusus Karyawan</div>
+                            </div>
                         </div>
-                        <div class="card-body">
-                            <div class="card-title">Absensi</div>
-                            <div class="card-sub">Khusus Karyawan</div>
+                    @else
+                        <!-- Only 1 Card visible when offsite: Buat Janji Temu (Appointment) -->
+                        <div class="checkin-card card-walkin" onclick="handleCheckin('walkin')" role="button" tabindex="0" aria-label="Buat Janji Temu Baru" style="border: 2px solid var(--accent-primary); background: rgba(99, 102, 241, 0.05);">
+                            <div class="card-icon-wrap" style="color: var(--accent-primary);">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" xmlns="http://www.w3.org/2000/svg">
+                                    <rect x="3" y="4" width="18" height="18" rx="2" ry="2"/>
+                                    <line x1="16" y1="2" x2="16" y2="6"/>
+                                    <line x1="8" y1="2" x2="8" y2="6"/>
+                                    <line x1="3" y1="10" x2="21" y2="10"/>
+                                </svg>
+                            </div>
+                            <div class="card-body">
+                                <div class="card-title" style="color: var(--accent-primary);">Buat Janji Temu</div>
+                                <div class="card-sub">Appointment Kunjungan</div>
+                            </div>
                         </div>
-                    </div>
+                    @endif
                 </div>
             </div>
         </div>

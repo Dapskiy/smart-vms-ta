@@ -51,6 +51,14 @@ Route::post('/kiosk/face-checkout', [FaceCheckoutController::class, 'checkout'])
 Route::post('/kiosk/face-check-duplicate', [FaceValidationController::class, 'checkDuplicate'])
     ->name('kiosk.face.check-duplicate');
 
+// Route untuk verifikasi token QR janji temu
+Route::post('/kiosk/qr-checkin', [FaceCheckinController::class, 'checkQrToken'])
+    ->name('kiosk.qr.checkin');
+
+// Route untuk menyelesaikan check-in QR (dengan registrasi wajah / verifikasi wajah)
+Route::post('/kiosk/qr-finalize-checkin', [FaceCheckinController::class, 'finalizeQrCheckin'])
+    ->name('kiosk.qr.finalize-checkin');
+
 // ── Approval Kunjungan Walk-In oleh PIC via Email ─────────────────────
 // Public routes (tanpa auth) — PIC mengakses dari link di email
 Route::get('/appointments/approve/{token}', [AppointmentApprovalController::class, 'approve'])

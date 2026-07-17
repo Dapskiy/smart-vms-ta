@@ -138,6 +138,155 @@ class FaceCheckinController extends Controller
         ]);
     }
 
+    public function checkQrToken(Request $request)
+    {
+        $request->validate([
+            'token' => 'required|string',
+        ]);
+
+        $token = trim($request->input('token'));
+
+        // Cari appointment hari ini dengan status pending berdasarkan token atau visit_id
+        $appointment = Appointment::where('status', 'pending')
+            ->whereDate('visit_date', today())
+            ->where(function($query) use ($token) {
+                $query->where('token', $token)
+                      ->orWhere('visit_id', $token);
+            })
+            ->with('visitor')
+            ->first();
+
+        if (!$appointment) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Kode Janji Temu (Token/Visit ID) tidak ditemukan atau bukan untuk hari ini.',
+            ]);
+        }
+
+        $visitor = $appointment->visitor;
+        $hasFace = ($visitor && !empty($visitor->face_features));
+
+        return response()->json([
+            'success' => true,
+            'has_face' => $hasFace,
+            'visitor_id' => $visitor->id,
+            'appointment_id' => $appointment->id,
+            'visitor_name' => $visitor->name,
+        ]);
+    }
+
+    public function finalizeQrCheckin(Request $request)
+    {
+        $request->validate([
+            'appointment_id' => 'required|exists:appointments,id',
+            'visitor_id' => 'required|exists:visitors,id',
+            'descriptor' => 'nullable|array',
+            'face_photo' => 'nullable|string',
+        ]);
+
+        $appointment = Appointment::find($request->input('appointment_id'));
+        $visitor = Visitor::find($request->input('visitor_id'));
+
+        if ($appointment->status !== 'pending') {
+            return response()->json([
+                'success' => false,
+                'message' => 'Janji temu sudah check-in sebelumnya.',
+            ]);
+        }
+
+        $incomingDescriptor = $request->input('descriptor');
+
+        // Jika belum memiliki data wajah, lakukan REGISTRASI wajah baru
+        if (empty($visitor->face_features)) {
+            if (!$incomingDescriptor || !$request->input('face_photo')) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Registrasi wajah diperlukan untuk kunjungan pertama.',
+                ]);
+            }
+            $visitor->update([
+                'face_features' => [$incomingDescriptor],
+                'face_photo' => [$request->input('face_photo')],
+            ]);
+            Log::info("[QR-CHECKIN] Registered new face for visitor #{$visitor->id} ({$visitor->name})");
+        } else {
+            // Jika sudah memiliki data wajah, lakukan VERIFIKASI kecocokan wajah
+            if (!$incomingDescriptor) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Verifikasi wajah diperlukan untuk menyelesaikan check-in.',
+                ]);
+            }
+
+            $stored = $visitor->face_features;
+            // Backwards compatibility for single descriptor array
+            if (isset($stored[0]) && !is_array($stored[0])) {
+                $stored = [$stored];
+            }
+
+            $bestDistance = PHP_FLOAT_MAX;
+            foreach ($stored as $desc) {
+                if (is_array($desc) && count($desc) === count($incomingDescriptor)) {
+                    $distance = $this->euclideanDistance($incomingDescriptor, $desc);
+                    if ($distance < $bestDistance) {
+                        $bestDistance = $distance;
+                    }
+                }
+            }
+
+            $threshold = 0.5;
+            if ($bestDistance > $threshold) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Verifikasi Wajah Gagal: Wajah tidak cocok dengan data pendaftaran Anda.',
+                ]);
+            }
+
+            // Simpan sampel foto wajah tambahan jika dikirim
+            if ($request->filled('face_photo')) {
+                try {
+                    $existingPhotos = is_array($visitor->face_photo) ? $visitor->face_photo : [];
+                    $existingFeatures = is_array($visitor->face_features) ? $visitor->face_features : [];
+                    if (!empty($existingFeatures) && isset($existingFeatures[0]) && !is_array($existingFeatures[0])) {
+                        $existingFeatures = [$existingFeatures];
+                    }
+                    if (count($existingPhotos) < 10) {
+                        $existingPhotos[] = $request->input('face_photo');
+                        $visitor->face_photo = $existingPhotos;
+                    }
+                    if (count($existingFeatures) < 10) {
+                        $existingFeatures[] = $incomingDescriptor;
+                        $visitor->face_features = $existingFeatures;
+                    }
+                    $visitor->save();
+                } catch (\Throwable $e) {
+                    Log::warning("[QR-CHECKIN] Failed to save extra face photo: " . $e->getMessage());
+                }
+            }
+        }
+
+        // Jalankan check-in
+        $appointment->update([
+            'status' => 'active',
+            'checkin_time' => now()->format('H:i'),
+        ]);
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Check-in berhasil!',
+            'appointment' => [
+                'visitor_name' => $visitor->name,
+                'visitor_phone' => $visitor->phone ?? '-',
+                'pic_name' => $appointment->pic?->name ?? '-',
+                'room_name' => $appointment->room?->name ?? '-',
+                'visit_date' => $appointment->visit_date?->translatedFormat('d F Y') ?? '-',
+                'visit_time' => $appointment->visit_time ?? '-',
+                'checkin_time' => $appointment->checkin_time ?? now()->format('H:i'),
+                'purpose' => $appointment->purpose ?? '-',
+            ]
+        ]);
+    }
+
     private function euclideanDistance(array $a, array $b): float
     {
         $sum = 0.0;

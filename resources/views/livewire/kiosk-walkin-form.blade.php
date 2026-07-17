@@ -235,17 +235,23 @@
         
         <div class="form-group">
             <label>Tipe Kunjungan</label>
-            <div style="display: flex; gap: 1rem; background: #f8fafc; padding: 0.8rem 1rem; border-radius: 8px; border: 1px solid #cbd5e1;">
-                <label style="display: flex; align-items: center; gap: 0.5rem; color: var(--text-primary); font-weight: normal; cursor: pointer; margin-bottom: 0;">
-                    <input type="radio" wire:model.live="visit_type" value="walk-in" style="accent-color: var(--accent-primary); width: 1.2rem; height: 1.2rem;">
-                    Bertamu Sekarang
-                </label>
-                <label style="display: flex; align-items: center; gap: 0.5rem; color: var(--text-primary); font-weight: normal; cursor: pointer; margin-bottom: 0;">
-                    <input type="radio" wire:model.live="visit_type" value="appointment" style="accent-color: var(--accent-primary); width: 1.2rem; height: 1.2rem;">
-                    Buat Janji (Hari Lain)
-                </label>
-            </div>
-            @error('visit_type') <span class="text-danger">{{ $message }}</span> @enderror
+            @if(\App\Helpers\KioskHelper::isKioskLocal())
+                <div style="display: flex; gap: 1rem; background: #f8fafc; padding: 0.8rem 1rem; border-radius: 8px; border: 1px solid #cbd5e1;">
+                    <label style="display: flex; align-items: center; gap: 0.5rem; color: var(--text-primary); font-weight: normal; cursor: pointer; margin-bottom: 0;">
+                        <input type="radio" wire:model.live="visit_type" value="walk-in" style="accent-color: var(--accent-primary); width: 1.2rem; height: 1.2rem;">
+                        Bertamu Sekarang
+                    </label>
+                    <label style="display: flex; align-items: center; gap: 0.5rem; color: var(--text-primary); font-weight: normal; cursor: pointer; margin-bottom: 0;">
+                        <input type="radio" wire:model.live="visit_type" value="appointment" style="accent-color: var(--accent-primary); width: 1.2rem; height: 1.2rem;">
+                        Buat Janji (Hari Lain)
+                    </label>
+                </div>
+                @error('visit_type') <span class="text-danger">{{ $message }}</span> @enderror
+            @else
+                <div style="background: rgba(79, 70, 229, 0.1); color: #4f46e5; padding: 0.8rem 1rem; border-radius: 8px; border: 1px solid rgba(79, 70, 229, 0.2); font-weight: 600;">
+                    📅 Buat Janji (Hari Lain)
+                </div>
+            @endif
         </div>
 
         @if($visit_type === 'appointment')

@@ -115,43 +115,49 @@ class InteractiveChatbot extends Component
         $prompt .= "- Untuk walk-in: visit_date dan visit_time boleh kosong\n";
         $prompt .= "- pax default 1 kecuali pengunjung menyebut jumlah lain\n\n";
 
-        // ── Konteks Data PIC Real-Time dari Database ──────────────────────────
-        $prompt .= "## DATA KARYAWAN (PIC) & STATUS KEHADIRAN HARI INI\n";
-        $prompt .= "*(Data ini diperbarui secara otomatis dari sistem — gunakan sebagai acuan utama)*\n\n";
+        // ── Konteks Data PIC Real-Time dari Database (Hanya jika Onsite) ────────
+        if (\App\Helpers\KioskHelper::isKioskLocal()) {
+            $prompt .= "## DATA KARYAWAN (PIC) & STATUS KEHADIRAN HARI INI\n";
+            $prompt .= "*(Data ini diperbarui secara otomatis dari sistem — gunakan sebagai acuan utama)*\n\n";
 
-        try {
-            // Eager-load relasi department + log absensi terbaru hari ini
-            $pics = \App\Models\Pic::with(['department', 'attendances' => function ($query) {
-                $query->whereDate('checked_at', today())->latest('checked_at');
-            }])->get();
+            try {
+                // Eager-load relasi department + log absensi terbaru hari ini
+                $pics = \App\Models\Pic::with(['department', 'attendances' => function ($query) {
+                    $query->whereDate('checked_at', today())->latest('checked_at');
+                }])->get();
 
-            if ($pics->isEmpty()) {
-                $prompt .= "*(Belum ada data karyawan terdaftar di sistem)*\n";
-            } else {
-                // Kelompokkan per departemen agar lebih mudah dipahami AI
-                $byDept = $pics->groupBy(fn($p) => $p->department?->name ?? 'Umum');
+                if ($pics->isEmpty()) {
+                    $prompt .= "*(Belum ada data karyawan terdaftar di sistem)*\n";
+                } else {
+                    // Kelompokkan per departemen agar lebih mudah dipahami AI
+                    $byDept = $pics->groupBy(fn($p) => $p->department?->name ?? 'Umum');
 
-                foreach ($byDept as $deptName => $deptPics) {
-                    $prompt .= "**Departemen: {$deptName}**\n";
-                    foreach ($deptPics as $pic) {
-                        // Tentukan kehadiran berdasarkan log absensi terbaru hari ini
-                        // (sumber kebenaran yang sama dengan tabel admin Filament)
-                        $latestAttendance = $pic->attendances->first();
-                        $isPresent = ($latestAttendance && $latestAttendance->type === 'checkin');
-                        $locText = ($isPresent && $pic->current_location) ? " di Gedung {$pic->current_location}" : '';
-                        $status = $isPresent ? "✅ HADIR (Tersedia{$locText})" : '❌ TIDAK HADIR';
-                        $prompt .= "- {$pic->name} | {$status}\n";
+                    foreach ($byDept as $deptName => $deptPics) {
+                        $prompt .= "**Departemen: {$deptName}**\n";
+                        foreach ($deptPics as $pic) {
+                            // Tentukan kehadiran berdasarkan log absensi terbaru hari ini
+                            // (sumber kebenaran yang sama dengan tabel admin Filament)
+                            $latestAttendance = $pic->attendances->first();
+                            $isPresent = ($latestAttendance && $latestAttendance->type === 'checkin');
+                            $locText = ($isPresent && $pic->current_location) ? " di Gedung {$pic->current_location}" : '';
+                            $status = $isPresent ? "✅ HADIR (Tersedia{$locText})" : '❌ TIDAK HADIR';
+                            $prompt .= "- {$pic->name} | {$status}\n";
+                        }
+                        $prompt .= "\n";
                     }
-                    $prompt .= "\n";
                 }
+            } catch (\Throwable $e) {
+                $prompt .= "*(Gagal memuat data karyawan dari database — mohon hubungi admin sistem)*\n";
             }
-        } catch (\Throwable $e) {
-            $prompt .= "*(Gagal memuat data karyawan dari database — mohon hubungi admin sistem)*\n";
         }
 
         if (!\App\Helpers\KioskHelper::isKioskLocal()) {
-            $prompt .= "\n## PENTING: KETERBATASAN AKSES OFFSITE (LUAR KANTOR)\n";
-            $prompt .= "Pengunjung saat ini terdeteksi mengakses dari LUAR jaringan kantor (offsite/terbatas). Oleh karena itu, fitur-fitur fisik seperti Check-In Janji Temu (QR Scan), Check-Out, Registrasi Tamu Baru (Walk-In), Scan Wajah, dan Absensi Karyawan ditangguhkan/dinonaktifkan. Tolong ingatkan pengunjung secara sopan bahwa mereka saat ini mengakses dari luar area kantor dan tidak dapat melakukan proses tersebut kecuali dengan mendatangi perangkat Kiosk fisik di dalam gedung.\n\n";
+            $prompt .= "\n## BATASAN TOPIK AKSES OFFSITE (LUAR KANTOR)\n";
+            $prompt .= "Pengunjung saat ini terdeteksi mengakses dari LUAR jaringan kantor (offsite/terbatas). Oleh karena itu, batasan topik berikut bersifat MUTLAK:\n";
+            $prompt .= "1. **Topik yang Diperbolehkan**: Hanya penjelasan mengenai alur atau cara pendaftaran/janji temu (prosedur) di VISITA.\n";
+            $prompt .= "2. **Topik yang DILARANG**: Menanyakan ketersediaan PIC, apakah PIC tertentu hadir atau tidak hadir hari ini, nama-nama PIC di setiap departemen, serta detail internal lainnya.\n";
+            $prompt .= "3. **Tindakan**: Jika mereka bertanya tentang kehadiran PIC atau detail internal, tolak dengan sangat sopan dan informasikan bahwa demi keamanan dan privasi, status kehadiran karyawan (PIC) dan informasi internal hanya dapat diakses secara langsung melalui perangkat Kiosk di lobi kantor.\n";
+            $prompt .= "4. **Fitur Fisik**: Jelaskan bahwa mereka hanya bisa melakukan pendaftaran janji temu (Appointment) lewat link/tombol yang tersedia di layar, sedangkan Check-In QR, Check-Out, dan Absensi Karyawan dinonaktifkan.\n\n";
         }
 
         return $prompt;

@@ -46,13 +46,25 @@ class KioskWalkinForm extends Component
     // Pending approval state
     public $pending_approval_token = null;
 
+    public function mount()
+    {
+        if (!\App\Helpers\KioskHelper::isKioskLocal()) {
+            $this->visit_type = 'appointment';
+        }
+    }
+
     #[On('resetWalkinForm')]
     public function resetForm()
     {
         $this->step = 0;
+        if (!\App\Helpers\KioskHelper::isKioskLocal()) {
+            $this->visit_type = 'appointment';
+        } else {
+            $this->visit_type = 'walk-in';
+        }
         $this->is_verified_returning = false;
         $this->verified_visitor_id = null;
-        $this->reset(['name', 'company', 'phone', 'purpose', 'pax', 'department_id', 'search_pic', 'selected_pic_id', 'selected_pic_name', 'pic_results', 'visit_type', 'visit_date', 'visit_time']);
+        $this->reset(['name', 'company', 'phone', 'purpose', 'pax', 'department_id', 'search_pic', 'selected_pic_id', 'selected_pic_name', 'pic_results', 'visit_date', 'visit_time']);
         $this->resetValidation();
         $this->resetErrorBag();
     }
@@ -176,8 +188,14 @@ class KioskWalkinForm extends Component
     {
         $pic = Pic::find($picId);
         if ($pic && !$pic->is_available) {
-            $this->addError('selected_pic_id', 'Maaf, PIC ini belum melakukan Check-In (Tidak Hadir). Silakan pilih PIC lain.');
-            return;
+            $isToday = true;
+            if ($this->visit_type === 'appointment' && $this->visit_date) {
+                $isToday = (date('Y-m-d', strtotime($this->visit_date)) === date('Y-m-d'));
+            }
+            if ($isToday) {
+                $this->addError('selected_pic_id', 'Maaf, PIC ini belum melakukan Check-In (Tidak Hadir). Silakan pilih PIC lain.');
+                return;
+            }
         }
 
         $this->selected_pic_id = $picId;
@@ -226,8 +244,8 @@ class KioskWalkinForm extends Component
 
     public function submit()
     {
-        if (!\App\Helpers\KioskHelper::isKioskLocal()) {
-            $this->addError('general', 'Akses Terbatas: Fitur ini hanya dapat digunakan melalui perangkat Kiosk di kantor.');
+        if (!\App\Helpers\KioskHelper::isKioskLocal() && $this->visit_type !== 'appointment') {
+            $this->addError('general', 'Akses Terbatas: Fitur walk-in hanya dapat digunakan melalui perangkat Kiosk di kantor.');
             $this->dispatch('walkin-error');
             return;
         }
@@ -248,6 +266,19 @@ class KioskWalkinForm extends Component
             'selected_pic_id.required' => 'Pilih karyawan yang akan dituju dari hasil pencarian.'
         ]);
 
+        // Verifikasi tambahan: jika kunjungan hari ini, PIC wajib hadir (sudah check-in)
+        $pic = Pic::find($this->selected_pic_id);
+        if ($pic && !$pic->is_available) {
+            $isToday = true;
+            if ($this->visit_type === 'appointment' && $this->visit_date) {
+                $isToday = (date('Y-m-d', strtotime($this->visit_date)) === date('Y-m-d'));
+            }
+            if ($isToday) {
+                $this->addError('selected_pic_id', 'Maaf, PIC ini belum melakukan Check-In (Tidak Hadir). Silakan pilih PIC lain atau ganti tanggal kunjungan.');
+                return;
+            }
+        }
+
         if ($this->is_verified_returning && $this->verified_visitor_id) {
             $visitor = Visitor::find($this->verified_visitor_id);
             if ($visitor && $visitor->is_blacklisted) {
@@ -261,16 +292,21 @@ class KioskWalkinForm extends Component
                 $this->addError('general', 'Terjadi kesalahan sistem. Silakan ulangi pendaftaran.');
             }
         } else {
-            // Berhenti di sini, trigger face scan JS di frontend (pendaftar baru)
-            $this->dispatch('trigger-face-scan');
+            if (!\App\Helpers\KioskHelper::isKioskLocal()) {
+                // Offsite visitor completing appointment without face scan
+                $this->submitWithoutFace();
+            } else {
+                // Berhenti di sini, trigger face scan JS di frontend (pendaftar baru)
+                $this->dispatch('trigger-face-scan');
+            }
         }
     }
 
     #[On('submitWithoutFace')]
     public function submitWithoutFace()
     {
-        if (!\App\Helpers\KioskHelper::isKioskLocal()) {
-            $this->addError('general', 'Akses Terbatas: Fitur ini hanya dapat digunakan melalui perangkat Kiosk di kantor.');
+        if (!\App\Helpers\KioskHelper::isKioskLocal() && $this->visit_type !== 'appointment') {
+            $this->addError('general', 'Akses Terbatas: Fitur walk-in hanya dapat digunakan melalui perangkat Kiosk di kantor.');
             $this->dispatch('walkin-error');
             return;
         }

@@ -1646,6 +1646,8 @@
                 closeMethodPicker();
             } else if (mode === 'walkin' || mode === 'walkin-search') {
                 document.getElementById('modal-walkin').classList.remove('active');
+            } else if (mode === 'qr-register' || mode === 'qr-verify') {
+                closeQrScanner();
             }
             document.getElementById('modal-face').classList.add('active');
             setFaceMessage('Memuat Model AI...', 'info');
@@ -1654,6 +1656,17 @@
             const skipBtn = document.getElementById('btn-skip-face');
             if (skipBtn) {
                 skipBtn.style.display = (mode === 'walkin') ? 'inline-block' : 'none';
+            }
+
+            // Set custom message for QR workflows
+            if (mode === 'qr-register') {
+                setTimeout(() => {
+                    setFaceMessage('Halo ' + (window.currentQrCheckin ? window.currentQrCheckin.visitor_name : '') + '! Silakan posisikan wajah Anda untuk REGISTRASI wajah.', 'info');
+                }, 1000);
+            } else if (mode === 'qr-verify') {
+                setTimeout(() => {
+                    setFaceMessage('Halo ' + (window.currentQrCheckin ? window.currentQrCheckin.visitor_name : '') + '! Silakan posisikan wajah Anda untuk VERIFIKASI check-in.', 'info');
+                }, 1000);
             }
 
             // Load face-api if needed
@@ -1861,6 +1874,12 @@
                 return;
             }
 
+            if (faceScanMode === 'qr-register' || faceScanMode === 'qr-verify') {
+                closeFaceScan();
+                submitQrFinalCheckin(descriptor, ciPhotoSnapshot);
+                return;
+            }
+
             // Normal check-in flow via API
             try {
                 const res = await fetch('/kiosk/face-checkin', {
@@ -1914,6 +1933,186 @@
             const l = document.getElementById('ci-arrow-left');
             if (r) r.style.display = dir==='right' ? 'flex':'none';
             if (l) l.style.display = dir==='left'  ? 'flex':'none';
+        }
+
+        /* -------------------------------------------------------
+           QR SCANNER & TOKEN VERIFICATION
+        ------------------------------------------------------- */
+        let html5QrcodeScanner = null;
+
+        async function openQrScanner(mode = 'qr') {
+            closeMethodPicker();
+            document.getElementById('modal-qr-scan').classList.add('active');
+            document.getElementById('qr-error-msg').style.display = 'none';
+            document.getElementById('qr-token-input').value = '';
+
+            const cameraWrap = document.getElementById('qr-camera-wrap');
+            const titleEl = document.getElementById('qr-scan-title');
+            const subEl = document.getElementById('qr-scan-subtitle');
+
+            if (mode === 'qr') {
+                titleEl.textContent = 'Scan QR Code';
+                subEl.textContent = 'Silakan arahkan QR Code tiket janji temu Anda ke kamera lobi Kiosk';
+                cameraWrap.style.display = 'flex';
+
+                // Load html5-qrcode dynamically
+                if (typeof Html5Qrcode === 'undefined') {
+                    try {
+                        await loadScript('https://unpkg.com/html5-qrcode');
+                    } catch (e) {
+                        console.error("Gagal load html5-qrcode dari CDN, fallback ke manual input");
+                    }
+                }
+
+                // Start QR Scanner
+                try {
+                    if (typeof Html5Qrcode !== 'undefined') {
+                        html5QrcodeScanner = new Html5Qrcode("qr-reader");
+                        const qrCodeSuccessCallback = (decodedText, decodedResult) => {
+                            stopQrScanner();
+                            verifyQrToken(decodedText);
+                        };
+                        const config = { fps: 10, qrbox: { width: 250, height: 250 } };
+                        
+                        await html5QrcodeScanner.start(
+                            { facingMode: "user" }, 
+                            config, 
+                            qrCodeSuccessCallback
+                        );
+                    } else {
+                        throw new Error("Html5Qrcode library not loaded");
+                    }
+                } catch (err) {
+                    console.error("Gagal memulai scanner QR:", err);
+                    document.getElementById('qr-error-msg').textContent = 'Kamera lobi QR tidak tersedia. Silakan masukkan token secara manual.';
+                    document.getElementById('qr-error-msg').style.display = 'block';
+                    cameraWrap.style.display = 'none';
+                }
+            } else {
+                titleEl.textContent = 'Masukkan Token';
+                subEl.textContent = 'Silakan masukkan kode token reservasi atau Kode Kunjungan Anda';
+                cameraWrap.style.display = 'none';
+            }
+        }
+
+        function stopQrScanner() {
+            if (html5QrcodeScanner) {
+                html5QrcodeScanner.stop().then(() => {
+                    html5QrcodeScanner = null;
+                }).catch(err => {
+                    console.error("Gagal stop scanner QR:", err);
+                    html5QrcodeScanner = null;
+                });
+            }
+        }
+
+        function closeQrScanner() {
+            stopQrScanner();
+            document.getElementById('modal-qr-scan').classList.remove('active');
+        }
+
+        function submitQrTokenManual() {
+            const token = document.getElementById('qr-token-input').value.trim();
+            if (!token) {
+                const errEl = document.getElementById('qr-error-msg');
+                errEl.textContent = 'Silakan masukkan token terlebih dahulu.';
+                errEl.style.display = 'block';
+                return;
+            }
+            verifyQrToken(token);
+        }
+
+        async function verifyQrToken(token) {
+            document.getElementById('qr-error-msg').style.display = 'none';
+            
+            try {
+                const response = await fetch('/kiosk/qr-checkin', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
+                    },
+                    body: JSON.stringify({ token: token })
+                });
+
+                const data = await response.json();
+
+                if (!data.success) {
+                    const errEl = document.getElementById('qr-error-msg');
+                    errEl.textContent = data.message;
+                    errEl.style.display = 'block';
+                    return;
+                }
+
+                // Jika token valid, tutup modal QR scanner
+                closeQrScanner();
+
+                // Simpan data check-in saat ini di state global
+                window.currentQrCheckin = {
+                    token: token,
+                    visitor_id: data.visitor_id,
+                    appointment_id: data.appointment_id,
+                    visitor_name: data.visitor_name,
+                    has_face: data.has_face
+                };
+
+                // Buka pop-up scan wajah untuk registrasi atau verifikasi wajah
+                if (!data.has_face) {
+                    openFaceScan('qr-register');
+                } else {
+                    openFaceScan('qr-verify');
+                }
+
+            } catch (err) {
+                console.error("Error verifikasi QR:", err);
+                const errEl = document.getElementById('qr-error-msg');
+                errEl.textContent = 'Terjadi kesalahan sistem saat menghubungi server.';
+                errEl.style.display = 'block';
+            }
+        }
+
+        async function submitQrFinalCheckin(descriptor, photoBase64) {
+            setFaceMessage('Menyelesaikan Check-in...', 'info');
+
+            try {
+                const response = await fetch('/kiosk/qr-finalize-checkin', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
+                    },
+                    body: JSON.stringify({
+                        appointment_id: window.currentQrCheckin.appointment_id,
+                        visitor_id: window.currentQrCheckin.visitor_id,
+                        descriptor: Array.from(descriptor),
+                        face_photo: photoBase64
+                    })
+                });
+
+                const data = await response.json();
+
+                if (data.success) {
+                    closeFaceScan();
+                    showSuccessPopup(data.appointment);
+                } else {
+                    setFaceMessage(data.message || 'Verifikasi/Registrasi gagal.', 'error');
+                    setTimeout(() => { 
+                        faceScanActive = true; 
+                        livenessStep = 'straight'; 
+                        faceInPlace = false; 
+                        faceScanLoop(document.getElementById('ci-face-video')); 
+                    }, 3000);
+                }
+            } catch (err) {
+                console.error("Error finalizing QR checkin:", err);
+                setFaceMessage('Koneksi gagal. Coba lagi.', 'error');
+                setTimeout(() => { 
+                    faceScanActive = true; 
+                    livenessStep = 'straight'; 
+                    faceInPlace = false; 
+                    faceScanLoop(document.getElementById('ci-face-video')); 
+                }, 3000);
+            }
         }
 
         function loadScript(src) {
@@ -2076,24 +2275,49 @@
             <button class="modal-close" onclick="closeMethodPicker()">✕</button>
             <div class="modal-title">Sudah Ada Janji?</div>
             <p class="modal-sub">Pilih cara verifikasi janji temu Anda</p>
-            <button class="method-btn" onclick="alert(&apos;Fitur Scan QR segera hadir!&apos;)">
+            <button class="method-btn" onclick="openQrScanner('qr')">
                 <div class="mb-icon" style="background:rgba(99,102,241,0.15);border:1px solid rgba(99,102,241,0.3);">
                     <svg fill="none" stroke="#818cf8" stroke-width="1.8" viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><path d="M14 14h.01M18 14h.01M14 18h.01M18 18h.01M16 16v.01"/></svg>
                 </div>
                 <div class="mb-text"><strong>Scan QR Code</strong><span>Arahkan QR Code tiket Anda ke kamera</span></div>
             </button>
-            <button class="method-btn" onclick="alert(&apos;Fitur Input Token segera hadir!&apos;)">
+            <button class="method-btn" onclick="openQrScanner('token')">
                 <div class="mb-icon" style="background:rgba(251,191,36,0.1);border:1px solid rgba(251,191,36,0.3);">
                     <svg fill="none" stroke="#fbbf24" stroke-width="1.8" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M7 20l4-16m2 16l4-16M6 9h14M4 15h14"/></svg>
                 </div>
                 <div class="mb-text"><strong>Masukkan Token</strong><span>Ketik kode token reservasi Anda</span></div>
             </button>
-            <button class="method-btn" onclick="openFaceScan()">
+            <button class="method-btn" onclick="openFaceScan('checkin')">
                 <div class="mb-icon" style="background:rgba(16,185,129,0.1);border:1px solid rgba(16,185,129,0.3);">
                     <svg fill="none" stroke="#10b981" stroke-width="1.8" viewBox="0 0 24 24"><circle cx="12" cy="8" r="4"/><path stroke-linecap="round" stroke-linejoin="round" d="M3 20c0-4 4-7 9-7s9 3 9 7"/><path stroke-linecap="round" d="M7 3.5A9 9 0 0 0 3 11M17 3.5A9 9 0 0 1 21 11"/></svg>
                 </div>
                 <div class="mb-text"><strong>Scan Wajah</strong><span>Untuk tamu yang pernah check-in sebelumnya</span></div>
             </button>
+        </div>
+    </div>
+
+    <!-- ===== MODAL: QR / TOKEN SCANNER ===== -->
+    <div id="modal-qr-scan" class="modal-overlay">
+        <div class="modal-box" style="max-width: 500px;">
+            <button class="modal-close" onclick="closeQrScanner()">✕</button>
+            <div class="modal-title" id="qr-scan-title">Scan QR Code</div>
+            <p class="modal-sub" id="qr-scan-subtitle">Silakan arahkan QR Code tiket janji temu Anda ke kamera lobi Kiosk</p>
+            
+            <!-- Area Scanner Kamera (Akan menyala jika mode scan QR) -->
+            <div id="qr-camera-wrap" style="display: none; flex-direction: column; align-items: center; justify-content: center; background: #0f172a; border-radius: 12px; padding: 15px; position: relative; margin-bottom: 20px;">
+                <div id="qr-reader" style="width: 100%; max-width: 350px; aspect-ratio: 1; border-radius: 8px; overflow: hidden; background: #1e293b; position: relative;"></div>
+                <div class="scan-bar" style="position: absolute; left: 0; right: 0; height: 3px; background: var(--accent-primary, #6366f1); box-shadow: 0 0 10px var(--accent-primary, #6366f1); animation: qrScanAnim 2s infinite linear; top: 15px; max-width: 380px; margin: 0 auto; pointer-events: none;"></div>
+            </div>
+
+            <!-- Input Manual Token (Selalu ada sebagai fallback atau jika dalam mode input token) -->
+            <div class="form-group" style="text-align: left;">
+                <label for="qr-token-input" style="font-weight: 500; margin-bottom: 8px; display: block; color: var(--text-secondary);">Kode Janji Temu (Token / Visit ID):</label>
+                <div style="display: flex; gap: 10px;">
+                    <input type="text" id="qr-token-input" class="form-control" placeholder="Contoh: V-202607-001 atau Token" style="text-transform: uppercase; font-family: monospace; font-size: 1.1rem; letter-spacing: 1px;">
+                    <button type="button" class="btn btn-primary" onclick="submitQrTokenManual()" style="padding: 10px 20px;">Verifikasi</button>
+                </div>
+                <div id="qr-error-msg" class="text-danger" style="margin-top: 10px; font-weight: 500; display: none;"></div>
+            </div>
         </div>
     </div>
 
@@ -2239,6 +2463,7 @@
         @keyframes kp-pulse     { 0%,100%{opacity:0.15;}50%{opacity:0.75;} }
         @keyframes kp-bounce-r  { 0%,100%{transform:translateX(0);}50%{transform:translateX(6px);} }
         @keyframes kp-bounce-l  { 0%,100%{transform:translateX(0);}50%{transform:translateX(-6px);} }
+        @keyframes qrScanAnim   { 0% { top: 15px; } 50% { top: calc(100% - 18px); } 100% { top: 15px; } }
     </style>
 
     <script>
