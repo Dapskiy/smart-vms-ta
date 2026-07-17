@@ -1092,10 +1092,11 @@
         </footer>
 
         <!-- Secure Kiosk Setup Modal -->
-        <div id="secure-setup-modal" style="display:none; position:fixed; inset:0; z-index:9999; background:rgba(15,23,42,0.85); backdrop-filter:blur(8px); align-items:center; justify-content:center;">
-            <div style="background:var(--bg-card); border:1px solid var(--border-subtle); border-radius:1.5rem; width:min(90vw, 400px); padding:2rem; box-shadow:var(--shadow-card); position:relative; text-align:center;">
-                <div style="font-size:1.4rem; font-weight:700; color:var(--text-primary); margin-bottom:0.5rem;">Konfigurasi Kiosk</div>
-                <div style="font-size:0.85rem; color:var(--text-secondary); margin-bottom:1.5rem;">Pilih lokasi pemasangan fisik perangkat Kiosk ini.</div>
+        <div id="secure-setup-modal" class="modal-overlay">
+            <div class="modal-box" style="max-width: 400px; text-align: center;">
+                <button class="modal-close" onclick="closeSecureModal()">✕</button>
+                <div class="modal-title" style="margin-bottom: 0.5rem;">Konfigurasi Kiosk</div>
+                <p class="modal-sub" style="margin-bottom: 1.5rem;">Pilih lokasi pemasangan fisik perangkat Kiosk ini.</p>
                 
                 <div style="display:flex; flex-direction:column; gap:0.75rem; margin-bottom:1.5rem;">
                     <button class="theme-option kiosk-loc-option" id="loc-sa" onclick="setKioskLocation('SA')" style="justify-content:space-between; border:1px solid var(--border-subtle); border-radius:0.75rem;">
@@ -1121,7 +1122,26 @@
                     </button>
                 </div>
 
-                <button onclick="closeSecureModal()" style="width:100%; padding:0.75rem; border:none; background:var(--bg-deep); color:var(--text-secondary); border-radius:0.75rem; font-weight:600; cursor:pointer;">Tutup</button>
+                <button class="btn-cancel-waiting" onclick="closeSecureModal()" style="width: 100%; margin-top: 0.5rem;">Tutup</button>
+            </div>
+        </div>
+
+        <!-- Secure Kiosk PIN Modal -->
+        <div id="secure-pin-modal" class="modal-overlay">
+            <div class="modal-box" style="max-width: 400px; text-align: center;">
+                <button class="modal-close" onclick="closeSecurePinModal()">✕</button>
+                <div class="modal-title" style="margin-bottom: 0.5rem;">Autentikasi Kiosk</div>
+                <p class="modal-sub" style="margin-bottom: 1.5rem;">Masukkan PIN Keamanan untuk mengakses konfigurasi lokasi.</p>
+                
+                <div style="margin-bottom: 1.5rem;">
+                    <input type="password" id="kiosk-pin-input" placeholder="••••" style="width: 100%; padding: 0.85rem 1rem; border-radius: 0.75rem; border: 1px solid var(--border-subtle); background: var(--bg-deep); color: var(--text-primary); font-size: 1.5rem; text-align: center; letter-spacing: 0.2em; font-weight: bold; outline: none; transition: border-color 0.2s;" onkeydown="if(event.key === 'Enter') submitKioskPin()">
+                    <div id="kiosk-pin-error" style="color: #ef4444; font-size: 0.8rem; margin-top: 0.5rem; display: none;">PIN yang Anda masukkan salah!</div>
+                </div>
+
+                <div style="display: flex; gap: 0.75rem;">
+                    <button class="btn-cancel-waiting" onclick="closeSecurePinModal()" style="flex: 1;">Batal</button>
+                    <button onclick="submitKioskPin()" style="flex: 1; padding: 0.75rem; border: none; background: var(--accent-primary); color: #fff; border-radius: 0.75rem; font-weight: 600; cursor: pointer;">Verifikasi</button>
+                </div>
             </div>
         </div>
 
@@ -1217,14 +1237,44 @@
 
             if (logoClicks === 5) {
                 logoClicks = 0;
-                const pin = prompt('Masukkan PIN Keamanan Kiosk untuk mengubah lokasi:');
-                if (pin === '{{ env('KIOSK_PIN', '1234') }}') {
-                    openSecureModal();
-                } else if (pin !== null) {
-                    alert('PIN Salah!');
-                }
+                openSecurePinModal();
             }
         });
+
+        function openSecurePinModal() {
+            const modal = document.getElementById('secure-pin-modal');
+            const input = document.getElementById('kiosk-pin-input');
+            const error = document.getElementById('kiosk-pin-error');
+            if (modal) modal.style.display = 'flex';
+            if (input) {
+                input.value = '';
+                setTimeout(() => input.focus(), 100);
+            }
+            if (error) error.style.display = 'none';
+        }
+
+        function closeSecurePinModal() {
+            const modal = document.getElementById('secure-pin-modal');
+            if (modal) modal.style.display = 'none';
+        }
+
+        function submitKioskPin() {
+            const input = document.getElementById('kiosk-pin-input');
+            const error = document.getElementById('kiosk-pin-error');
+            const pinVal = input ? input.value : '';
+            const correctPin = '{{ env('KIOSK_PIN', '1234') }}';
+
+            if (pinVal === correctPin) {
+                closeSecurePinModal();
+                openSecureModal();
+            } else {
+                if (error) error.style.display = 'block';
+                if (input) {
+                    input.value = '';
+                    input.focus();
+                }
+            }
+        }
 
         function openSecureModal() {
             document.getElementById('secure-setup-modal').style.display = 'flex';
