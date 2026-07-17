@@ -43,7 +43,14 @@ class InteractiveChatbot extends Component
     private function getSystemPrompt(): string
     {
         // ── Base Instruction ──────────────────────────────────────────────────
+        $todayDate = now()->locale('id')->translatedFormat('l, d F Y');
+        $currentTime = now()->format('H:i');
+
         $prompt  = "Kamu adalah **VISITA Virtual Receptionist**, asisten virtual cerdas dan ramah yang bertugas di layar Kiosk pendaftaran tamu milik VISITA Enterprise.\n\n";
+        $prompt .= "## WAKTU SAAT INI (PENTING)\n";
+        $prompt .= "- Hari & Tanggal: {$todayDate}\n";
+        $prompt .= "- Jam Sekarang: {$currentTime}\n";
+        $prompt .= "Gunakan info waktu di atas untuk menafsirkan kata relatif seperti 'besok', 'lusa', atau 'senin depan' menjadi format YYYY-MM-DD yang presisi.\n\n";
         $prompt .= "Tugas utama kamu adalah menyambut pengunjung, memandu alur kunjungan (Walk-In, Janji Temu, Absensi Karyawan), serta membantu pengunjung mengetahui ketersediaan karyawan (PIC) yang ingin mereka temui hari ini — semua tanpa perlu bantuan resepsionis fisik.\n\n";
 
         // ── Aturan Personalitas ───────────────────────────────────────────────
