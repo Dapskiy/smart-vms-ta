@@ -1016,7 +1016,7 @@
 
         <!-- HEADER -->
         <header class="kiosk-header">
-            <div class="logo-wrap">
+            <div class="logo-wrap" id="logo-trigger" style="cursor: pointer;">
                 <div class="logo-icon">
                     <!-- V-shield logo mark -->
                     <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
@@ -1025,7 +1025,7 @@
                 </div>
                 <div>
                     <div class="logo-text">VISITA<span class="logo-dot">.</span></div>
-                    <div class="logo-tagline">Enterprise Visitor Management</div>
+                    <div class="logo-tagline">Enterprise Visitor Management • <span id="kiosk-location-display" style="font-weight: 700; color: var(--accent-primary);">SA</span></div>
                 </div>
             </div>
 
@@ -1090,6 +1090,40 @@
                 SISTEM AKTIF &amp; TERHUBUNG
             </div>
         </footer>
+
+        <!-- Secure Kiosk Setup Modal -->
+        <div id="secure-setup-modal" style="display:none; position:fixed; inset:0; z-index:9999; background:rgba(15,23,42,0.85); backdrop-filter:blur(8px); align-items:center; justify-content:center;">
+            <div style="background:var(--bg-card); border:1px solid var(--border-subtle); border-radius:1.5rem; width:min(90vw, 400px); padding:2rem; box-shadow:var(--shadow-card); position:relative; text-align:center;">
+                <div style="font-size:1.4rem; font-weight:700; color:var(--text-primary); margin-bottom:0.5rem;">Konfigurasi Kiosk</div>
+                <div style="font-size:0.85rem; color:var(--text-secondary); margin-bottom:1.5rem;">Pilih lokasi pemasangan fisik perangkat Kiosk ini.</div>
+                
+                <div style="display:flex; flex-direction:column; gap:0.75rem; margin-bottom:1.5rem;">
+                    <button class="theme-option kiosk-loc-option" id="loc-sa" onclick="setKioskLocation('SA')" style="justify-content:space-between; border:1px solid var(--border-subtle); border-radius:0.75rem;">
+                        <div style="display:flex; align-items:center; gap:0.75rem;">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:1.2rem; height:1.2rem;"><path d="M3 21h18M3 10h18M5 6h14a2 2 0 0 1 2 2v13H3V8a2 2 0 0 1 2-2zm2 9h2v3H7v-3zm6 0h2v3h-2v-3zm-6-4h2v2H7v-2zm6 0h2v2h-2v-2z"/></svg>
+                            <span style="font-weight:600;">Gedung SA</span>
+                        </div>
+                        <div class="theme-check" id="check-sa" style="display:none; width:1.2rem; height:1.2rem; border-radius:50%; background:var(--accent-primary); color:#fff; align-items:center; justify-content:center; font-size:0.65rem; font-weight:700;">✓</div>
+                    </button>
+                    <button class="theme-option kiosk-loc-option" id="loc-sb" onclick="setKioskLocation('SB')" style="justify-content:space-between; border:1px solid var(--border-subtle); border-radius:0.75rem;">
+                        <div style="display:flex; align-items:center; gap:0.75rem;">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:1.2rem; height:1.2rem;"><path d="M3 21h18M3 10h18M5 6h14a2 2 0 0 1 2 2v13H3V8a2 2 0 0 1 2-2zm2 9h2v3H7v-3zm6 0h2v3h-2v-3zm-6-4h2v2H7v-2zm6 0h2v2h-2v-2z"/></svg>
+                            <span style="font-weight:600;">Gedung SB</span>
+                        </div>
+                        <div class="theme-check" id="check-sb" style="display:none; width:1.2rem; height:1.2rem; border-radius:50%; background:var(--accent-primary); color:#fff; align-items:center; justify-content:center; font-size:0.65rem; font-weight:700;">✓</div>
+                    </button>
+                    <button class="theme-option kiosk-loc-option" id="loc-gkt" onclick="setKioskLocation('GKT')" style="justify-content:space-between; border:1px solid var(--border-subtle); border-radius:0.75rem;">
+                        <div style="display:flex; align-items:center; gap:0.75rem;">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:1.2rem; height:1.2rem;"><path d="M3 21h18M3 10h18M5 6h14a2 2 0 0 1 2 2v13H3V8a2 2 0 0 1 2-2zm2 9h2v3H7v-3zm6 0h2v3h-2v-3zm-6-4h2v2H7v-2zm6 0h2v2h-2v-2z"/></svg>
+                            <span style="font-weight:600;">Gedung GKT</span>
+                        </div>
+                        <div class="theme-check" id="check-gkt" style="display:none; width:1.2rem; height:1.2rem; border-radius:50%; background:var(--accent-primary); color:#fff; align-items:center; justify-content:center; font-size:0.65rem; font-weight:700;">✓</div>
+                    </button>
+                </div>
+
+                <button onclick="closeSecureModal()" style="width:100%; padding:0.75rem; border:none; background:var(--bg-deep); color:var(--text-secondary); border-radius:0.75rem; font-weight:600; cursor:pointer;">Tutup</button>
+            </div>
+        </div>
 
     </div>
 
@@ -1165,6 +1199,69 @@
                 document.documentElement.classList.add('dark-mode');
             }
             updateThemeChecks(saved);
+        })();
+
+        /* -------------------------------------------------------
+           KIOSK LOCATION SETTINGS (SECURE)
+        ------------------------------------------------------- */
+        let logoClicks = 0;
+        let lastLogoClickTime = 0;
+
+        document.getElementById('logo-trigger').addEventListener('click', () => {
+            const now = Date.now();
+            if (now - lastLogoClickTime > 2000) {
+                logoClicks = 0;
+            }
+            logoClicks++;
+            lastLogoClickTime = now;
+
+            if (logoClicks === 5) {
+                logoClicks = 0;
+                const pin = prompt('Masukkan PIN Keamanan Kiosk untuk mengubah lokasi:');
+                if (pin === '{{ env('KIOSK_PIN', '1234') }}') {
+                    openSecureModal();
+                } else if (pin !== null) {
+                    alert('PIN Salah!');
+                }
+            }
+        });
+
+        function openSecureModal() {
+            document.getElementById('secure-setup-modal').style.display = 'flex';
+        }
+
+        function closeSecureModal() {
+            document.getElementById('secure-setup-modal').style.display = 'none';
+        }
+
+        function setKioskLocation(loc) {
+            localStorage.setItem('kiosk-location', loc);
+            updateKioskLocationChecks(loc);
+            const displayEl = document.getElementById('kiosk-location-display');
+            if (displayEl) {
+                displayEl.textContent = loc;
+            }
+            closeSecureModal();
+        }
+
+        function updateKioskLocationChecks(loc) {
+            document.querySelectorAll('.kiosk-loc-option').forEach(btn => {
+                btn.classList.remove('active');
+                const check = btn.querySelector('.theme-check');
+                if (check) check.style.display = 'none';
+            });
+            const activeBtn = document.getElementById(`loc-${loc.toLowerCase()}`);
+            if (activeBtn) {
+                activeBtn.classList.add('active');
+                const check = activeBtn.querySelector('.theme-check');
+                if (check) check.style.display = 'flex';
+            }
+        }
+
+        // Restore saved location on load
+        (function() {
+            const savedLoc = localStorage.getItem('kiosk-location') || 'SA';
+            setKioskLocation(savedLoc);
         })();
 
         /* -------------------------------------------------------

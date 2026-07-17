@@ -869,7 +869,7 @@
                 </div>
                 <div>
                     <div class="logo-text">VISITA<span class="logo-dot">.</span></div>
-                    <div class="logo-tagline">Enterprise Visitor Management</div>
+                    <div class="logo-tagline">Enterprise Visitor Management • <span id="kiosk-location-display" style="font-weight: 700; color: var(--accent-primary);">SA</span></div>
                 </div>
             </div>
 
@@ -2479,6 +2479,15 @@ window.addEventListener('attendance-error', event => {
                 .catch((err) => console.error('[Service Worker] Registration failed:', err));
         });
     }
+
+    // Restore saved location on load
+    (function() {
+        const savedLoc = localStorage.getItem('kiosk-location') || 'SA';
+        const displayEl = document.getElementById('kiosk-location-display');
+        if (displayEl) {
+            displayEl.textContent = savedLoc;
+        }
+    })();
 </script>
 
 {{-- Livewire Scripts (includes Alpine.js v3 automatically in Livewire v3) --}}

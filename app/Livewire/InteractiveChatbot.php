@@ -138,7 +138,8 @@ class InteractiveChatbot extends Component
                         // (sumber kebenaran yang sama dengan tabel admin Filament)
                         $latestAttendance = $pic->attendances->first();
                         $isPresent = ($latestAttendance && $latestAttendance->type === 'checkin');
-                        $status = $isPresent ? '✅ HADIR (Tersedia)' : '❌ TIDAK HADIR';
+                        $locText = ($isPresent && $pic->current_location) ? " di Gedung {$pic->current_location}" : '';
+                        $status = $isPresent ? "✅ HADIR (Tersedia{$locText})" : '❌ TIDAK HADIR';
                         $prompt .= "- {$pic->name} | {$status}\n";
                     }
                     $prompt .= "\n";

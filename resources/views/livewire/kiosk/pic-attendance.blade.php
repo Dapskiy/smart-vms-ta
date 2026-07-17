@@ -99,7 +99,7 @@
 
     <div class="kiosk-shell">
         <div>
-            <div class="page-title">Absensi Karyawan</div>
+            <div class="page-title">Absensi Karyawan • <span id="kiosk-location-display" style="color: #818cf8;">SA</span></div>
             <p class="page-sub">Tengok kanan lalu kiri untuk verifikasi wajah</p>
         </div>
 
@@ -381,7 +381,8 @@
 
         /* Send descriptor to Livewire */
         function submitPaDescriptor(descriptor) {
-            Livewire.dispatch('process-pic-face', { descriptor: Array.from(descriptor) });
+            const loc = localStorage.getItem('kiosk-location') || 'SA';
+            Livewire.dispatch('process-pic-face', { descriptor: Array.from(descriptor), location: loc });
         }
 
         /* ---- UI helpers ---- */
@@ -470,6 +471,15 @@
                 paScanLoop(document.getElementById('pa-face-video'));
             }, 3000);
         });
+
+        // Restore saved location on load
+        (function() {
+            const savedLoc = localStorage.getItem('kiosk-location') || 'SA';
+            const displayEl = document.getElementById('kiosk-location-display');
+            if (displayEl) {
+                displayEl.textContent = savedLoc;
+            }
+        })();
     </script>
 
     @livewireScripts

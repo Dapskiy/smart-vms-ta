@@ -45,6 +45,11 @@ class PicAttendancesTable
                         'admin' => 'gray',
                         default => 'gray',
                     }),
+                TextColumn::make('location')
+                    ->label('Lokasi Gedung')
+                    ->badge()
+                    ->color('primary')
+                    ->placeholder('-'),
                 TextColumn::make('checked_at')
                     ->label('Waktu')
                     ->dateTime('d M Y, H:i')
@@ -63,6 +68,13 @@ class PicAttendancesTable
                         'kiosk' => 'Kiosk',
                         'manual' => 'Manual',
                         'admin' => 'Admin',
+                    ]),
+                SelectFilter::make('location')
+                    ->label('Lokasi Gedung')
+                    ->options([
+                        'SA' => 'Gedung SA',
+                        'SB' => 'Gedung SB',
+                        'GKT' => 'Gedung GKT',
                     ]),
                 SelectFilter::make('pic_id')
                     ->label('PIC')

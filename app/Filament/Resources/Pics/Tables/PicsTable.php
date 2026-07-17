@@ -36,6 +36,11 @@ class PicsTable
                     ->label('Status Hadir')
                     ->boolean()
                     ->state(fn ($record) => $record->attendances()->whereDate('checked_at', today())->latest('checked_at')->first()?->type === 'checkin'),
+                TextColumn::make('current_location')
+                    ->label('Lokasi Saat Ini')
+                    ->badge()
+                    ->color('primary')
+                    ->placeholder('-'),
                 IconColumn::make('face_registered')
                     ->label('Face ID')
                     ->boolean()
@@ -57,6 +62,9 @@ class PicsTable
                         $isCheckingIn = ($latest?->type !== 'checkin');
 
                         $record->is_available = $isCheckingIn;
+                        if (!$isCheckingIn) {
+                            $record->current_location = null;
+                        }
                         $record->save();
 
                         PicAttendance::create([

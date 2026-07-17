@@ -16,7 +16,7 @@ class PicAttendance extends Component
     public $lastMatchedTime = null;
 
     #[On('process-pic-face')]
-    public function processFace($descriptor)
+    public function processFace($descriptor, $location = 'SA')
     {
         $pics = Pic::whereNotNull('face_features')->get();
         $bestMatch = null;
@@ -54,8 +54,9 @@ class PicAttendance extends Component
 
             $isCheckingIn = ($latest === null || $latest->type === 'checkout');
 
-            // Set attendance status to present/absent
+            // Set attendance status to present/absent and record building location
             $bestMatch->is_available = $isCheckingIn;
+            $bestMatch->current_location = $isCheckingIn ? $location : null;
             $bestMatch->save();
 
             // Log attendance record
@@ -63,11 +64,13 @@ class PicAttendance extends Component
                 'pic_id' => $bestMatch->id,
                 'type' => $isCheckingIn ? 'checkin' : 'checkout',
                 'method' => 'kiosk',
+                'location' => $location,
                 'checked_at' => now(),
             ]);
 
             $statusText = $isCheckingIn ? 'Masuk' : 'Keluar';
-            $this->message = "{$bestMatch->name} berhasil Absen {$statusText}!";
+            $locText = $isCheckingIn ? " di Gedung {$location}" : "";
+            $this->message = "{$bestMatch->name} berhasil Absen {$statusText}{$locText}!";
             $this->messageType = 'success';
             
             // Dispatch event to show success visually
