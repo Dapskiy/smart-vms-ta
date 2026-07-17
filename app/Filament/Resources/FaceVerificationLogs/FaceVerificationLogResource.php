@@ -24,7 +24,7 @@ class FaceVerificationLogResource extends Resource
 
     protected static ?string $pluralLabel = 'Log Verifikasi Wajah';
 
-    protected static ?string $navigationGroup = 'Laporan';
+    protected static \UnitEnum|string|null $navigationGroup = 'Laporan';
 
     public static function form(Schema $schema): Schema
     {
