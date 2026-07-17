@@ -244,6 +244,10 @@ class KioskWalkinForm extends Component
 
     public function submit()
     {
+        if (!$this->checkRateLimit()) {
+            return;
+        }
+
         if (!\App\Helpers\KioskHelper::isKioskLocal() && $this->visit_type !== 'appointment') {
             $this->addError('general', 'Akses Terbatas: Fitur walk-in hanya dapat digunakan melalui perangkat Kiosk di kantor.');
             $this->dispatch('walkin-error');
@@ -305,6 +309,10 @@ class KioskWalkinForm extends Component
     #[On('submitWithoutFace')]
     public function submitWithoutFace()
     {
+        if (!$this->checkRateLimit()) {
+            return;
+        }
+
         if (!\App\Helpers\KioskHelper::isKioskLocal() && $this->visit_type !== 'appointment') {
             $this->addError('general', 'Akses Terbatas: Fitur walk-in hanya dapat digunakan melalui perangkat Kiosk di kantor.');
             $this->dispatch('walkin-error');
@@ -333,6 +341,10 @@ class KioskWalkinForm extends Component
     #[On('finalizeWalkin')]
     public function finalizeWalkin($descriptor, $photoBase64)
     {
+        if (!$this->checkRateLimit()) {
+            return;
+        }
+
         if (!\App\Helpers\KioskHelper::isKioskLocal()) {
             $this->addError('general', 'Akses Terbatas: Fitur ini hanya dapat digunakan melalui perangkat Kiosk di kantor.');
             $this->dispatch('walkin-error');
@@ -419,6 +431,18 @@ class KioskWalkinForm extends Component
         $this->createAppointmentRecord($visitor);
     }
 
+    private function checkRateLimit()
+    {
+        $ip = request()->ip();
+        if (\Illuminate\Support\Facades\RateLimiter::tooManyAttempts('submit-appointment:'.$ip, 3)) {
+            $seconds = \Illuminate\Support\Facades\RateLimiter::availableIn('submit-appointment:'.$ip);
+            $this->addError('general', "Terlalu banyak mencoba. Silakan tunggu {$seconds} detik sebelum mengirim formulir pendaftaran baru.");
+            $this->dispatch('walkin-error');
+            return false;
+        }
+        return true;
+    }
+
     private function createAppointmentRecord(Visitor $visitor)
     {
         $isWalkIn = $this->visit_type === 'walk-in';
@@ -437,6 +461,10 @@ class KioskWalkinForm extends Component
             'token'          => Str::random(10),
             'approval_token' => $approvalToken,
         ]);
+
+        // Hit rate limiter setelah record sukses dibuat
+        $ip = request()->ip();
+        \Illuminate\Support\Facades\RateLimiter::hit('submit-appointment:'.$ip, 3600); // 1 jam decay
 
         if ($isWalkIn) {
             // Kirim email approval ke PIC
