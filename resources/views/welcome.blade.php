@@ -1025,7 +1025,11 @@
                 </div>
                 <div>
                     <div class="logo-text">VISITA<span class="logo-dot">.</span></div>
-                    <div class="logo-tagline">Enterprise Visitor Management • <span id="kiosk-location-display" style="font-weight: 700; color: var(--accent-primary);">SA</span></div>
+                    @if(\App\Helpers\KioskHelper::isKioskLocal())
+                        <div class="logo-tagline">Enterprise Visitor Management • <span id="kiosk-location-display" style="font-weight: 700; color: var(--accent-primary);">SA</span></div>
+                    @else
+                        <div class="logo-tagline">Enterprise Visitor Management • <span style="font-weight: 700; color: #ef4444; background: rgba(239, 68, 68, 0.1); padding: 0.15rem 0.4rem; border-radius: 0.25rem; font-size: 0.75rem;">Offsite (Terbatas)</span></div>
+                    @endif
                 </div>
             </div>
 
@@ -1145,6 +1149,19 @@
             </div>
         </div>
 
+        <!-- Offsite Restriction Modal -->
+        <div id="offsite-warning-modal" class="modal-overlay">
+            <div class="modal-box" style="max-width: 400px; text-align: center;">
+                <button class="modal-close" onclick="closeOffsiteWarning()">✕</button>
+                <div style="font-size: 3rem; margin-bottom: 1rem;">📍</div>
+                <div class="modal-title" style="margin-bottom: 0.5rem; color: #f59e0b;">Akses Terbatas</div>
+                <p class="modal-sub" style="margin-bottom: 1.5rem; line-height: 1.5;">
+                    Fitur fisik Kiosk seperti <strong>Check-In</strong>, <strong>Check-Out</strong>, dan <strong>Absensi Karyawan</strong> dinonaktifkan karena Anda terdeteksi mengakses dari luar jaringan kantor.
+                </p>
+                <button class="btn-cancel-waiting" onclick="closeOffsiteWarning()" style="width: 100%;">Mengerti</button>
+            </div>
+        </div>
+
     </div>
 
     {{-- PIC Attendance (invisible event listener) --}}
@@ -1152,6 +1169,7 @@
 
     <!-- ==================== JAVASCRIPT ==================== -->
     <script>
+        window.isKioskLocal = {{ \App\Helpers\KioskHelper::isKioskLocal() ? 'true' : 'false' }};
         /* -------------------------------------------------------
            CLOCK & DATE
         ------------------------------------------------------- */
@@ -1313,6 +1331,16 @@
             const savedLoc = localStorage.getItem('kiosk-location') || 'SA';
             setKioskLocation(savedLoc);
         })();
+
+        /* -------------------------------------------------------
+           OFFSITE RESTRICTIONS
+        ------------------------------------------------------- */
+        function showOffsiteRestriction() {
+            document.getElementById('offsite-warning-modal').classList.add('active');
+        }
+        function closeOffsiteWarning() {
+            document.getElementById('offsite-warning-modal').classList.remove('active');
+        }
 
         /* -------------------------------------------------------
            RIPPLE EFFECT

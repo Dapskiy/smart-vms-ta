@@ -226,6 +226,12 @@ class KioskWalkinForm extends Component
 
     public function submit()
     {
+        if (!\App\Helpers\KioskHelper::isKioskLocal()) {
+            $this->addError('general', 'Akses Terbatas: Fitur ini hanya dapat digunakan melalui perangkat Kiosk di kantor.');
+            $this->dispatch('walkin-error');
+            return;
+        }
+
         $rules = [
             'department_id' => 'required|exists:departments,id',
             'selected_pic_id' => 'required|exists:pics,id',
@@ -263,6 +269,12 @@ class KioskWalkinForm extends Component
     #[On('submitWithoutFace')]
     public function submitWithoutFace()
     {
+        if (!\App\Helpers\KioskHelper::isKioskLocal()) {
+            $this->addError('general', 'Akses Terbatas: Fitur ini hanya dapat digunakan melalui perangkat Kiosk di kantor.');
+            $this->dispatch('walkin-error');
+            return;
+        }
+
         // 1. Simpan/Cari Visitor
         $visitor = Visitor::firstOrCreate(
             ['phone' => $this->phone],
@@ -285,6 +297,12 @@ class KioskWalkinForm extends Component
     #[On('finalizeWalkin')]
     public function finalizeWalkin($descriptor, $photoBase64)
     {
+        if (!\App\Helpers\KioskHelper::isKioskLocal()) {
+            $this->addError('general', 'Akses Terbatas: Fitur ini hanya dapat digunakan melalui perangkat Kiosk di kantor.');
+            $this->dispatch('walkin-error');
+            return;
+        }
+
         // 1. Simpan/Cari Visitor
         $visitor = Visitor::firstOrCreate(
             ['phone' => $this->phone],

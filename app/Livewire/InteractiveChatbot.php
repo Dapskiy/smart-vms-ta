@@ -149,6 +149,11 @@ class InteractiveChatbot extends Component
             $prompt .= "*(Gagal memuat data karyawan dari database — mohon hubungi admin sistem)*\n";
         }
 
+        if (!\App\Helpers\KioskHelper::isKioskLocal()) {
+            $prompt .= "\n## PENTING: KETERBATASAN AKSES OFFSITE (LUAR KANTOR)\n";
+            $prompt .= "Pengunjung saat ini terdeteksi mengakses dari LUAR jaringan kantor (offsite/terbatas). Oleh karena itu, fitur-fitur fisik seperti Check-In Janji Temu (QR Scan), Check-Out, Registrasi Tamu Baru (Walk-In), Scan Wajah, dan Absensi Karyawan ditangguhkan/dinonaktifkan. Tolong ingatkan pengunjung secara sopan bahwa mereka saat ini mengakses dari luar area kantor dan tidak dapat melakukan proses tersebut kecuali dengan mendatangi perangkat Kiosk fisik di dalam gedung.\n\n";
+        }
+
         return $prompt;
     }
 

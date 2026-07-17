@@ -18,6 +18,13 @@ class PicAttendance extends Component
     #[On('process-pic-face')]
     public function processFace($descriptor, $location = 'SA')
     {
+        if (!\App\Helpers\KioskHelper::isKioskLocal()) {
+            $this->message = "Fitur absensi hanya dapat digunakan di jaringan lokal kantor.";
+            $this->messageType = 'error';
+            $this->dispatch('attendance-error', message: $this->message);
+            return;
+        }
+
         $pics = Pic::whereNotNull('face_features')->get();
         $bestMatch = null;
         $bestDistance = 1.0;

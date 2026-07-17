@@ -869,7 +869,11 @@
                 </div>
                 <div>
                     <div class="logo-text">VISITA<span class="logo-dot">.</span></div>
-                    <div class="logo-tagline">Enterprise Visitor Management • <span id="kiosk-location-display" style="font-weight: 700; color: var(--accent-primary);">SA</span></div>
+                    @if(\App\Helpers\KioskHelper::isKioskLocal())
+                        <div class="logo-tagline">Enterprise Visitor Management • <span id="kiosk-location-display" style="font-weight: 700; color: var(--accent-primary);">SA</span></div>
+                    @else
+                        <div class="logo-tagline">Enterprise Visitor Management • <span style="font-weight: 700; color: #ef4444; background: rgba(239, 68, 68, 0.1); padding: 0.15rem 0.4rem; border-radius: 0.25rem; font-size: 0.75rem;">Offsite (Terbatas)</span></div>
+                    @endif
                 </div>
             </div>
 

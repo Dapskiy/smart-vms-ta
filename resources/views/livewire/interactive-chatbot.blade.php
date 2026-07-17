@@ -1,3 +1,6 @@
+@php
+    $isLocal = \App\Helpers\KioskHelper::isKioskLocal();
+@endphp
 <div
     class="chatbot-wrapper"
     data-init-chatted="{{ empty($messages) ? 'false' : 'true' }}"
@@ -69,6 +72,10 @@
     :class="{ 'is-chatting': hasChatted }"
     @chatbot-trigger-action.window="
         const actionType = $event.detail.type;
+        if (window.showOffsiteRestriction && !window.isKioskLocal) {
+            window.showOffsiteRestriction();
+            return;
+        }
         if (actionType === 'checkout') {
             if (typeof openCheckoutFaceScan === 'function') openCheckoutFaceScan();
         } else if (actionType === 'attendance') {
@@ -158,7 +165,7 @@
                 <!-- 4 Action Cards (Moved from Welcome) -->
                 <div class="cards-grid">
                     <!-- Card 1: Sudah Ada Janji (Check-In) -->
-                    <div class="checkin-card card-appointment" onclick="handleCheckin('appointment')" role="button" tabindex="0" aria-label="Check-in dengan janji temu">
+                    <div class="checkin-card card-appointment {{ $isLocal ? '' : 'card-disabled-offsite' }}" @if($isLocal) onclick="handleCheckin('appointment')" @else onclick="showOffsiteRestriction()" @endif role="button" tabindex="0" aria-label="Check-in dengan janji temu">
                         <div class="card-icon-wrap">
                             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" xmlns="http://www.w3.org/2000/svg">
                                 <rect x="3" y="3" width="7" height="7" rx="1"/>
@@ -174,7 +181,7 @@
                     </div>
 
                     <!-- Card 2: Check-Out Mandiri -->
-                    <div class="checkin-card card-checkout" onclick="openCheckoutFaceScan()" role="button" tabindex="0" aria-label="Check-out mandiri via wajah">
+                    <div class="checkin-card card-checkout {{ $isLocal ? '' : 'card-disabled-offsite' }}" @if($isLocal) onclick="openCheckoutFaceScan()" @else onclick="showOffsiteRestriction()" @endif role="button" tabindex="0" aria-label="Check-out mandiri via wajah">
                         <div class="card-icon-wrap">
                             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
                                 <path d="M17 16l4-4m0 0l-4-4m4 4H7"/>
@@ -188,7 +195,7 @@
                     </div>
 
                     <!-- Card 3: Tamu Baru / Walk-in -->
-                    <div class="checkin-card card-walkin" onclick="handleCheckin('walkin')" role="button" tabindex="0" aria-label="Registrasi tamu baru walk-in">
+                    <div class="checkin-card card-walkin {{ $isLocal ? '' : 'card-disabled-offsite' }}" @if($isLocal) onclick="handleCheckin('walkin')" @else onclick="showOffsiteRestriction()" @endif role="button" tabindex="0" aria-label="Registrasi tamu baru walk-in">
                         <div class="card-icon-wrap">
                             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" xmlns="http://www.w3.org/2000/svg">
                                 <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/>
@@ -204,7 +211,7 @@
                     </div>
 
                     <!-- Card 4: Absensi Karyawan (PIC) -->
-                    <div class="checkin-card card-attendance" onclick="openAttendanceModal()" role="button" tabindex="0" aria-label="Absensi Karyawan">
+                    <div class="checkin-card card-attendance {{ $isLocal ? '' : 'card-disabled-offsite' }}" @if($isLocal) onclick="openAttendanceModal()" @else onclick="showOffsiteRestriction()" @endif role="button" tabindex="0" aria-label="Absensi Karyawan">
                         <div class="card-icon-wrap">
                             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
                                 <path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path>
@@ -395,6 +402,27 @@
 
     <style>
         [x-cloak] { display: none !important; }
+
+        .card-disabled-offsite {
+            opacity: 0.55;
+            cursor: not-allowed !important;
+            position: relative;
+            pointer-events: auto;
+            transition: all 0.2s ease;
+        }
+        .card-disabled-offsite:hover {
+            opacity: 0.8;
+            transform: translateY(-2px);
+            border-color: #f59e0b !important;
+        }
+        .card-disabled-offsite::after {
+            content: "🔒";
+            position: absolute;
+            top: 0.75rem;
+            right: 0.75rem;
+            font-size: 1rem;
+            filter: drop-shadow(0 2px 4px rgba(0,0,0,0.1));
+        }
 
         .chatbot-wrapper {
             width: 100%;
