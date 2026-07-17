@@ -55,11 +55,32 @@ class FaceCheckinController extends Controller
         }
 
         if (!$bestMatch || $bestDistance > $threshold) {
+            \App\Models\FaceVerificationLog::create([
+                'visitor_id' => $bestMatch ? $bestMatch->id : null,
+                'visitor_name' => $bestMatch ? $bestMatch->name : 'Unknown',
+                'type' => 'checkin',
+                'euclidean_distance' => $bestMatch ? $bestDistance : null,
+                'threshold' => $threshold,
+                'is_success' => false,
+                'error_message' => 'Wajah tidak dikenali dalam sistem.',
+                'ip_address' => $request->ip(),
+            ]);
+
             return response()->json([
                 'success' => false,
                 'message' => 'Wajah tidak dikenali dalam sistem.',
             ], 404);
         }
+
+        \App\Models\FaceVerificationLog::create([
+            'visitor_id' => $bestMatch->id,
+            'visitor_name' => $bestMatch->name,
+            'type' => 'checkin',
+            'euclidean_distance' => $bestDistance,
+            'threshold' => $threshold,
+            'is_success' => true,
+            'ip_address' => $request->ip(),
+        ]);
 
         // Simpan foto wajah & descriptor jika dikirim
         if ($request->filled('face_photo')) {
@@ -209,6 +230,14 @@ class FaceCheckinController extends Controller
                 'face_photo' => [$request->input('face_photo')],
             ]);
             Log::info("[QR-CHECKIN] Registered new face for visitor #{$visitor->id} ({$visitor->name})");
+
+            \App\Models\FaceVerificationLog::create([
+                'visitor_id' => $visitor->id,
+                'visitor_name' => $visitor->name,
+                'type' => 'qr-register',
+                'is_success' => true,
+                'ip_address' => $request->ip(),
+            ]);
         } else {
             // Jika sudah memiliki data wajah, lakukan VERIFIKASI kecocokan wajah
             if (!$incomingDescriptor) {
@@ -236,11 +265,32 @@ class FaceCheckinController extends Controller
 
             $threshold = 0.5;
             if ($bestDistance > $threshold) {
+                \App\Models\FaceVerificationLog::create([
+                    'visitor_id' => $visitor->id,
+                    'visitor_name' => $visitor->name,
+                    'type' => 'qr-verify',
+                    'euclidean_distance' => $bestDistance,
+                    'threshold' => $threshold,
+                    'is_success' => false,
+                    'error_message' => 'Wajah tidak cocok dengan data pendaftaran Anda.',
+                    'ip_address' => $request->ip(),
+                ]);
+
                 return response()->json([
                     'success' => false,
                     'message' => 'Verifikasi Wajah Gagal: Wajah tidak cocok dengan data pendaftaran Anda.',
                 ]);
             }
+
+            \App\Models\FaceVerificationLog::create([
+                'visitor_id' => $visitor->id,
+                'visitor_name' => $visitor->name,
+                'type' => 'qr-verify',
+                'euclidean_distance' => $bestDistance,
+                'threshold' => $threshold,
+                'is_success' => true,
+                'ip_address' => $request->ip(),
+            ]);
 
             // Simpan sampel foto wajah tambahan jika dikirim
             if ($request->filled('face_photo')) {

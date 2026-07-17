@@ -52,6 +52,16 @@ class GuestStatsOverview extends BaseWidget
         // 5. Dummy data array untuk Sparkline chart (agar visual lebih keren)
         $sparklineData = [7, 4, 6, 10, 14, 7, $todayCount];
 
+        // ── Metrik Akurasi Biometrik (Face Logs) ──
+        $totalScans = \App\Models\FaceVerificationLog::whereIn('type', ['checkin', 'checkout', 'qr-verify', 'walkin-verify'])->count();
+        $successScans = \App\Models\FaceVerificationLog::whereIn('type', ['checkin', 'checkout', 'qr-verify', 'walkin-verify'])->where('is_success', true)->count();
+        $successRate = $totalScans > 0 ? round(($successScans / $totalScans) * 100, 1) : 100.0;
+        
+        $avgDistance = \App\Models\FaceVerificationLog::whereIn('type', ['checkin', 'checkout', 'qr-verify', 'walkin-verify'])
+            ->where('is_success', true)
+            ->avg('euclidean_distance');
+        $avgDistanceStr = $avgDistance !== null ? number_format($avgDistance, 4) : '0.0000';
+
         return [
             Stat::make('Tamu Hari Ini', $todayCount)
                 ->description($trendTamuDesc)
@@ -73,6 +83,16 @@ class GuestStatsOverview extends BaseWidget
                 ->description(Carbon::now()->translatedFormat('F Y'))
                 ->descriptionIcon('heroicon-m-check-badge')
                 ->color('success'),
+
+            Stat::make('Akurasi Scan Wajah', $successRate . '%')
+                ->description($totalScans . ' total pemindaian wajah')
+                ->descriptionIcon('heroicon-m-shield-check')
+                ->color($successRate >= 90 ? 'success' : ($successRate >= 70 ? 'warning' : 'danger')),
+
+            Stat::make('Rata-rata Euclidean Distance', $avgDistanceStr)
+                ->description('Threshold batas: 0.50')
+                ->descriptionIcon('heroicon-m-calculator')
+                ->color('info'),
         ];
     }
 }

@@ -383,8 +383,8 @@
         
     </div>
 
-    <!-- marked.js untuk render Markdown -->
-    <script src="https://cdn.jsdelivr.net/npm/marked@9/marked.min.js"></script>
+    <!-- marked.js untuk render Markdown (offline-resilient) -->
+    <script src="/js/marked.min.js"></script>
     <script>
         if (window.marked) { marked.setOptions({ breaks: true, gfm: true }); }
 

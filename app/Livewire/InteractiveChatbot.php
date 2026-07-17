@@ -263,19 +263,81 @@ class InteractiveChatbot extends Component
                 if ($regMarkerData) {
                     $this->processRegistrationData($regMarkerData);
                 }
-            } elseif ($response->status() === 429) {
-                $this->error = 'Permintaan terlalu banyak. Tunggu sebentar lalu coba lagi. (Rate limit)';
             } else {
-                $this->error = 'Gagal mendapat respons dari AI. (HTTP ' . $response->status() . ')';
+                throw new \Exception('HTTP status ' . $response->status());
             }
         } catch (\Throwable $e) {
-            $this->error = 'Koneksi ke AI gagal: ' . $e->getMessage();
+            \Illuminate\Support\Facades\Log::warning("[CHATBOT-OFFLINE] Fallback triggered due to error: " . $e->getMessage());
+
+            $fallbackReply = $this->getOfflineFallbackResponse($message);
+
+            // Parse action markers from fallback
+            $actionTrigger = null;
+            if (preg_match('/<!--ACTION:(.*?)-->/s', $fallbackReply, $actionMatch)) {
+                $actionTrigger = $actionMatch[1];
+            }
+
+            $this->messages[] = [
+                'role'    => 'assistant',
+                'content' => $fallbackReply,
+                'is_offline' => true,
+            ];
+
+            // Trigger TTS
+            $plainText = strip_tags(preg_replace('/[#*_`~>\\-|]/', '', $fallbackReply));
+            $this->dispatch('chatbot-speak', text: $plainText);
+
+            if ($actionTrigger) {
+                $this->dispatch('chatbot-trigger-action', type: $actionTrigger);
+            }
         } finally {
             $this->isLoading = false;
         }
 
         // Scroll ke bawah setelah respons masuk
         $this->dispatch('chatbot-scrolled');
+    }
+
+    private function getOfflineFallbackResponse(string $userMessage): string
+    {
+        $message = strtolower(trim($userMessage));
+
+        // Pendaftaran / Reservasi / Appointment
+        if (str_contains($message, 'daftar') || str_contains($message, 'janji') || str_contains($message, 'appointment') || str_contains($message, 'walkin') || str_contains($message, 'tamu') || str_contains($message, 'registrasi')) {
+            return "Saya mendeteksi Anda ingin membuat janji temu atau mendaftar kunjungan.\n\n"
+                 . "Silakan klik tombol di bawah untuk membuka form pendaftaran.\n"
+                 . "<!--ACTION:walkin-->";
+        }
+
+        // Checkout / Selesai
+        if (str_contains($message, 'checkout') || str_contains($message, 'pulang') || str_contains($message, 'selesai') || str_contains($message, 'keluar')) {
+            return "Saya mendeteksi Anda ingin melakukan check-out.\n\n"
+                 . "Silakan klik tombol di bawah untuk melakukan pemindaian wajah check-out.\n"
+                 . "<!--ACTION:checkout-->";
+        }
+
+        // Kehadiran PIC / Absensi
+        if (str_contains($message, 'absen') || str_contains($message, 'hadir') || str_contains($message, 'kehadiran') || str_contains($message, 'pic') || str_contains($message, 'karyawan')) {
+            return "Saya mendeteksi Anda ingin melakukan absensi karyawan atau mengecek kehadiran PIC.\n\n"
+                 . "Silakan klik tombol di bawah untuk mengakses menu kehadiran.\n"
+                 . "<!--ACTION:attendance-->";
+        }
+
+        // Bantuan / Cara Penggunaan
+        if (str_contains($message, 'bantu') || str_contains($message, 'help') || str_contains($message, 'tanya') || str_contains($message, 'fitur') || str_contains($message, 'bagaimana')) {
+            return "Saat ini saya berjalan dalam mode offline / cadangan.\n\n"
+                 . "Anda dapat menanyakan hal-hal berikut kepada saya:\n"
+                 . "1. **Daftar Kunjungan**: untuk membuat janji temu baru.\n"
+                 . "2. **Check-out**: untuk mengakhiri kunjungan Anda.\n"
+                 . "3. **Absen Karyawan**: untuk masuk/keluar PIC.";
+        }
+
+        // Default greeting / fallback
+        return "Halo! Saat ini sistem asisten virtual Kiosk sedang berjalan dalam mode offline/lokal.\n\n"
+             . "Meskipun demikian, saya tetap dapat membantu Anda membuka menu lobi:\n"
+             . "* Untuk mendaftar kunjungan: Ketik 'Daftar'\n"
+             . "* Untuk check-out mandiri: Ketik 'Checkout'\n"
+             . "* Untuk absen karyawan: Ketik 'Absen'";
     }
 
     // ══════════════════════════════════════════════════════════════

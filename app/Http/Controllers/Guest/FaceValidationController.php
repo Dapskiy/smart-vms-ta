@@ -59,6 +59,17 @@ class FaceValidationController extends Controller
 
         if ($bestMatch && $bestDistance <= $threshold) {
             $companyInfo = $bestMatch->company ? " dari {$bestMatch->company}" : "";
+
+            \App\Models\FaceVerificationLog::create([
+                'visitor_id' => $bestMatch->id,
+                'visitor_name' => $bestMatch->name,
+                'type' => 'duplicate-check',
+                'euclidean_distance' => $bestDistance,
+                'threshold' => $threshold,
+                'is_success' => false,
+                'error_message' => "Duplikat terdeteksi dengan {$bestMatch->name}.",
+                'ip_address' => $request->ip(),
+            ]);
             
             return response()->json([
                 'is_duplicate'  => true,
@@ -67,6 +78,16 @@ class FaceValidationController extends Controller
                 'message'       => "Wajah ini sudah terdaftar atas nama \"{$bestMatch->name}\"{$companyInfo}. Setiap visitor harus memiliki wajah unik.",
             ]);
         }
+
+        \App\Models\FaceVerificationLog::create([
+            'visitor_id' => $currentId ? (int) $currentId : null,
+            'visitor_name' => null,
+            'type' => 'duplicate-check',
+            'euclidean_distance' => $bestMatch ? $bestDistance : null,
+            'threshold' => $threshold,
+            'is_success' => true,
+            'ip_address' => $request->ip(),
+        ]);
 
         return response()->json([
             'is_duplicate' => false,

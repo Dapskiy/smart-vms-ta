@@ -104,6 +104,16 @@ class KioskWalkinForm extends Component
         }
 
         if ($bestMatch && $bestDistance <= $threshold) {
+            \App\Models\FaceVerificationLog::create([
+                'visitor_id' => $bestMatch->id,
+                'visitor_name' => $bestMatch->name,
+                'type' => 'returning-visitor-lookup',
+                'euclidean_distance' => $bestDistance,
+                'threshold' => $threshold,
+                'is_success' => true,
+                'ip_address' => request()->ip(),
+            ]);
+
             $this->name = $bestMatch->name;
             $this->company = $bestMatch->company;
             $this->phone = $bestMatch->phone;
@@ -114,6 +124,17 @@ class KioskWalkinForm extends Component
             $this->dispatch('walkin-form-reopen'); // Buka modal kembali
             session()->flash('general_success', 'Selamat datang kembali, ' . $this->name . '!');
         } else {
+            \App\Models\FaceVerificationLog::create([
+                'visitor_id' => $bestMatch ? $bestMatch->id : null,
+                'visitor_name' => $bestMatch ? $bestMatch->name : 'Unknown',
+                'type' => 'returning-visitor-lookup',
+                'euclidean_distance' => $bestMatch ? $bestDistance : null,
+                'threshold' => $threshold,
+                'is_success' => false,
+                'error_message' => 'Wajah tidak dikenali. Silakan mendaftar sebagai tamu baru.',
+                'ip_address' => request()->ip(),
+            ]);
+
             $this->step = 1; // Paksa jadi tamu baru
             $this->is_verified_returning = false;
             $this->dispatch('walkin-form-reopen');
@@ -406,6 +427,17 @@ class KioskWalkinForm extends Component
             }
 
             if ($bestDistance > $threshold) {
+                 \App\Models\FaceVerificationLog::create([
+                     'visitor_id' => $visitor->id,
+                     'visitor_name' => $visitor->name,
+                     'type' => 'walkin-verify',
+                     'euclidean_distance' => $bestDistance,
+                     'threshold' => $threshold,
+                     'is_success' => false,
+                     'error_message' => 'Wajah tidak cocok dengan data pendaftaran sebelumnya.',
+                     'ip_address' => request()->ip(),
+                 ]);
+
                  $this->addError('general', 'Wajah tidak cocok dengan data pendaftaran sebelumnya.');
                  $this->dispatch('walkin-error'); 
                  return;
@@ -414,6 +446,8 @@ class KioskWalkinForm extends Component
 
         // 3. Simpan data wajah baru (append max 10)
         try {
+            $isNewRegistration = empty($visitor->face_features);
+
             $existingPhotos = is_array($visitor->face_photo) ? $visitor->face_photo : [];
             if (count($existingPhotos) < 10) {
                 $existingPhotos[] = $photoBase64;
@@ -424,6 +458,16 @@ class KioskWalkinForm extends Component
                 $visitor->face_features = $existingFeatures;
             }
             $visitor->save();
+
+            \App\Models\FaceVerificationLog::create([
+                'visitor_id' => $visitor->id,
+                'visitor_name' => $visitor->name,
+                'type' => $isNewRegistration ? 'walkin-register' : 'walkin-verify',
+                'euclidean_distance' => $isNewRegistration ? null : ($bestDistance ?? null),
+                'threshold' => $isNewRegistration ? 0.5 : ($threshold ?? 0.4),
+                'is_success' => true,
+                'ip_address' => request()->ip(),
+            ]);
         } catch (\Exception $e) {
             // Ignore error log
         }

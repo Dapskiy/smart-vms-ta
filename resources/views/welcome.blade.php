@@ -1955,12 +1955,12 @@
                 subEl.textContent = 'Silakan arahkan QR Code tiket janji temu Anda ke kamera lobi Kiosk';
                 cameraWrap.style.display = 'flex';
 
-                // Load html5-qrcode dynamically
+                // Load html5-qrcode dynamically (offline-resilient)
                 if (typeof Html5Qrcode === 'undefined') {
                     try {
-                        await loadScript('https://unpkg.com/html5-qrcode');
+                        await loadScript('/js/html5-qrcode.min.js');
                     } catch (e) {
-                        console.error("Gagal load html5-qrcode dari CDN, fallback ke manual input");
+                        console.error("Gagal load html5-qrcode secara lokal");
                     }
                 }
 

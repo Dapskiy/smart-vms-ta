@@ -51,11 +51,32 @@ class FaceCheckoutController extends Controller
         }
 
         if (!$bestMatch || $bestDistance > $threshold) {
+            \App\Models\FaceVerificationLog::create([
+                'visitor_id' => $bestMatch ? $bestMatch->id : null,
+                'visitor_name' => $bestMatch ? $bestMatch->name : 'Unknown',
+                'type' => 'checkout',
+                'euclidean_distance' => $bestMatch ? $bestDistance : null,
+                'threshold' => $threshold,
+                'is_success' => false,
+                'error_message' => 'Wajah tidak dikenali dalam sistem.',
+                'ip_address' => $request->ip(),
+            ]);
+
             return response()->json([
                 'success' => false,
                 'message' => 'Wajah tidak dikenali dalam sistem.',
             ], 404);
         }
+
+        \App\Models\FaceVerificationLog::create([
+            'visitor_id' => $bestMatch->id,
+            'visitor_name' => $bestMatch->name,
+            'type' => 'checkout',
+            'euclidean_distance' => $bestDistance,
+            'threshold' => $threshold,
+            'is_success' => true,
+            'ip_address' => $request->ip(),
+        ]);
 
         // Cari appointment yang sedang aktif (status = 'active') untuk visitor ini
         $appointment = Appointment::where('visitor_id', $bestMatch->id)
