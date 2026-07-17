@@ -123,49 +123,35 @@ class AppointmentsTable
                         }
 
                         // Simpan face features + foto terenkripsi ke visitor (maks 10)
-                        $updateData = [];
+                        $visitor = $record->visitor;
+                        if ($visitor) {
+                            if (!empty($arguments['face_features'])) {
+                                // Jika dikirim sebagai string JSON, decode dulu
+                                $newDescriptor = is_string($arguments['face_features'])
+                                    ? json_decode($arguments['face_features'], true)
+                                    : $arguments['face_features'];
 
-                        if (!empty($arguments['face_features'])) {
-                            // Jika dikirim sebagai string JSON, decode dulu
-                            $newDescriptor = is_string($arguments['face_features'])
-                                ? json_decode($arguments['face_features'], true)
-                                : $arguments['face_features'];
-
-                            $existingFeatures = [];
-                            if (!empty($record->visitor->face_features)) {
-                                $decoded = json_decode($record->visitor->face_features, true);
-                                if (is_array($decoded)) {
-                                    // Normalize elemen lama yang berformat string
-                                    $normalized = array_map(fn($e) => is_string($e) ? json_decode($e, true) : $e, $decoded);
+                                $existingFeatures = is_array($visitor->face_features) ? $visitor->face_features : [];
+                                if (!empty($existingFeatures)) {
+                                    $normalized = array_map(fn($e) => is_string($e) ? json_decode($e, true) : $e, $existingFeatures);
                                     $existingFeatures = (isset($normalized[0]) && is_array($normalized[0])) ? $normalized : [$normalized];
                                 }
-                            }
-                            // Maksimal 10 sampel — jika sudah penuh, tidak ditambah lagi
-                            if (count($existingFeatures) < 10) {
-                                $existingFeatures[] = $newDescriptor;
-                                $updateData['face_features'] = json_encode($existingFeatures);
-                            }
-                        }
 
-                        if (!empty($arguments['face_photo'])) {
-                            $existingPhotos = [];
-                            if (!empty($record->visitor->face_photo)) {
-                                $decoded = json_decode($record->visitor->face_photo, true);
-                                if (is_array($decoded)) {
-                                    $existingPhotos = $decoded;
-                                } else {
-                                    $existingPhotos = [$record->visitor->face_photo];
+                                if (count($existingFeatures) < 10) {
+                                    $existingFeatures[] = $newDescriptor;
+                                    $visitor->face_features = $existingFeatures;
                                 }
                             }
-                            // Maksimal 10 foto — jika sudah penuh, tidak ditambah lagi
-                            if (count($existingPhotos) < 10) {
-                                $existingPhotos[] = Crypt::encryptString($arguments['face_photo']);
-                                $updateData['face_photo'] = json_encode($existingPhotos);
-                            }
-                        }
 
-                        if (!empty($updateData)) {
-                            $record->visitor->update($updateData);
+                            if (!empty($arguments['face_photo'])) {
+                                $existingPhotos = is_array($visitor->face_photo) ? $visitor->face_photo : ($visitor->face_photo ? [$visitor->face_photo] : []);
+                                if (count($existingPhotos) < 10) {
+                                    $existingPhotos[] = $arguments['face_photo'];
+                                    $visitor->face_photo = $existingPhotos;
+                                }
+                            }
+
+                            $visitor->save();
                         }
 
                         // Proses check-in (admin = manual)
