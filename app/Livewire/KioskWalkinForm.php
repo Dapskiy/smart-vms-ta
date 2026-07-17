@@ -260,6 +260,28 @@ class KioskWalkinForm extends Component
         }
     }
 
+    #[On('submitWithoutFace')]
+    public function submitWithoutFace()
+    {
+        // 1. Simpan/Cari Visitor
+        $visitor = Visitor::firstOrCreate(
+            ['phone' => $this->phone],
+            [
+                'name' => $this->name,
+                'company' => $this->company,
+                'is_blacklisted' => false,
+            ]
+        );
+
+        if ($visitor->is_blacklisted) {
+            $this->addError('general', 'Mohon maaf, Anda tidak dapat melanjutkan proses registrasi. Silakan hubungi Resepsionis.');
+            $this->dispatch('walkin-error');
+            return;
+        }
+
+        $this->createAppointmentRecord($visitor);
+    }
+
     #[On('finalizeWalkin')]
     public function finalizeWalkin($descriptor, $photoBase64)
     {

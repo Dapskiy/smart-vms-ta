@@ -37,7 +37,7 @@
                     this.loadingText = 'Mengunduh pustaka AI...';
                     await new Promise((resolve, reject) => {
                         let s = document.createElement('script');
-                        s.src = '/js/face-api.min.js?v=' + Date.now();
+                        s.src = '/js/face-api.min.js';
                         s.onload = resolve;
                         s.onerror = () => reject(new Error('Gagal mengunduh face-api.min.js'));
                         document.head.appendChild(s);

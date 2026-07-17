@@ -1328,9 +1328,15 @@
             document.getElementById('modal-face').classList.add('active');
             setFaceMessage('Memuat Model AI...', 'info');
 
+            // Show skip/fallback button if we are doing a walk-in registration
+            const skipBtn = document.getElementById('btn-skip-face');
+            if (skipBtn) {
+                skipBtn.style.display = (mode === 'walkin') ? 'inline-block' : 'none';
+            }
+
             // Load face-api if needed
             if (typeof faceapi === 'undefined') {
-                await loadScript('/js/face-api.min.js?v=' + Date.now());
+                await loadScript('/js/face-api.min.js');
             }
             await Promise.all([
                 faceapi.nets.tinyFaceDetector.loadFromUri('/models'),
@@ -1359,10 +1365,12 @@
                 };
             } catch(e) {
                 setFaceMessage('Kamera tidak dapat diakses. Gunakan HTTPS.', 'error');
+                // Hide loading overlay so the user can see the skip/fallback button
+                document.getElementById('face-loading').style.display = 'none';
             }
         }
 
-        function closeFaceScan() {
+        function closeFaceScan(isSkip = false) {
             faceScanActive   = false;
             ciPhotoSnapshot  = null;
             ciPreparingPhoto = false;
@@ -1372,6 +1380,16 @@
             document.getElementById('modal-face').classList.remove('active');
             document.getElementById('face-loading').style.display = 'flex';
             document.getElementById('face-camera-wrap').style.display = 'none';
+
+            // FALLBACK: Reopen Walk-in Form if we came from Walk-in and it was NOT a skipped submission
+            if (!isSkip && (faceScanMode === 'walkin' || faceScanMode === 'walkin-search')) {
+                openWalkinForm();
+            }
+        }
+
+        function skipFaceScan() {
+            closeFaceScan(true); // Close face scan without reopening walk-in form
+            Livewire.dispatch('submitWithoutFace');
         }
 
         function captureKioskPhoto(video) {
@@ -1802,6 +1820,12 @@
                     </div>
                 </div>
             </div>
+            <!-- Fallback/Skip Button -->
+            <div id="face-fallback-wrap" style="margin-top: 1rem; display: flex; justify-content: center;">
+                <button id="btn-skip-face" onclick="skipFaceScan()" class="btn-ok" style="background: #475569; font-size: 0.85rem; padding: 0.6rem 1.5rem; display: none; border-radius: 0.5rem; border: none; color: #fff; cursor: pointer; font-weight: 600; font-family: 'Poppins', sans-serif;">
+                    Daftar Tanpa Wajah (Manual)
+                </button>
+            </div>
         </div>
     </div>
 
@@ -2123,7 +2147,7 @@
             setCoMsg('Memuat Model AI...', 'info');
 
             if (typeof faceapi === 'undefined') {
-                await loadScript('/js/face-api.min.js?v=' + Date.now());
+                await loadScript('/js/face-api.min.js');
             }
             await Promise.all([
                 faceapi.nets.tinyFaceDetector.loadFromUri('/models'),
@@ -2286,7 +2310,7 @@ async function openAttendanceModal() {
     document.getElementById('modal-attendance').classList.add('active');
     setAtMsg('Memuat Model AI...', 'info');
     if (typeof faceapi === 'undefined') {
-        await loadScript('/js/face-api.min.js?v=' + Date.now());
+        await loadScript('/js/face-api.min.js');
     }
     await Promise.all([
         faceapi.nets.tinyFaceDetector.loadFromUri('/models'),
@@ -2444,6 +2468,17 @@ window.addEventListener('attendance-error', event => {
         if (video) { atLandmarkLoop(video); atDetectionLoop(video); }
     }, 3000);
 });
+</script>
+
+{{-- Service Worker Registration for Face API and Models Caching --}}
+<script>
+    if ('serviceWorker' in navigator) {
+        window.addEventListener('load', () => {
+            navigator.serviceWorker.register('/sw.js')
+                .then((reg) => console.log('[Service Worker] Registered successfully:', reg.scope))
+                .catch((err) => console.error('[Service Worker] Registration failed:', err));
+        });
+    }
 </script>
 
 {{-- Livewire Scripts (includes Alpine.js v3 automatically in Livewire v3) --}}
