@@ -147,7 +147,14 @@ class InteractiveChatbot extends Component
                             $latestAttendance = $pic->attendances->first();
                             $isPresent = ($latestAttendance && $latestAttendance->type === 'checkin');
                             $locText = ($isPresent && $pic->current_location) ? " di Gedung {$pic->current_location}" : '';
-                            $status = $isPresent ? "✅ HADIR (Tersedia{$locText})" : '❌ TIDAK HADIR';
+                            
+                            if ($isPresent) {
+                                $status = $pic->is_available 
+                                    ? "✅ HADIR (Tersedia{$locText})" 
+                                    : "⏳ HADIR (Sedang Sibuk/Istirahat, Tidak Bisa Ditemui{$locText})";
+                            } else {
+                                $status = '❌ TIDAK HADIR';
+                            }
                             $prompt .= "- {$pic->name} | {$status}\n";
                         }
                         $prompt .= "\n";

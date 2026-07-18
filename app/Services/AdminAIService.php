@@ -82,9 +82,19 @@ CONTEXT;
      * Digunakan oleh AdminChatController sebagai konteks tambahan
      * di atas buildContext() yang sudah berjalan sebagai baseline.
      */
-    public function getDataForAI(string $query): string
+    public function getDataForAI(string $query, ?\App\Models\Pic $currentPic = null): string
     {
         $parts = [];
+        $queryLower = strtolower($query);
+
+        // Jika ada PIC login, tambahkan infonya sebagai prioritas
+        if ($currentPic) {
+            $parts[] = "KONTEKS PENGGUNA YANG BERTANYA (KAMU):\n"
+                . "- Nama PIC: {$currentPic->name}\n"
+                . "- ID PIC: {$currentPic->id}\n"
+                . "- Status Ketersediaan Saat Ini: " . ($currentPic->is_available ? 'Tersedia' : 'Tidak Tersedia') . "\n"
+                . "- Lokasi Saat Ini: " . ($currentPic->current_location ?? 'Belum diset') . "\n";
+        }
 
         // ── Intent 1: Nama PIC spesifik disebut dalam query ───────────────
         $picNames = $this->extractPicNamesFromQuery($query);
@@ -93,22 +103,42 @@ CONTEXT;
         }
 
         // ── Intent 2: Keyword umum tentang PIC / departemen ───────────────
-        if (empty($picNames) && $this->matchesKeywords($query, ['pic', 'person in charge', 'departemen', 'department', 'penanggung jawab'])) {
+        if (empty($picNames) && $this->matchesKeywords($queryLower, ['pic', 'person in charge', 'departemen', 'department', 'penanggung jawab'])) {
             $parts[] = $this->getAllPicSummary();
         }
 
+        // ── Intent Aksi 1: Approve / Reject / Setujui / Tolak / Batal ─────────────────
+        if ($this->matchesKeywords($queryLower, ['approve', 'setuju', 'tolak', 'reject', 'batal', 'cancel'])) {
+            $parts[] = $this->getPendingAndActiveAppointmentsForAction();
+        }
+
+        // ── Intent Aksi 2: Blacklist / Blokir / Banned ───────────────────────────────
+        if ($this->matchesKeywords($queryLower, ['blacklist', 'blokir', 'banned'])) {
+            $parts[] = $this->getVisitorsForBlacklistAction($query);
+        }
+
+        // ── Intent Analitik 1: PIC Populer / Terpopuler / Paling sering dikunjungi ─────
+        if ($this->matchesKeywords($queryLower, ['pic paling', 'sering dikunjungi', 'pic terpopuler', 'pic terfavorit'])) {
+            $parts[] = $this->getTopPicsAnalytics();
+        }
+
+        // ── Intent Analitik 2: Akurasi / Biometrik / Face Log / Scan Wajah ─────────────
+        if ($this->matchesKeywords($queryLower, ['akurasi', 'accuracy', 'scan wajah', 'log verifikasi', 'biometrik', 'face log'])) {
+            $parts[] = $this->getFaceVerificationAnalytics();
+        }
+
         // ── Intent 3: Tamu / Check-in / Appointment aktif ─────────────────
-        if ($this->matchesKeywords($query, ['tamu', 'check-in', 'checkin', 'aktif', 'sedang masuk', 'sedang berkunjung', 'appointment', 'janji'])) {
+        if ($this->matchesKeywords($queryLower, ['tamu', 'check-in', 'checkin', 'aktif', 'sedang masuk', 'sedang berkunjung', 'appointment', 'janji'])) {
             $parts[] = $this->getActiveAppointmentDetail();
         }
 
         // ── Intent 4: Data visitor / pengunjung terdaftar ─────────────────
-        if ($this->matchesKeywords($query, ['visitor', 'pengunjung', 'terdaftar', 'blacklist', 'wajah', 'face'])) {
+        if ($this->matchesKeywords($queryLower, ['visitor', 'pengunjung', 'terdaftar', 'blacklist', 'wajah', 'face'])) {
             $parts[] = $this->getVisitorSummary($query);
         }
 
         // ── Intent 5: Checkout / selesai hari ini ─────────────────────────
-        if ($this->matchesKeywords($query, ['checkout', 'check-out', 'pulang', 'selesai', 'keluar'])) {
+        if ($this->matchesKeywords($queryLower, ['checkout', 'check-out', 'pulang', 'selesai', 'keluar'])) {
             $parts[] = $this->getCompletedTodaySummary();
         }
 
@@ -306,5 +336,95 @@ RINGKASAN DASHBOARD HARI INI ({$now}):
 - Menunggu (pending): {$pending}
 - Sudah checkout    : {$completed}
 DATA;
+    }
+
+    /** Dapatkan daftar pending dan active appointments untuk aksi approve/reject */
+    private function getPendingAndActiveAppointmentsForAction(): string
+    {
+        $apts = Appointment::with(['visitor', 'pic'])
+            ->whereIn('status', ['pending', 'active'])
+            ->orderBy('created_at', 'desc')
+            ->take(15)
+            ->get();
+
+        if ($apts->isEmpty()) {
+            return "DATA JANJI TEMU UNTUK AKSI:\n- Tidak ada janji temu pending atau aktif saat ini.";
+        }
+
+        $lines = $apts->map(function ($a) {
+            $statusStr = $a->status === 'pending' ? 'PENDING' : 'AKTIF';
+            return "  • [ID: {$a->id}] Tamu: {$a->visitor?->name} (Visitor ID: {$a->visitor_id}) | PIC: {$a->pic?->name} | Status: {$statusStr} | Keperluan: {$a->purpose}";
+        })->implode("\n");
+
+        return "DATA JANJI TEMU UNTUK AKSI (PILIH ID YANG SESUAI):\n{$lines}";
+    }
+
+    /** Cari visitor yang cocok untuk proses blacklist */
+    private function getVisitorsForBlacklistAction(string $query): string
+    {
+        $visitors = Visitor::where('is_blacklisted', false)
+            ->orderBy('created_at', 'desc')
+            ->take(15)
+            ->get();
+
+        if ($visitors->isEmpty()) {
+            return "DATA VISITOR UNTUK BLACKLIST:\n- Tidak ada visitor terdaftar yang aktif.";
+        }
+
+        $lines = $visitors->map(fn($v) => "  • [ID: {$v->id}] Nama: {$v->name} | Instansi: " . ($v->company ?? '-'))->implode("\n");
+
+        return "DAFTAR VISITOR AKTIF (PILIH ID UNTUK BLACKLIST):\n{$lines}";
+    }
+
+    /** Dapatkan analitik PIC yang paling sering dikunjungi */
+    private function getTopPicsAnalytics(): string
+    {
+        $topPics = Appointment::select('pic_id', \DB::raw('count(*) as total'))
+            ->groupBy('pic_id')
+            ->orderBy('total', 'desc')
+            ->with('pic')
+            ->take(5)
+            ->get();
+
+        if ($topPics->isEmpty()) {
+            return "ANALITIK PIC TERPOPULER:\n- Belum ada data kunjungan untuk menghitung PIC terpopuler.";
+        }
+
+        $lines = $topPics->map(function ($item, $index) {
+            $rank = $index + 1;
+            $name = $item->pic?->name ?? 'N/A';
+            $dept = $item->pic?->department?->name ?? '-';
+            return "  {$rank}. {$name} (Dept: {$dept}) - {$item->total} kunjungan";
+        })->implode("\n");
+
+        return "ANALITIK PIC PALING SERING DIKUNJUNGI:\n{$lines}";
+    }
+
+    /** Dapatkan analitik akurasi pemindaian wajah */
+    private function getFaceVerificationAnalytics(): string
+    {
+        $totalScans = \App\Models\FaceVerificationLog::whereIn('type', ['checkin', 'checkout', 'qr-verify', 'walkin-verify'])->count();
+        $successScans = \App\Models\FaceVerificationLog::whereIn('type', ['checkin', 'checkout', 'qr-verify', 'walkin-verify'])->where('is_success', true)->count();
+        $successRate = $totalScans > 0 ? round(($successScans / $totalScans) * 100, 1) : 100.0;
+        
+        $avgDistance = \App\Models\FaceVerificationLog::whereIn('type', ['checkin', 'checkout', 'qr-verify', 'walkin-verify'])
+            ->where('is_success', true)
+            ->avg('euclidean_distance');
+        $avgDistanceStr = $avgDistance !== null ? number_format($avgDistance, 4) : '0.0000';
+
+        $failedLogs = \App\Models\FaceVerificationLog::where('is_success', false)
+            ->orderBy('created_at', 'desc')
+            ->take(5)
+            ->get();
+
+        $failedList = $failedLogs->isEmpty()
+            ? '  (tidak ada pemindaian gagal terbaru)'
+            : $failedLogs->map(fn($log) => "  • Tamu: {$log->visitor_name} | Jarak: " . ($log->euclidean_distance ?? 'N/A') . " | Waktu: " . $log->created_at->format('d/m H:i'))->implode("\n");
+
+        return "ANALITIK AKURASI SCAN WAJAH HARI INI:\n"
+             . "- Persentase Sukses: {$successRate}%\n"
+             . "- Rata-rata Euclidean Distance (Match): {$avgDistanceStr}\n"
+             . "- Total Pemindaian: {$totalScans} (Sukses: {$successScans}, Gagal: " . ($totalScans - $successScans) . ")\n\n"
+             . "PEMINDAIAN GAGAL TERBARU:\n{$failedList}";
     }
 }

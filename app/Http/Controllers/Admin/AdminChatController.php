@@ -36,14 +36,28 @@ class AdminChatController extends Controller
         // Bangun system prompt dua lapis:
         // 1. buildContext()   → snapshot statistik real-time (selalu ada)
         // 2. getDataForAI()   → data spesifik sesuai intent query admin
+        $currentPic = \App\Models\Pic::where('user_id', auth()->id())->first();
         $globalContext  = $this->aiService->buildContext();
-        $specificData   = $this->aiService->getDataForAI($userMessage);
+        $specificData   = $this->aiService->getDataForAI($userMessage, $currentPic);
 
         $systemPrompt  = "Kamu adalah VISITA AI Assistant, asisten cerdas untuk panel admin sistem manajemen kunjungan tamu VISITA Enterprise. "
             . "Kamu memiliki akses ke data real-time sistem yang disediakan di bawah ini.\n\n"
             . "Jawab pertanyaan admin secara akurat, ringkas, dan profesional menggunakan Bahasa Indonesia. "
             . "Jika data tidak tersedia, katakan dengan jujur. "
+            . "PENTING: Jika status ketersediaan PIC tertulis 'Tidak Tersedia' atau 'Tidak tersedia', artinya PIC tersebut sedang sibuk/istirahat/tidak di tempat dan TIDAK bisa ditemui oleh tamu saat ini. "
             . "Admin yang bertanya saat ini adalah: {$adminName}.\n\n"
+            . "## SISTEM EKSEKUSI TINDAKAN (ACTION DISPATCHER)\n"
+            . "Kamu memiliki kemampuan khusus untuk melakukan perubahan database secara otomatis jika admin meminta tindakan tersebut. "
+            . "Sertakan marker JSON di akhir baris jawaban Anda jika dipicu oleh permintaan admin:\n"
+            . "- Menyetujui janji temu pending: <!--EXEC_ACTION:{\"action\":\"approve_appointment\",\"appointment_id\":ID}-->\n"
+            . "- Menolak janji temu pending: <!--EXEC_ACTION:{\"action\":\"reject_appointment\",\"appointment_id\":ID}-->\n"
+            . "- Mem-blacklist visitor: <!--EXEC_ACTION:{\"action\":\"blacklist_visitor\",\"visitor_id\":ID,\"reason\":\"ALASAN\"}-->\n"
+            . "- Mengubah status ketersediaan kamu sendiri: <!--EXEC_ACTION:{\"action\":\"update_availability\",\"is_available\":true/false}-->\n"
+            . "- Mengubah lokasi saat ini kamu sendiri: <!--EXEC_ACTION:{\"action\":\"update_location\",\"location\":\"LOKASI\"}-->\n\n"
+            . "Penting:\n"
+            . "1. Selalu cari ID yang relevan dari data spesifik yang dilampirkan.\n"
+            . "2. JANGAN membuat ID fiktif. Jika data ID tidak ditemukan atau nama tidak cocok, sampaikan dengan sopan.\n"
+            . "3. Jangan mencantumkan marker jika admin hanya bertanya biasa tanpa ada maksud menyuruh melakukan aksi.\n\n"
             . $globalContext
             . "\n\n---\nDATA SPESIFIK UNTUK PERTANYAAN INI:\n"
             . $specificData;
@@ -74,6 +88,89 @@ class AdminChatController extends Controller
             if ($response->successful()) {
                 $reply = $response->json('choices.0.message.content', '...');
                 Log::info("[ADMIN-AI] Admin={$adminName} | Q={$userMessage}");
+
+                // ── Deteksi dan Eksekusi Perintah Aksi (Action Execution) ──
+                if (preg_match('/<!--EXEC_ACTION:(.*?)-->/s', $reply, $matches)) {
+                    $actionData = json_decode(trim($matches[1]), true);
+                    $execResult = '';
+
+                    if ($actionData && isset($actionData['action'])) {
+                        try {
+                            switch ($actionData['action']) {
+                                case 'approve_appointment':
+                                    $aptId = $actionData['appointment_id'] ?? null;
+                                    if ($aptId) {
+                                        $apt = \App\Models\Appointment::find($aptId);
+                                        if ($apt) {
+                                            $apt->update([
+                                                'status'       => 'active',
+                                                'checkin_time' => now()->format('H:i'),
+                                                'approved_at'  => now(),
+                                            ]);
+                                            $execResult = "\n\n*(Sistem: Janji temu ID #{$aptId} atas nama " . ($apt->visitor?->name ?? 'N/A') . " berhasil disetujui)*";
+                                        }
+                                    }
+                                    break;
+
+                                case 'reject_appointment':
+                                    $aptId = $actionData['appointment_id'] ?? null;
+                                    if ($aptId) {
+                                        $apt = \App\Models\Appointment::find($aptId);
+                                        if ($apt) {
+                                            $apt->update([
+                                                'status'      => 'rejected',
+                                                'rejected_at' => now(),
+                                            ]);
+                                            $execResult = "\n\n*(Sistem: Janji temu ID #{$aptId} atas nama " . ($apt->visitor?->name ?? 'N/A') . " berhasil ditolak)*";
+                                        }
+                                    }
+                                    break;
+
+                                case 'blacklist_visitor':
+                                    $visitorId = $actionData['visitor_id'] ?? null;
+                                    $reason = $actionData['reason'] ?? 'Melanggar aturan/kebijakan lobi via AI Chat';
+                                    if ($visitorId) {
+                                        $visitor = \App\Models\Visitor::find($visitorId);
+                                        if ($visitor) {
+                                            $visitor->update([
+                                                'is_blacklisted' => true,
+                                                'blacklist_reason' => $reason,
+                                            ]);
+                                            $execResult = "\n\n*(Sistem: Visitor ID #{$visitorId} ({$visitor->name}) telah dimasukkan ke daftar blacklist)*";
+                                        }
+                                    }
+                                    break;
+
+                                case 'update_availability':
+                                    $currentPic = \App\Models\Pic::where('user_id', auth()->id())->first();
+                                    if ($currentPic && isset($actionData['is_available'])) {
+                                        $isAvailable = (bool) $actionData['is_available'];
+                                        $currentPic->update(['is_available' => $isAvailable]);
+                                        $statusStr = $isAvailable ? 'Tersedia' : 'Tidak Tersedia';
+                                        $execResult = "\n\n*(Sistem: Status ketersediaan Anda berhasil diubah menjadi {$statusStr})*";
+                                    }
+                                    break;
+
+                                case 'update_location':
+                                    $currentPic = \App\Models\Pic::where('user_id', auth()->id())->first();
+                                    $location = $actionData['location'] ?? null;
+                                    if ($currentPic && $location) {
+                                        $currentPic->update(['current_location' => $location]);
+                                        $execResult = "\n\n*(Sistem: Lokasi Anda berhasil diperbarui ke \"{$location}\")*";
+                                    }
+                                    break;
+                            }
+                        } catch (\Throwable $e) {
+                            Log::error("[ADMIN-AI-ACTION] Gagal mengeksekusi aksi: " . $e->getMessage());
+                            $execResult = "\n\n*(Sistem: Gagal mengeksekusi tindakan otomatis: {$e->getMessage()})*";
+                        }
+                    }
+
+                    // Bersihkan tag EXEC_ACTION agar tidak tampil mentah di bubble chat
+                    $reply = preg_replace('/<!--EXEC_ACTION:.*?-->/s', '', $reply);
+                    $reply .= $execResult;
+                }
+
                 return response()->json(['reply' => trim($reply)]);
             }
 

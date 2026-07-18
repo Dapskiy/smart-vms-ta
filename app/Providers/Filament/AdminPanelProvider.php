@@ -76,6 +76,10 @@ class AdminPanelProvider extends PanelProvider
                 'panels::body.end',
                 fn(): \Illuminate\Contracts\View\View => view('filament.widgets.admin-chat-widget')
             )
+            ->renderHook(
+                \Filament\View\PanelsRenderHook::GLOBAL_SEARCH_BEFORE,
+                fn(): string => \Illuminate\Support\Facades\Blade::render("@livewire('topbar-availability-toggle')")
+            )
             ->discoverResources(in: app_path('Filament/Resources'), for: 'App\Filament\Resources')
             ->discoverPages(in: app_path('Filament/Pages'), for: 'App\Filament\Pages')
             ->pages([

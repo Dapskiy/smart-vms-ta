@@ -155,8 +155,6 @@
 (function () {
     /* ── Config ─────────────────────────────────────────────── */
     const ENDPOINT   = '{{ $chatUrl }}';
-    const CSRF_TOKEN = document.querySelector('meta[name="csrf-token"]')?.content
-                    ?? '{{ csrf_token() }}';  // fallback jika meta tag belum ada
 
     let isOpen    = false;
     let isLoading = false;
@@ -379,12 +377,16 @@
             scrollBottom();
 
             try {
+                // Ambil CSRF token terupdate dari DOM agar tidak stale setelah session change/login-logout
+                const activeCsrfToken = document.querySelector('meta[name="csrf-token"]')?.content
+                                     || '{{ csrf_token() }}';
+
                 const res = await fetch(ENDPOINT, {
                     method: 'POST',
                     headers: {
                         'Content-Type' : 'application/json',
                         'Accept'       : 'application/json',
-                        'X-CSRF-TOKEN' : CSRF_TOKEN,
+                        'X-CSRF-TOKEN' : activeCsrfToken,
                     },
                     body: JSON.stringify({ message }),
                 });

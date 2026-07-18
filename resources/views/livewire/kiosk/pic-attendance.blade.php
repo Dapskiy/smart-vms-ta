@@ -483,5 +483,24 @@
     </script>
 
     @livewireScripts
+    <script>
+        (function() {
+            const registerHook = () => {
+                Livewire.hook('request', ({ fail }) => {
+                    fail(({ status, preventDefault }) => {
+                        if (status === 419) {
+                            preventDefault();
+                            window.location.reload();
+                        }
+                    });
+                });
+            };
+            if (window.Livewire) {
+                registerHook();
+            } else {
+                document.addEventListener('livewire:init', registerHook);
+            }
+        })();
+    </script>
 </body>
 </html>

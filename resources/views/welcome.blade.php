@@ -3049,6 +3049,24 @@ window.addEventListener('attendance-error', event => {
 
 {{-- Livewire Scripts (includes Alpine.js v3 automatically in Livewire v3) --}}
 @livewireScripts
-
+<script>
+    (function() {
+        const registerHook = () => {
+            Livewire.hook('request', ({ fail }) => {
+                fail(({ status, preventDefault }) => {
+                    if (status === 419) {
+                        preventDefault();
+                        window.location.reload();
+                    }
+                });
+            });
+        };
+        if (window.Livewire) {
+            registerHook();
+        } else {
+            document.addEventListener('livewire:init', registerHook);
+        }
+    })();
+</script>
 </body>
 </html>
