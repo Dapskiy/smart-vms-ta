@@ -242,8 +242,12 @@ class KioskWalkinForm extends Component
             $this->validate([
                 'name' => 'required|string|max:255',
                 'company' => 'required|string|max:255',
-                'phone' => 'required|string|max:20',
+                'phone' => 'required|regex:/^[0-9]+$/|min:10|max:15',
                 'pax' => 'required|integer|min:1|max:50',
+            ], [
+                'phone.regex' => 'Nomor HP hanya boleh berisi angka.',
+                'phone.min' => 'Nomor HP minimal 10 angka.',
+                'phone.max' => 'Nomor HP maksimal 15 angka.',
             ]);
             $this->step = 2;
         }

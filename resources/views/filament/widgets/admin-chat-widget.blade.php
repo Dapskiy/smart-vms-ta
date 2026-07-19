@@ -144,7 +144,7 @@
         onclick="aaiUI.toggle()"
         title="VISITA AI Assistant"
         aria-label="Buka Admin AI Assistant"
-        class="w-14 h-14 rounded-full bg-white hover:bg-gray-50 text-white shadow-xl hover:shadow-2xl flex items-center justify-center overflow-hidden transition-all hover:scale-110 active:scale-95 border-2 border-indigo-500/30"
+        class="w-14 h-14 rounded-full bg-white dark:bg-gray-800 hover:bg-gray-50 dark:hover:bg-gray-700 text-white dark:text-gray-200 shadow-xl hover:shadow-2xl flex items-center justify-center overflow-hidden transition-all hover:scale-110 active:scale-95 border-2 border-indigo-500/30 dark:border-indigo-500/50"
         style="animation:aaiPulse 2.8s infinite"
     >
         <span id="aai-fab-icon" class="w-full h-full flex items-center justify-center text-3xl">🤖</span>
@@ -418,7 +418,9 @@
                 typing.remove();
                 const data = await res.json();
 
-                if (res.ok && data.reply) {
+                if (res.status === 419 || res.status === 401) {
+                    msgArea.appendChild(bubbleAssistant("Sesi Anda telah berakhir demi keamanan. Silakan muat ulang (refresh) halaman ini."));
+                } else if (res.ok && data.reply) {
                     msgArea.appendChild(bubbleAssistant(data.reply));
                     if (ttsOn) speakText(data.reply);
                 } else {
