@@ -1489,7 +1489,7 @@
 
             // Poll appointment approval status
             approvalPollInterval = setInterval(() => {
-                fetch(`/appointments/status/${token}`)
+                fetch(`/appointments/status/${token}?t=${Date.now()}`, { cache: 'no-store' })
                     .then(response => {
                         if (!response.ok) throw new Error('Status check failed');
                         return response.json();
@@ -1513,13 +1513,16 @@
 
                             document.getElementById('modal-success').classList.add('active');
 
-                            successSecondsLeft = 5;
+                            successSecondsLeft = 3;
                             updateCountdown();
                             clearInterval(successTimer);
                             successTimer = setInterval(() => {
                                 successSecondsLeft--;
                                 updateCountdown();
-                                if (successSecondsLeft <= 0) closeSuccessPopup();
+                                if (successSecondsLeft <= 0) {
+                                    clearInterval(successTimer);
+                                    window.location.reload();
+                                }
                             }, 1000);
                         } else if (data.status === 'rejected') {
                             stopApprovalPolling();
@@ -1528,9 +1531,9 @@
                             // Show rejected modal
                             document.getElementById('modal-rejected').classList.add('active');
 
-                            let rejectedSecondsLeft = 5;
+                            let rejectedSecondsLeft = 3;
                             const updateRejectedCountdown = () => {
-                                const pct = (rejectedSecondsLeft / 5) * 100;
+                                const pct = (rejectedSecondsLeft / 3) * 100;
                                 document.getElementById('rejected-countdown-bar').style.width = pct + '%';
                                 document.getElementById('rejected-countdown-text').textContent =
                                     'Layar akan kembali otomatis dalam ' + rejectedSecondsLeft + ' detik';
@@ -1541,7 +1544,10 @@
                             successTimer = setInterval(() => {
                                 rejectedSecondsLeft--;
                                 updateRejectedCountdown();
-                                if (rejectedSecondsLeft <= 0) closeRejectedPopup();
+                                if (rejectedSecondsLeft <= 0) {
+                                    clearInterval(successTimer);
+                                    window.location.reload();
+                                }
                             }, 1000);
                         }
                     })

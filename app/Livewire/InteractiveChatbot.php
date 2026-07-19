@@ -91,35 +91,44 @@ class InteractiveChatbot extends Component
         $prompt .= "## PENDAFTARAN KUNJUNGAN VIA PERCAKAPAN\n";
         $prompt .= "Kamu BISA mendaftarkan pengunjung langsung melalui percakapan ini.\n\n";
 
-        // ── ALUR TAMU LAMA (RETURNING VISITOR) ──
-        $prompt .= "### LANGKAH PERTAMA PADA PENDAFTARAN MANUAL:\n";
+        // ── PERTANYAAN AWAL: WAKTU KUNJUNGAN ──
+        $prompt .= "### LANGKAH PERTAMA — TANYAKAN WAKTU KUNJUNGAN\n";
         $prompt .= "(Abaikan langkah ini jika pengunjung menggunakan salah satu SHORTCUT TINDAKAN di atas)\n";
-        $prompt .= "Sebelum mengumpulkan data, SELALU tanyakan dulu: **\"Apakah Bapak/Ibu pernah berkunjung sebelumnya?\"**\n\n";
-        $prompt .= "Jika pengunjung menjawab **YA/SUDAH PERNAH**, sertakan marker ini di akhir respons:\n";
-        $prompt .= "<!--FACE_LOOKUP-->\n";
-        $prompt .= "Dan minta pengunjung untuk melakukan scan wajah agar data mereka otomatis terisi.\n";
-        $prompt .= "Setelah scan wajah berhasil, sistem akan otomatis mengirim pesan dengan data pengunjung yang sudah terisi. Kamu hanya perlu mengumpulkan data yang BELUM terisi: **tujuan kunjungan**, **nama PIC**, dan **jenis kunjungan**.\n\n";
+        $prompt .= "Saat pengunjung ingin bertemu PIC/membuat janji temu, SELALU tanyakan dulu:\n";
+        $prompt .= "**\"Apakah Anda ingin berkunjung hari ini, atau untuk jadwal di hari lain (besok/lain waktu)?\"**\n\n";
 
-        // ── ALUR TAMU BARU ──
-        $prompt .= "### JIKA TAMU BARU (belum pernah berkunjung), kumpulkan data berikut secara bertahap:\n";
-        $prompt .= "1. **Nama lengkap** pengunjung\n";
-        $prompt .= "2. **Nama perusahaan/instansi**\n";
-        $prompt .= "3. **Nomor telepon/WhatsApp** (format: 08xxx)\n";
-        $prompt .= "4. **Tujuan kunjungan** (singkat)\n";
-        $prompt .= "5. **Nama karyawan (PIC)** yang ingin ditemui — HARUS cocok dengan data PIC di bawah\n";
-        $prompt .= "6. **Jenis**: walk-in (sekarang) atau appointment (jadwal nanti)\n";
-        $prompt .= "7. Jika appointment: **tanggal** (YYYY-MM-DD) dan **waktu** (HH:mm)\n\n";
+        // ── ALUR HARI INI (WALK-IN) ──
+        $prompt .= "### ALUR A — KUNJUNGAN HARI INI (walk-in)\n";
+        $prompt .= "Jika pengunjung menjawab **HARI INI**:\n";
+        $prompt .= "Kamu TIDAK BOLEH menanyakan pertanyaan form (seperti nama, pernah berkunjung, dsb) di dalam chat. Cukup jawab dengan singkat & ramah: **\"Baik, silakan lakukan pendaftaran walk-in melalui form berikut.\"**\n";
+        $prompt .= "Lalu, WAJIB sertakan marker tindakan ini di akhir pesanmu: <!--ACTION:walkin-->\n";
+        $prompt .= "Marker tersebut akan otomatis memunculkan pop-up form Kiosk agar tamu bisa menscan wajahnya sendiri.\n\n";
+
+        // ── ALUR BESOK/LAIN HARI (APPOINTMENT AUTO-ACC) ──
+        $prompt .= "### ALUR B — JANJI TEMU HARI LAIN (appointment, auto-disetujui)\n";
+        $prompt .= "Jika pengunjung menjawab **BESOK / LAIN HARI / JADWAL NANTI**:\n";
+        $prompt .= "TIDAK perlu tanya pernah berkunjung atau belum. Langsung kumpulkan data berikut secara bertahap:\n";
+        $prompt .= "   a. Nama lengkap\n";
+        $prompt .= "   b. Nama perusahaan/instansi\n";
+        $prompt .= "   c. Nomor telepon/WhatsApp (format: 08xxx)\n";
+        $prompt .= "   d. Nama PIC yang ingin ditemui — HARUS cocok dengan data PIC di bawah\n";
+        $prompt .= "   e. Tanggal kunjungan (YYYY-MM-DD) — harus SETELAH hari ini\n";
+        $prompt .= "   f. Jam kunjungan (HH:mm)\n";
+        $prompt .= "   g. Keperluan/tujuan kunjungan\n";
+        $prompt .= "Setelah semua data lengkap, gunakan marker REGISTER dengan type=\"appointment\". Janji temu ini akan **otomatis disetujui** tanpa perlu konfirmasi email PIC.\n\n";
 
         // ── MARKER PENDAFTARAN ──
         $prompt .= "### MARKER PENDAFTARAN\n";
-        $prompt .= "SETELAH semua data lengkap (baik tamu baru maupun tamu lama), konfirmasi ulang ke pengunjung.\n";
+        $prompt .= "SETELAH semua data lengkap (baik walk-in maupun appointment), konfirmasi ulang ke pengunjung.\n";
         $prompt .= "Jika pengunjung setuju, sertakan marker ini di AKHIR respons:\n";
-        $prompt .= "<!--REGISTER:{\"name\":\"...\",\"company\":\"...\",\"phone\":\"...\",\"purpose\":\"...\",\"pic_name\":\"...\",\"pax\":1,\"type\":\"walk-in\",\"visit_date\":\"\",\"visit_time\":\"\"}-->\n\n";
+        $prompt .= "<!--REGISTER:{\"name\":\"...\",\"company\":\"...\",\"phone\":\"...\",\"purpose\":\"...\",\"pic_name\":\"...\",\"pax\":1,\"type\":\"walk-in atau appointment\",\"visit_date\":\"YYYY-MM-DD\",\"visit_time\":\"HH:mm\"}-->\n\n";
         $prompt .= "ATURAN MARKER:\n";
         $prompt .= "- JANGAN sertakan <!--REGISTER:...--> sampai pengunjung SETUJU\n";
         $prompt .= "- JANGAN sertakan <!--FACE_LOOKUP--> lebih dari sekali per percakapan\n";
         $prompt .= "- pic_name harus PERSIS sama dengan nama di data PIC di bawah\n";
-        $prompt .= "- Untuk walk-in: visit_date dan visit_time boleh kosong\n";
+        $prompt .= "- type harus \"walk-in\" untuk kunjungan hari ini, \"appointment\" untuk jadwal hari lain\n";
+        $prompt .= "- Untuk walk-in: visit_date dan visit_time boleh kosong (akan diisi otomatis oleh sistem)\n";
+        $prompt .= "- Untuk appointment: visit_date dan visit_time WAJIB diisi\n";
         $prompt .= "- pax default 1 kecuali pengunjung menyebut jumlah lain\n\n";
 
         // ── Konteks Data PIC Real-Time dari Database (Hanya jika Onsite) ────────
@@ -587,18 +596,23 @@ class InteractiveChatbot extends Component
         $isWalkIn = ($this->regData['type'] ?? 'walk-in') === 'walk-in';
         $approvalToken = $isWalkIn ? Str::uuid()->toString() : null;
 
+        // Untuk appointment (future), status langsung 'active' (auto-ACC)
+        // Untuk walk-in (hari ini), status 'pending' (menunggu approval PIC via email)
+        $appointmentStatus = $isWalkIn ? 'pending' : 'active';
+
         $appointment = Appointment::create([
             'visit_id'       => VisitIdService::generate(),
             'visitor_id'     => $visitor->id,
             'pic_id'         => $this->regData['pic_id'],
             'type'           => $this->regData['type'] ?? 'walk-in',
-            'status'         => 'pending',
+            'status'         => $appointmentStatus,
             'visit_date'     => $isWalkIn ? now()->toDateString() : ($this->regData['visit_date'] ?: now()->toDateString()),
             'visit_time'     => $isWalkIn ? now()->toTimeString() : ($this->regData['visit_time'] ?: now()->format('H:i')),
             'purpose'        => $this->regData['purpose'] ?? '-',
             'pax'            => $this->regData['pax'] ?? 1,
             'token'          => Str::random(10),
             'approval_token' => $approvalToken,
+            'approved_at'    => $isWalkIn ? null : now(),
         ]);
 
         if ($isWalkIn) {
@@ -628,12 +642,13 @@ class InteractiveChatbot extends Component
                 'visit_time'  => $appointment->visit_time,
                 'purpose'     => $appointment->purpose,
                 'type'        => $appointment->type,
+                'token'       => $appointment->token,
             ]);
         }
 
         $successMsg = $isWalkIn
             ? '✅ **Registrasi berhasil!** Menunggu persetujuan dari karyawan yang dituju...'
-            : '✅ **Janji temu berhasil dibuat!** Token akan dikirimkan ke WhatsApp Anda.';
+            : '✅ **Janji temu berhasil dibuat dan otomatis disetujui!** Silakan datang sesuai jadwal. Token Anda: **' . $appointment->token . '**';
         $this->messages[] = ['role' => 'assistant', 'content' => $successMsg];
 
         $this->regData = [];

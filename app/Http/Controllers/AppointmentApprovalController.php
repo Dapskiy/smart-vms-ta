@@ -43,7 +43,7 @@ class AppointmentApprovalController extends Controller
 
         $appointment->update([
             'status'        => 'active',
-            'check_in_time' => now()->format('H:i:s'),
+            'checkin_time'  => now()->format('H:i:s'),
             'approved_at'   => now(),
         ]);
 
@@ -108,7 +108,7 @@ class AppointmentApprovalController extends Controller
     public function status(string $token)
     {
         $appointment = Appointment::where('approval_token', $token)
-            ->select(['id', 'status', 'approved_at', 'rejected_at', 'check_in_time'])
+            ->select(['id', 'status', 'approved_at', 'rejected_at', 'checkin_time'])
             ->first();
 
         if (!$appointment) {
@@ -117,7 +117,7 @@ class AppointmentApprovalController extends Controller
 
         return response()->json([
             'status'        => $appointment->status,
-            'check_in_time' => $appointment->check_in_time,
+            'check_in_time' => $appointment->checkin_time,
             'approved_at'   => $appointment->approved_at?->format('H:i'),
             'rejected_at'   => $appointment->rejected_at?->format('H:i'),
         ]);

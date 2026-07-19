@@ -53,8 +53,6 @@ class AppointmentsTable
                     ->label('Checkin')
                     ->time('H:i')
                     ->sortable(),
-                TextColumn::make('vehicle_number')
-                    ->searchable(),
                 TextColumn::make('token')
                     ->searchable(),
                 TextColumn::make('status')
