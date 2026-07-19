@@ -21,30 +21,54 @@
         role="dialog"
         aria-label="VISITA AI Assistant"
     >
-        {{-- Header --}}
-        <div class="relative flex flex-col items-center gap-2 px-4 pt-6 pb-5 bg-gradient-to-br from-indigo-600 to-violet-600 flex-shrink-0 text-center">
+        {{-- Header — Premium Glassmorphism Design --}}
+        <div class="relative flex-shrink-0 overflow-hidden">
+            {{-- Layered gradient background --}}
+            <div class="absolute inset-0 bg-gradient-to-br from-slate-900 via-indigo-950 to-violet-950"></div>
+            <div class="absolute inset-0 bg-[radial-gradient(ellipse_at_top_left,rgba(129,140,248,0.2),transparent_60%)]"></div>
+            <div class="absolute inset-0 bg-[radial-gradient(ellipse_at_bottom_right,rgba(167,139,250,0.15),transparent_60%)]"></div>
+
             {{-- Action buttons (absolute top-right) --}}
-            <div class="absolute top-3 right-3 flex items-center gap-1.5">
+            <div class="absolute top-2.5 right-2.5 z-10 flex items-center gap-1">
                 {{-- Speech Controls --}}
-                <div id="aai-speech-controls" class="hidden items-center gap-1.5">
-                    <button onclick="aaiUI.stopSpeech()" class="w-7 h-7 rounded-lg bg-white/15 hover:bg-white/30 flex items-center justify-center text-sm text-white transition-colors" title="Hentikan suara">🛑</button>
-                    <button id="aai-pause-btn" onclick="aaiUI.pauseResumeSpeech()" class="w-7 h-7 rounded-lg bg-white/15 hover:bg-white/30 flex items-center justify-center text-sm text-white transition-colors" title="Jeda suara">⏸️</button>
+                <div id="aai-speech-controls" class="hidden items-center gap-1">
+                    <button onclick="aaiUI.stopSpeech()" class="w-7 h-7 rounded-lg bg-white/10 backdrop-blur-sm hover:bg-white/20 flex items-center justify-center text-sm text-white/80 hover:text-white transition-all duration-200" title="Hentikan suara">🛑</button>
+                    <button id="aai-pause-btn" onclick="aaiUI.pauseResumeSpeech()" class="w-7 h-7 rounded-lg bg-white/10 backdrop-blur-sm hover:bg-white/20 flex items-center justify-center text-sm text-white/80 hover:text-white transition-all duration-200" title="Jeda suara">⏸️</button>
                 </div>
                 {{-- TTS Toggle --}}
-                <button id="aai-tts-btn" onclick="aaiUI.toggleTts()" title="Matikan/nyalakan suara" class="w-7 h-7 rounded-lg bg-white/15 hover:bg-white/30 flex items-center justify-center text-sm text-white transition-colors">🔊</button>
+                <button id="aai-tts-btn" onclick="aaiUI.toggleTts()" title="Matikan/nyalakan suara" class="w-7 h-7 rounded-lg bg-white/10 backdrop-blur-sm hover:bg-white/20 flex items-center justify-center text-sm text-white/80 hover:text-white transition-all duration-200">🔊</button>
                 {{-- Clear --}}
-                <button onclick="aaiUI.clearHistory()" title="Hapus riwayat" class="w-7 h-7 rounded-lg bg-white/15 hover:bg-white/30 flex items-center justify-center text-sm text-white transition-colors">🗑️</button>
+                <button onclick="aaiUI.clearHistory()" title="Hapus riwayat" class="w-7 h-7 rounded-lg bg-white/10 backdrop-blur-sm hover:bg-white/20 flex items-center justify-center text-sm text-white/80 hover:text-white transition-all duration-200">🗑️</button>
                 {{-- Close --}}
-                <button onclick="aaiUI.toggle()" title="Tutup" class="w-7 h-7 rounded-lg bg-white/15 hover:bg-white/30 flex items-center justify-center text-xs font-bold text-white transition-colors">✕</button>
+                <button onclick="aaiUI.toggle()" title="Tutup" class="w-7 h-7 rounded-lg bg-white/10 backdrop-blur-sm hover:bg-red-500/40 flex items-center justify-center text-xs font-bold text-white/80 hover:text-white transition-all duration-200">✕</button>
             </div>
 
-            <div class="w-[200px] h-[200px] rounded-full bg-white flex items-center justify-center overflow-hidden shadow-lg border-4 border-white/20">
-                <img id="aai-header-avatar" src="{{ asset('assets/images/chatbot/avatar-idle.gif') }}" alt="AI" class="w-full h-full object-cover">
+            {{-- Content --}}
+            <div class="relative z-[1] flex items-center gap-4 px-5 py-4 pt-5">
+                {{-- Avatar with glow ring --}}
+                <div class="relative flex-shrink-0">
+                    <div class="absolute -inset-1 rounded-2xl bg-gradient-to-br from-indigo-400/40 to-violet-500/40 blur-md"></div>
+                    <div class="relative w-[80px] h-[80px] rounded-2xl bg-gradient-to-br from-white/15 to-white/5 backdrop-blur-sm border border-white/20 flex items-center justify-center p-1 shadow-xl">
+                        <img id="aai-header-avatar" src="{{ asset('assets/images/chatbot/avatar-greeting-1.png') }}" alt="AI" class="w-full h-full object-contain drop-shadow-lg">
+                    </div>
+                </div>
+
+                {{-- Text --}}
+                <div class="flex flex-col gap-0.5 min-w-0">
+                    <h3 class="text-white font-bold text-[16px] leading-tight tracking-tight">VISITA AI Assistant</h3>
+                    <p class="text-indigo-300/80 text-[11px] leading-tight font-medium">Data real-time · Powered by Gemini</p>
+                    <div class="flex items-center gap-1.5 mt-1.5">
+                        <span class="relative flex h-2 w-2">
+                            <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+                            <span class="relative inline-flex rounded-full h-2 w-2 bg-emerald-400"></span>
+                        </span>
+                        <span class="text-emerald-300/90 text-[10px] font-semibold uppercase tracking-wider">Online</span>
+                    </div>
+                </div>
             </div>
-            <div>
-                <p class="text-white font-semibold text-[17px] leading-tight mb-1">VISITA AI Assistant</p>
-                <p class="text-indigo-200 text-xs leading-tight">Data real-time · Powered by Gemini</p>
-            </div>
+
+            {{-- Bottom accent line --}}
+            <div class="h-[1px] bg-gradient-to-r from-transparent via-indigo-400/50 to-transparent"></div>
         </div>
 
         {{-- Messages Area --}}
@@ -123,7 +147,7 @@
         class="w-14 h-14 rounded-full bg-white hover:bg-gray-50 text-white shadow-xl hover:shadow-2xl flex items-center justify-center overflow-hidden transition-all hover:scale-110 active:scale-95 border-2 border-indigo-500/30"
         style="animation:aaiPulse 2.8s infinite"
     >
-        <span id="aai-fab-icon" class="w-full h-full"><img src="{{ asset('assets/images/chatbot/avatar-idle.gif') }}" alt="AI" class="w-full h-full object-cover"></span>
+        <span id="aai-fab-icon" class="w-full h-full flex items-center justify-center text-3xl">🤖</span>
     </button>
 
 </div>
@@ -241,8 +265,8 @@
         const avatar = $('aai-header-avatar');
         if (!avatar) return;
         avatar.src = (isSpeaking && !isPaused) 
-            ? "{{ asset('assets/images/chatbot/avatar-speaking.gif') }}" 
-            : "{{ asset('assets/images/chatbot/avatar-idle.gif') }}";
+            ? "{{ asset('assets/images/chatbot/avatar-speaking-1.png') }}" 
+            : "{{ asset('assets/images/chatbot/avatar-greeting-1.png') }}";
     }
 
     function speakText(text) {
@@ -333,14 +357,14 @@
             if (isOpen) {
                 panel.classList.remove('hidden');
                 panel.classList.add('flex', 'flex-col');
-                icon.innerHTML = '<span class="text-2xl text-gray-800">✕</span>';
+                icon.innerHTML = '<span class="text-2xl">✕</span>';
                 fab.style.animation = 'none';
                 setTimeout(() => $('aai-input')?.focus(), 160);
                 scrollBottom();
             } else {
                 panel.classList.add('hidden');
                 panel.classList.remove('flex', 'flex-col');
-                icon.innerHTML = '<img src="{{ asset('assets/images/chatbot/avatar-idle.gif') }}" alt="AI" class="w-full h-full object-cover">';
+                icon.innerHTML = '🤖';
                 fab.style.animation = 'aaiPulse 2.8s infinite';
                 window.speechSynthesis?.cancel();
                 isSpeaking = false; isPaused = false;
