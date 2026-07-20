@@ -14,15 +14,11 @@ class AppointmentPolicy
     
     public function viewAny(AuthUser $authUser): bool
     {
-        return $authUser->can('ViewAny:Appointment') || $authUser->pic()->exists();
+        return $authUser->can('ViewAny:Appointment');
     }
 
     public function view(AuthUser $authUser, Appointment $appointment): bool
     {
-        if ($authUser->pic()->exists() && $appointment->pic_id === $authUser->pic->id) {
-            return true;
-        }
-
         return $authUser->can('View:Appointment');
     }
 
@@ -33,10 +29,6 @@ class AppointmentPolicy
 
     public function update(AuthUser $authUser, Appointment $appointment): bool
     {
-        if ($authUser->pic()->exists() && $appointment->pic_id === $authUser->pic->id) {
-            return true;
-        }
-
         return $authUser->can('Update:Appointment');
     }
 

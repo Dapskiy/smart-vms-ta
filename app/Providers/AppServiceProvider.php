@@ -3,6 +3,7 @@
 namespace App\Providers;
 
 use Illuminate\Support\ServiceProvider;
+use Illuminate\Support\Facades\Schema;
 
 class AppServiceProvider extends ServiceProvider
 {
@@ -31,11 +32,20 @@ class AppServiceProvider extends ServiceProvider
             return $user->hasRole('super_admin') ? true : null;
         });
 
-        // Reset PIC availability at 00:00 daily
-        if (cache()->get('pic_availability_reset_date') !== today()->toDateString()) {
-            \App\Models\Pic::query()->update(['is_available' => false]);
-            cache()->forever('pic_availability_reset_date', today()->toDateString());
-        }
+    // Reset PIC availability at 00:00 daily
+    if (
+        Schema::hasTable('pics') &&
+        cache()->get('pic_availability_reset_date') !== today()->toDateString()
+    ) {
+        \App\Models\Pic::query()->update([
+            'is_available' => false
+        ]);
+
+        cache()->forever(
+            'pic_availability_reset_date',
+            today()->toDateString()
+        );
+    }
 
         \Filament\Support\Facades\FilamentView::registerRenderHook(
             'panels::body.end',
