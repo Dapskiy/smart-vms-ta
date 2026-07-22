@@ -243,7 +243,7 @@ return [
     |
     */
 
-    'custom_permissions' => [],
+    'custom_permissions' => ['export_summary'],
 
     /*
     |--------------------------------------------------------------------------

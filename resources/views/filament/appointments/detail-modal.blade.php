@@ -189,7 +189,15 @@
                             <span class="vd-muted">-</span>
                         @endif
                     </td>
-                    <td>{{ $record->visitor?->phone ?? '-' }}</td>
+                    <td>
+                        @php
+                            $phone = $record->visitor?->phone ?? '-';
+                            if ($phone !== '-' && !auth()->user()->hasRole('super_admin')) {
+                                $phone = \Illuminate\Support\Str::mask($phone, '*', 4, -4);
+                            }
+                        @endphp
+                        {{ $phone }}
+                    </td>
                     <td>
                         @if($record->status === 'completed' || in_array($record->visitor?->name, $checkedOutNames))
                             {{ $record->checkout_time ? \Carbon\Carbon::parse($record->checkout_time)->format('H:i:s') : \Carbon\Carbon::parse($record->updated_at)->format('H:i:s') }}

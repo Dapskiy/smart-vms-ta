@@ -140,6 +140,7 @@ class ManageSummaries extends ManageRecords
                 }),
 
             \pxlrbt\FilamentExcel\Actions\Pages\ExportAction::make()
+                ->visible(fn () => auth()->user()->can('export_summary'))
                 ->exports([
                     \App\Filament\Exports\SummaryExcelExport::make()
                         ->withFilename($fileName)
@@ -198,6 +199,13 @@ class ManageSummaries extends ManageRecords
                             \pxlrbt\FilamentExcel\Columns\Column::make('no')->heading('No')->getStateUsing(static function () { static $row = 0; return ++$row; }),
                             \pxlrbt\FilamentExcel\Columns\Column::make('name')->heading('Nama Visitor'),
                             \pxlrbt\FilamentExcel\Columns\Column::make('company')->heading('Instansi'),
+                            \pxlrbt\FilamentExcel\Columns\Column::make('phone')
+                                ->heading('No. Telepon')
+                                ->getStateUsing(function ($record) {
+                                    if (empty($record->phone)) return '-';
+                                    if (auth()->user()->hasRole('super_admin')) return $record->phone;
+                                    return \Illuminate\Support\Str::mask($record->phone, '*', 4, -4);
+                                }),
                             \pxlrbt\FilamentExcel\Columns\Column::make('visit_date')->heading('Tanggal Berkunjung')->getStateUsing(function ($record) {
                                 $lastAppointment = $record->appointments()->whereIn('status', ['completed', 'checkout', 'inactive'])->latest('visit_date')->first();
                                 return $lastAppointment && $lastAppointment->visit_date ? \Carbon\Carbon::parse($lastAppointment->visit_date)->format('d M Y') : '-';

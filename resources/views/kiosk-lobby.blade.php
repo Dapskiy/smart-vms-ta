@@ -1319,6 +1319,8 @@
         let faceInPlace        = false;
         let ciPhotoSnapshot    = null;
         let ciPreparingPhoto   = false;
+        let earPrevOpen        = true;    // blink detection: were eyes open?
+        let blinkDetected      = false;   // blink detection: completed?
         let scanCountdown      = null;
         let faceScanMode       = 'checkin'; // 'checkin' atau 'walkin'
 
@@ -1358,6 +1360,8 @@
                     document.getElementById('face-camera-wrap').style.display = 'flex';
                     livenessStep = 'straight';
                     faceInPlace  = false;
+                    earPrevOpen  = true;
+                    blinkDetected = false;
                     // Reset grid to visible
                     const grid = document.getElementById('ci-face-grid');
                     if (grid) grid.style.opacity = '1';
@@ -1407,6 +1411,14 @@
                 ctx.drawImage(video, 0, 0);
                 return canvas.toDataURL('image/jpeg', 0.80);
             } catch(e) { console.warn('captureKioskPhoto failed:', e); return null; }
+        }
+
+        /* Eye Aspect Ratio (EAR) — used for Blink Detection / Liveness */
+        function calcEAR(pts, idx) {
+            const p = idx.map(i => pts[i]);
+            const dist = (a, b) => Math.hypot(a.x - b.x, a.y - b.y);
+            // EAR = (|p1-p5| + |p2-p4|) / (2 * |p0-p3|)
+            return (dist(p[1], p[5]) + dist(p[2], p[4])) / (2 * dist(p[0], p[3]));
         }
 
         /* FAST landmark-only loop (requestAnimationFrame, no descriptor) */
@@ -1491,9 +1503,25 @@
                         setFaceMessage('⬅ Sekarang tengok ke kiri', 'info');
                         showArrow('left');
                         if (noseRatio > 0.62) {
+                            livenessStep = 'blink';
+                            earPrevOpen = true;
+                            blinkDetected = false;
+                            showArrow('none');
+                        }
+                    } else if (livenessStep === 'blink') {
+                        showArrow('none');
+                        setFaceMessage('Berkedip sekali 👁️', 'info');
+                        const leftEAR  = calcEAR(pts, [36,37,38,39,40,41]);
+                        const rightEAR = calcEAR(pts, [42,43,44,45,46,47]);
+                        const avgEAR   = (leftEAR + rightEAR) / 2;
+                        if (earPrevOpen && avgEAR < 0.21) {
+                            earPrevOpen = false; // mata baru saja menutup
+                        } else if (!earPrevOpen && avgEAR > 0.25) {
+                            blinkDetected = true; // mata terbuka lagi = kedipan terdeteksi!
+                        }
+                        if (blinkDetected) {
                             livenessStep = 'passed';
                             setFaceMessage('Verifikasi berhasil! Memproses...', 'success');
-                            showArrow('none');
                             faceScanActive = false;
                             submitFaceDescriptor(det.descriptor);
                             return;
@@ -2436,7 +2464,7 @@ function atShowArrow(dir) {
 }
 
 window.addEventListener('attendance-success', event => {
-    const d = event.detail;
+    const d = (event.detail[0] !== undefined) ? event.detail[0] : event.detail;
     const modal = document.getElementById('modal-attendance');
     if (!modal || !modal.classList.contains('active')) return;
     document.getElementById('at-face-camera-wrap').style.display = 'none';
@@ -2455,13 +2483,14 @@ window.addEventListener('attendance-success', event => {
         gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.5);
         osc.start(ctx.currentTime); osc.stop(ctx.currentTime + 0.5);
     } catch(e) {}
-    setTimeout(() => closeAttendanceModal(), 3000);
+    setTimeout(() => window.location.reload(), 3000);
 });
 
 window.addEventListener('attendance-error', event => {
+    const d = (event.detail[0] !== undefined) ? event.detail[0] : event.detail;
     const modal = document.getElementById('modal-attendance');
     if (!modal || !modal.classList.contains('active')) return;
-    setAtMsg(event.detail.message || 'Wajah tidak dikenali dalam sistem.', 'error');
+    setAtMsg(d.message || 'Wajah tidak dikenali dalam sistem.', 'error');
     updateAtRing('red');
     setTimeout(() => {
         atLivenessStep = 'straight'; atFaceInPlace = false; atProcessing = false; atScanActive = true;

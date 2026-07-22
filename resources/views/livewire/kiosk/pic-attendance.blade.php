@@ -416,7 +416,7 @@
 
         /* ---- Result panel handler (from Livewire events) ---- */
         window.addEventListener('attendance-success', event => {
-            const d = event.detail;
+            const d = (event.detail[0] !== undefined) ? event.detail[0] : event.detail;
             const panel  = document.getElementById('pa-result-panel');
             const nameEl = document.getElementById('pa-result-name');
             const badge  = document.getElementById('pa-result-badge');
@@ -439,24 +439,17 @@
                 osc.start(ctx.currentTime); osc.stop(ctx.currentTime + 0.5);
             } catch(e) {}
 
-            // Resume scanning after 4s
-            setTimeout(() => {
-                panel.classList.remove('active');
-                paLivenessStep = 'straight'; paFaceInPlace = false; paPhotoSnap = null; paPrepPhoto = false;
-                updatePaRing('blue');
-                setPaMsg('Posisikan wajah di dalam lingkaran', 'info');
-                showPaArrow('none');
-                paScanActive = true;
-                paScanLoop(document.getElementById('pa-face-video'));
-            }, 4000);
+            // Reload page after 4s so kiosk resets cleanly
+            setTimeout(() => window.location.reload(), 4000);
         });
 
         window.addEventListener('attendance-error', event => {
+            const d = (event.detail[0] !== undefined) ? event.detail[0] : event.detail;
             const panel = document.getElementById('pa-result-panel');
             const nameEl = document.getElementById('pa-result-name');
             const badge  = document.getElementById('pa-result-badge');
 
-            nameEl.textContent = event.detail.message || 'Wajah tidak dikenali';
+            nameEl.textContent = d.message || 'Wajah tidak dikenali';
             badge.textContent  = '❌ Tidak Dikenali';
             badge.className    = 'result-badge error';
             panel.classList.add('active');
