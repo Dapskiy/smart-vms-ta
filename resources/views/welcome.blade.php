@@ -1643,8 +1643,7 @@
         let faceInPlace        = false;
         let ciPhotoSnapshot    = null;
         let ciPreparingPhoto   = false;
-        let earPrevOpen        = true;    // blink detection: were eyes open?
-        let blinkDetected      = false;   // blink detection: completed?
+        // Smile detection state (replaces blink detection for better reliability)
         let scanCountdown      = null;
         let faceScanMode       = 'checkin'; // 'checkin' atau 'walkin'
 
@@ -1685,6 +1684,7 @@
                 faceapi.nets.tinyFaceDetector.loadFromUri('/models'),
                 faceapi.nets.faceLandmark68Net.loadFromUri('/models'),
                 faceapi.nets.faceRecognitionNet.loadFromUri('/models'),
+                faceapi.nets.faceExpressionNet.loadFromUri('/models'),
             ]);
 
             const video = document.getElementById('ci-face-video');
@@ -1697,8 +1697,6 @@
                     document.getElementById('face-camera-wrap').style.display = 'flex';
                     livenessStep = 'straight';
                     faceInPlace  = false;
-                    earPrevOpen  = true;
-                    blinkDetected = false;
                     // Reset grid to visible
                     const grid = document.getElementById('ci-face-grid');
                     if (grid) grid.style.opacity = '1';
@@ -1750,11 +1748,10 @@
             } catch(e) { console.warn('captureKioskPhoto failed:', e); return null; }
         }
 
-        /* Eye Aspect Ratio (EAR) — used for Blink Detection / Liveness */
+        /* calcEAR kept for potential future use */
         function calcEAR(pts, idx) {
             const p = idx.map(i => pts[i]);
             const dist = (a, b) => Math.hypot(a.x - b.x, a.y - b.y);
-            // EAR = (|p1-p5| + |p2-p4|) / (2 * |p0-p3|)
             return (dist(p[1], p[5]) + dist(p[2], p[4])) / (2 * dist(p[0], p[3]));
         }
 
@@ -1774,7 +1771,7 @@
             if (!faceScanActive) return;
             try {
                 const det = await faceapi.detectSingleFace(video, new faceapi.TinyFaceDetectorOptions())
-                    .withFaceLandmarks().withFaceDescriptor();
+                    .withFaceLandmarks().withFaceDescriptor().withFaceExpressions();
 
                 updateFaceRingColor('blue');
 
@@ -1840,23 +1837,13 @@
                         setFaceMessage('⬅ Sekarang tengok ke kiri', 'info');
                         showArrow('left');
                         if (noseRatio > 0.62) {
-                            livenessStep = 'blink';
-                            earPrevOpen = true;
-                            blinkDetected = false;
+                            livenessStep = 'smile';
                             showArrow('none');
                         }
-                    } else if (livenessStep === 'blink') {
+                    } else if (livenessStep === 'smile') {
                         showArrow('none');
-                        setFaceMessage('Berkedip sekali 👁️', 'info');
-                        const leftEAR  = calcEAR(pts, [36,37,38,39,40,41]);
-                        const rightEAR = calcEAR(pts, [42,43,44,45,46,47]);
-                        const avgEAR   = (leftEAR + rightEAR) / 2;
-                        if (earPrevOpen && avgEAR < 0.21) {
-                            earPrevOpen = false; // mata baru saja menutup
-                        } else if (!earPrevOpen && avgEAR > 0.25) {
-                            blinkDetected = true; // mata terbuka lagi = kedipan terdeteksi!
-                        }
-                        if (blinkDetected) {
+                        setFaceMessage('Silakan Tersenyum Lebar 😊', 'info');
+                        if (det.expressions && det.expressions.happy > 0.60) {
                             livenessStep = 'passed';
                             setFaceMessage('Verifikasi berhasil! Memproses...', 'success');
                             faceScanActive = false;
@@ -2846,7 +2833,7 @@
             }
         }
 
-        let coTimer = null, coSecs = 60;
+        let coTimer = null, coSecs = 5;
         function showCoSuccess(d) {
             document.getElementById('co-si-name').textContent    = d.visitor_name  || '-';
             document.getElementById('co-si-pic').textContent     = d.pic_name      || '-';
@@ -2855,16 +2842,16 @@
             document.getElementById('co-si-checkin').textContent  = d.checkin_time  || '-';
             document.getElementById('co-si-checkout').textContent = d.checkout_time || '-';
             document.getElementById('modal-checkout-success').classList.add('active');
-            coSecs = 60; updateCoCountdown();
+            coSecs = 5; updateCoCountdown();
             coTimer = setInterval(() => { coSecs--; updateCoCountdown(); if(coSecs<=0) closeCheckoutSuccess(); }, 1000);
         }
         function updateCoCountdown() {
-            document.getElementById('co-countdown-bar').style.width = (coSecs/60*100)+'%';
+            document.getElementById('co-countdown-bar').style.width = (coSecs/5*100)+'%';
             document.getElementById('co-countdown-text').textContent = 'Layar kembali otomatis dalam '+coSecs+' detik';
         }
         function closeCheckoutSuccess() {
             clearInterval(coTimer);
-            document.getElementById('modal-checkout-success').classList.remove('active');
+            window.location.reload();
         }
 
         function setCoMsg(msg, type) {
