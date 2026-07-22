@@ -123,4 +123,6 @@ return [
         'store' => env('APP_MAINTENANCE_STORE', 'database'),
     ],
 
+    'kiosk_pin' => env('KIOSK_PIN', '1234'),
+
 ];

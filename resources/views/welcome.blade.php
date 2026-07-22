@@ -1280,7 +1280,7 @@
             const input = document.getElementById('kiosk-pin-input');
             const error = document.getElementById('kiosk-pin-error');
             const pinVal = input ? input.value : '';
-            const correctPin = '{{ env('KIOSK_PIN', '1234') }}';
+            const correctPin = '{{ config('app.kiosk_pin', '1234') }}';
 
             if (pinVal === correctPin) {
                 closeSecurePinModal();
