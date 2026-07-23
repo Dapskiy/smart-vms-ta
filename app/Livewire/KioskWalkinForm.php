@@ -354,6 +354,14 @@ class KioskWalkinForm extends Component
             ]
         );
 
+        // Perbarui atribut dinamis (company, name) jika terdapat perubahan data terbaru
+        if ($visitor->company !== $this->company || $visitor->name !== $this->name) {
+            $visitor->update([
+                'company' => $this->company ?: $visitor->company,
+                'name' => $this->name ?: $visitor->name,
+            ]);
+        }
+
         if ($visitor->is_blacklisted) {
             $this->addError('general', 'Mohon maaf, Anda tidak dapat melanjutkan proses registrasi. Silakan hubungi Resepsionis.');
             $this->dispatch('walkin-error');
@@ -386,6 +394,14 @@ class KioskWalkinForm extends Component
                 'is_blacklisted' => false,
             ]
         );
+
+        // Perbarui atribut dinamis (company, name) jika terdapat perubahan data terbaru
+        if ($visitor->company !== $this->company || $visitor->name !== $this->name) {
+            $visitor->update([
+                'company' => $this->company ?: $visitor->company,
+                'name' => $this->name ?: $visitor->name,
+            ]);
+        }
 
         if ($visitor->is_blacklisted) {
             $this->addError('general', 'Mohon maaf, Anda tidak dapat melanjutkan proses registrasi. Silakan hubungi Resepsionis.');

@@ -34,11 +34,19 @@ class GuestRegistrationForm extends Component
             'phone' => 'required|string|max:20',
         ]);
 
-        // 2. Simpan data ke tabel visitors
-        $visitor = Visitor::create([
-            'name' => $this->name,
+        // 2. Simpan atau perbarui data ke tabel visitors
+        $visitor = Visitor::firstOrCreate(
+            ['phone' => $this->phone],
+            [
+                'name' => $this->name,
+                'company' => $this->company,
+            ]
+        );
+
+        // Perbarui atribut dinamis (company, name) jika ada perubahan
+        $visitor->update([
             'company' => $this->company,
-            'phone' => $this->phone,
+            'name' => $this->name,
         ]);
 
         // 3. Update appointment (sambungkan dengan visitor_id dan set tipe ke appointment)

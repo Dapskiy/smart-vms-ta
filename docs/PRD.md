@@ -42,13 +42,13 @@ Smart VMS menyediakan platform terpadu yang mencakup:
 | **Visitor Management** | Registrasi visitor, data identitas, blacklist management |
 | **Appointment System** | Penjadwalan kunjungan (appointment), walk-in registration, approval flow |
 | **Kiosk Self-Service** | Form walk-in, face check-in, face check-out, QR check-in, returning visitor detection |
-| **Face Recognition & Liveness** | Registrasi wajah, 3-Stage Active Liveness Detection (Anti-Spoofing), verifikasi via Euclidean Distance, encrypted face data |
+| **Hybrid Authentication** | **Primary:** 3-Stage Active Liveness Face Scan (Anti-Spoofing). **Failover:** QR Code Pass & Auto Biometric Re-Enrollment (Kiosk HD Camera) |
 | **PIC Management** | CRUD PIC, departemen, availability toggle, face-based attendance |
 | **Room Management** | CRUD ruang meeting dengan lokasi dan deskripsi |
 | **Dashboard & Analytics** | Statistik harian, tren kunjungan, chart tujuan kunjungan, akurasi biometrik |
 | **AI Chatbot** | Admin AI assistant (OpenAI) dengan konteks real-time + 3-layer privacy guard |
 | **RBAC** | Role-based access control dengan Spatie Permission + Filament Shield |
-| **Email Notification** | Notifikasi approval/rejection ke PIC via email |
+| **Email Notification** | Notifikasi approval/rejection ke PIC via email + Hybrid E-Pass Card |
 | **Data Export** | Export data ke Excel via Filament Excel |
 
 ### 2.2 Out of Scope (Tidak Termasuk — untuk saat ini)

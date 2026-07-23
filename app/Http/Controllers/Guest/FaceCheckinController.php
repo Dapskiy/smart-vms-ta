@@ -265,52 +265,87 @@ class FaceCheckinController extends Controller
 
             $threshold = 0.5;
             if ($bestDistance > $threshold) {
+                // FAILOVER MECHANISM: Jika verifikasi wajah gagal (misal foto HP pendaftar low-res/buram),
+                // namun QR Code Token VALID dan foto HD Kiosk dikirim → lakukan Auto Biometric Re-Enrollment!
+                if ($incomingDescriptor && $request->filled('face_photo')) {
+                    try {
+                        $existingPhotos = is_array($visitor->face_photo) ? $visitor->face_photo : [];
+                        $existingFeatures = is_array($visitor->face_features) ? $visitor->face_features : [];
+                        if (!empty($existingFeatures) && isset($existingFeatures[0]) && !is_array($existingFeatures[0])) {
+                            $existingFeatures = [$existingFeatures];
+                        }
+                        // Ganti/perbarui data biometrik dengan foto HD Kiosk yang jernih
+                        array_unshift($existingPhotos, $request->input('face_photo'));
+                        array_unshift($existingFeatures, $incomingDescriptor);
+
+                        $visitor->update([
+                            'face_photo' => array_slice($existingPhotos, 0, 10),
+                            'face_features' => array_slice($existingFeatures, 0, 10),
+                        ]);
+
+                        Log::info("[QR-FAILOVER] Auto Biometric Re-Enrollment executed for visitor #{$visitor->id} ({$visitor->name}) via HD Kiosk camera");
+
+                        \App\Models\FaceVerificationLog::create([
+                            'visitor_id' => $visitor->id,
+                            'visitor_name' => $visitor->name,
+                            'type' => 'qr-failover-re-enrollment',
+                            'euclidean_distance' => $bestDistance,
+                            'threshold' => $threshold,
+                            'is_success' => true,
+                            'error_message' => 'QR Failover Mode: Auto-enrolled new HD face photo from Kiosk.',
+                            'ip_address' => $request->ip(),
+                        ]);
+                    } catch (\Throwable $e) {
+                        Log::warning("[QR-FAILOVER] Failed Auto Re-Enrollment: " . $e->getMessage());
+                    }
+                } else {
+                    \App\Models\FaceVerificationLog::create([
+                        'visitor_id' => $visitor->id,
+                        'visitor_name' => $visitor->name,
+                        'type' => 'qr-verify',
+                        'euclidean_distance' => $bestDistance,
+                        'threshold' => $threshold,
+                        'is_success' => false,
+                        'error_message' => 'Wajah tidak cocok dengan data pendaftaran Anda.',
+                        'ip_address' => $request->ip(),
+                    ]);
+
+                    return response()->json([
+                        'success' => false,
+                        'message' => 'Verifikasi Wajah Gagal: Wajah tidak cocok dengan data pendaftaran Anda.',
+                    ]);
+                }
+            } else {
                 \App\Models\FaceVerificationLog::create([
                     'visitor_id' => $visitor->id,
                     'visitor_name' => $visitor->name,
                     'type' => 'qr-verify',
                     'euclidean_distance' => $bestDistance,
                     'threshold' => $threshold,
-                    'is_success' => false,
-                    'error_message' => 'Wajah tidak cocok dengan data pendaftaran Anda.',
+                    'is_success' => true,
                     'ip_address' => $request->ip(),
                 ]);
 
-                return response()->json([
-                    'success' => false,
-                    'message' => 'Verifikasi Wajah Gagal: Wajah tidak cocok dengan data pendaftaran Anda.',
-                ]);
-            }
-
-            \App\Models\FaceVerificationLog::create([
-                'visitor_id' => $visitor->id,
-                'visitor_name' => $visitor->name,
-                'type' => 'qr-verify',
-                'euclidean_distance' => $bestDistance,
-                'threshold' => $threshold,
-                'is_success' => true,
-                'ip_address' => $request->ip(),
-            ]);
-
-            // Simpan sampel foto wajah tambahan jika dikirim
-            if ($request->filled('face_photo')) {
-                try {
-                    $existingPhotos = is_array($visitor->face_photo) ? $visitor->face_photo : [];
-                    $existingFeatures = is_array($visitor->face_features) ? $visitor->face_features : [];
-                    if (!empty($existingFeatures) && isset($existingFeatures[0]) && !is_array($existingFeatures[0])) {
-                        $existingFeatures = [$existingFeatures];
+                // Simpan sampel foto wajah tambahan jika dikirim
+                if ($request->filled('face_photo')) {
+                    try {
+                        $existingPhotos = is_array($visitor->face_photo) ? $visitor->face_photo : [];
+                        $existingFeatures = is_array($visitor->face_features) ? $visitor->face_features : [];
+                        if (!empty($existingFeatures) && isset($existingFeatures[0]) && !is_array($existingFeatures[0])) {
+                            $existingFeatures = [$existingFeatures];
+                        }
+                        if (count($existingPhotos) < 10) {
+                            $existingPhotos[] = $request->input('face_photo');
+                            $visitor->face_photo = $existingPhotos;
+                        }
+                        if (count($existingFeatures) < 10) {
+                            $existingFeatures[] = $incomingDescriptor;
+                            $visitor->face_features = $existingFeatures;
+                        }
+                        $visitor->save();
+                    } catch (\Throwable $e) {
+                        Log::warning("[QR-CHECKIN] Failed to save extra face photo: " . $e->getMessage());
                     }
-                    if (count($existingPhotos) < 10) {
-                        $existingPhotos[] = $request->input('face_photo');
-                        $visitor->face_photo = $existingPhotos;
-                    }
-                    if (count($existingFeatures) < 10) {
-                        $existingFeatures[] = $incomingDescriptor;
-                        $visitor->face_features = $existingFeatures;
-                    }
-                    $visitor->save();
-                } catch (\Throwable $e) {
-                    Log::warning("[QR-CHECKIN] Failed to save extra face photo: " . $e->getMessage());
                 }
             }
         }

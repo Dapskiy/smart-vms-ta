@@ -410,6 +410,15 @@ face_features → Custom Accessor/Mutator (manual Crypt)
 
 > **Trade-off:** Jika tidak ada request sama sekali di hari itu, reset tidak terjadi. Untuk production, gunakan `php artisan schedule:run` + cron.
 
+### 4.9 Kenapa Hybrid Authentication dengan Failover Mechanism & Auto Re-Enrollment?
+
+| Pertimbangan | Alasan |
+|-------------|--------|
+| **Kamera HP Low-Res** | Foto pendaftaran online dari rumah bisa saja buram/gelap akibat spesifikasi HP visitor |
+| **Primary vs Failover** | Face Recognition + 3-Stage Active Liveness digunakan sebagai metode utama (*Primary*), QR Code Pass sebagai metode cadangan (*Failover*) |
+| **Auto Re-Enrollment** | Saat Failover QR Code discan di Kiosk, sistem otomatis mengambil foto HD dari kamera Kiosk untuk memperbarui data biometrik visitor |
+| **Resilient System** | Sistem tidak pernah macet meskipun terjadi kendala biometrik pada perangkat pendaftar |
+
 ---
 
 ## 5. Infrastructure Overview

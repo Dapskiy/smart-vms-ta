@@ -8,6 +8,7 @@ use App\Http\Controllers\Guest\FaceCheckoutController;
 use App\Http\Controllers\Guest\FaceValidationController;
 use App\Http\Controllers\Admin\VisitorFacePhotoController;
 use App\Http\Controllers\Admin\AdminChatController;
+use App\Http\Controllers\Guest\EpassController;
 use App\Http\Controllers\AppointmentApprovalController;
 
 Route::get('/', function () {
@@ -21,6 +22,9 @@ Route::get('/login', function () {
 
 // Route untuk menampilkan form pendaftaran tamu via Livewire
 Route::get('/invitation/{token}', GuestRegistrationForm::class)->name('guest.invitation');
+
+// Route Hybrid Visitor E-Pass Card
+Route::get('/guest/e-pass/{token}', [EpassController::class, 'show'])->name('guest.epass');
 
 // Route untuk checkout individu per visitor
 Route::post('/admin/appointments/checkout', [AppointmentCheckoutController::class, 'checkout'])
