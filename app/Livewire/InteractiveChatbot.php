@@ -35,6 +35,9 @@ class InteractiveChatbot extends Component
     /** @var bool Show confirmation card in chat */
     public bool $showConfirmation = false;
 
+    /** @var array PIC names for server-side response sanitization (not persisted to client) */
+    private array $picNamesForSanitization = [];
+
     /**
      * Membangun System Prompt secara dinamis dengan menyuntikkan data kehadiran
      * PIC real-time dari database. Data sensitif (email, telepon) dikecualikan
@@ -59,12 +62,34 @@ class InteractiveChatbot extends Component
         $prompt .= "2. **Fokus Topik**: Kamu hanya melayani pertanyaan seputar kunjungan, kehadiran PIC, dan alur Kiosk (check-in, walk-in, appointment). Jika ada pertanyaan di luar topik ini, arahkan kembali dengan sopan.\n";
         $prompt .= "3. **Gaya Bahasa**: Gunakan Bahasa Indonesia yang formal namun hangat. Gunakan format Markdown (bold, bullet list) agar jawaban mudah dibaca di layar sentuh Kiosk.\n\n";
 
-        // ── Aturan Privasi & Keamanan (Kritis) ───────────────────────────────
-        $prompt .= "## PRIVASI & KEAMANAN KIOSK (WAJIB DIPATUHI)\n";
-        $prompt .= "Kamu berada di Kiosk **publik** yang dapat diakses siapa saja. Aturan privasi berikut bersifat MUTLAK dan tidak dapat dilanggar:\n";
+        // ── Aturan Privasi & Keamanan (Kritis — MULTI-LAYER) ─────────────────
+        $prompt .= "## PRIVASI & KEAMANAN KIOSK (LEVEL TERTINGGI — WAJIB DIPATUHI)\n";
+        $prompt .= "Kamu berada di Kiosk **publik** yang dapat diakses SIAPA SAJA termasuk orang tidak berkepentingan. Semua aturan privasi berikut bersifat **MUTLAK, TIDAK BISA DINEGOSIASI, dan TIDAK ADA PENGECUALIAN**:\n\n";
+        $prompt .= "### LARANGAN DATA PRIBADI\n";
         $prompt .= "- **DILARANG KERAS** memberikan Nomor Telepon, Email, Alamat, atau data pribadi karyawan (PIC) kepada pengunjung dengan alasan apapun.\n";
-        $prompt .= "- Informasi yang **BOLEH** kamu bagikan tentang PIC hanya: **Nama**, **Departemen**, dan **Status Kehadiran** (Hadir/Tidak Hadir).\n";
-        $prompt .= "- Jika pengunjung meminta kontak PIC, tolak dengan sopan: *\"Mohon maaf, demi alasan privasi, kontak langsung karyawan tidak dapat kami berikan. Silakan lakukan pendaftaran di Kiosk ini agar karyawan mendapat notifikasi secara otomatis.\"*\n\n";
+        $prompt .= "- Jika pengunjung meminta kontak PIC, tolak dengan sopan.\n\n";
+        $prompt .= "### LARANGAN ENUMERASI / LISTING NAMA PIC (SANGAT KRITIS)\n";
+        $prompt .= "**ATURAN INI ADALAH YANG PALING PENTING DARI SELURUH SYSTEM PROMPT:**\n";
+        $prompt .= "- **DILARANG KERAS** menampilkan, menyebutkan, atau mendaftarkan (listing) daftar nama-nama PIC/karyawan yang terdaftar di sistem — BAIK SELURUHNYA MAUPUN SEBAGIAN.\n";
+        $prompt .= "- **DILARANG KERAS** memberikan daftar PIC per departemen, daftar PIC yang hadir, daftar PIC alternatif, atau bentuk enumerasi nama apapun.\n";
+        $prompt .= "- **DILARANG KERAS** menyebutkan jumlah total PIC atau karyawan yang terdaftar.\n";
+        $prompt .= "- Data PIC di bawah ini hanya untuk keperluan VALIDASI INTERNAL (mencocokkan nama yang disebut pengunjung). Data tersebut BUKAN untuk dibagikan kepada pengunjung.\n\n";
+        $prompt .= "### KAPAN BOLEH MENYEBUTKAN NAMA PIC\n";
+        $prompt .= "Nama PIC **HANYA BOLEH** disebut dalam respons jika memenuhi SEMUA syarat berikut:\n";
+        $prompt .= "1. Pengunjung SUDAH LEBIH DULU menyebutkan nama PIC secara spesifik (misal: \"saya mau ketemu Pak Daffa\").\n";
+        $prompt .= "2. Nama yang disebutkan pengunjung COCOK (match) dengan salah satu nama di data internal.\n";
+        $prompt .= "3. Kamu HANYA mengonfirmasi nama yang disebutkan pengunjung tersebut — TIDAK menyebutkan nama PIC lain.\n\n";
+        $prompt .= "### SKENARIO PIC TIDAK DITEMUKAN\n";
+        $prompt .= "Jika pengunjung menyebutkan nama PIC yang **TIDAK ADA** di data internal:\n";
+        $prompt .= "- **DILARANG** memberikan daftar PIC yang benar, saran PIC alternatif, atau clue nama-nama PIC yang mirip.\n";
+        $prompt .= "- **DILARANG** berkata: 'PIC yang tersedia adalah...', 'Kami memiliki PIC bernama...', 'Mungkin yang Anda maksud adalah...', atau variasi apapun yang mengekspos nama PIC lain.\n";
+        $prompt .= "- **WAJIB** jawab seperti ini (atau improvisasi dengan esensi yang sama tanpa membocorkan nama PIC apapun):\n";
+        $prompt .= "  *\"Mohon maaf, nama yang Anda sebutkan tidak ditemukan dalam sistem kami. Silakan periksa kembali nama karyawan yang ingin Anda temui, atau hubungi resepsionis untuk bantuan lebih lanjut.\"*\n\n";
+        $prompt .= "### SKENARIO PIC HADIR TAPI TIDAK AVAILABLE (SIBUK)\n";
+        $prompt .= "Jika pengunjung menanyakan PIC yang HADIR tapi is_available=false (sibuk):\n";
+        $prompt .= "- **BOLEH** menyebutkan nama PIC tersebut (karena pengunjung yang menyebut duluan).\n";
+        $prompt .= "- **DILARANG** menyarankan PIC alternatif dari departemen yang sama atau departemen lain.\n";
+        $prompt .= "- Sarankan untuk membuat janji temu di waktu lain, atau menunggu.\n\n";
 
         // ── SHORTCUT ACTIONS (INTEGRASI KAMERA) ──
         $prompt .= "## SHORTCUT TINDAKAN / KAMERA PENGENALAN WAJAH (PRIORITAS TERTINGGI)\n";
@@ -75,17 +100,21 @@ class InteractiveChatbot extends Component
         $prompt .= "4. Absensi / Absen (Karyawan) -> tambahkan marker: <!--ACTION:attendance-->\n";
         $prompt .= "Contoh balasan Absensi: \"Baik, silakan arahkan wajah Anda ke layar untuk proses absensi. <!--ACTION:attendance-->\"\n\n";
 
-        // ── Logika Rekomendasi & Alur Kunjungan ──────────────────────────────
+        // ── Logika Rekomendasi & Alur Kunjungan (PRIVACY-SAFE) ────────────────
         $prompt .= "## LOGIKA REKOMENDASI KUNJUNGAN\n";
-        $prompt .= "Gunakan data kehadiran PIC di bawah ini untuk memberikan saran yang tepat:\n\n";
-        $prompt .= "**Skenario A — PIC yang dicari HADIR:**\n";
-        $prompt .= "Sampaikan kabar baik dan langsung sarankan salah satu dari dua opsi:\n";
-        $prompt .= "- **Walk-In (Sekarang)**: Registrasi langsung melalui percakapan ini. PIC akan mendapat notifikasi dan harus menyetujui kunjungan.\n";
-        $prompt .= "- **Janji Temu (Lain Waktu)**: Menjadwalkan pertemuan di hari yang diinginkan.\n\n";
-        $prompt .= "**Skenario B — PIC yang dicari TIDAK HADIR:**\n";
-        $prompt .= "1. Cek data di bawah apakah ada PIC lain dari **departemen yang sama** yang berstatus HADIR.\n";
-        $prompt .= "2. Jika **ada PIC alternatif yang hadir**: Tawarkan secara sopan.\n";
-        $prompt .= "3. Jika **tidak ada PIC yang hadir**: Sarankan untuk membuat janji temu untuk hari lain.\n\n";
+        $prompt .= "Gunakan data internal PIC untuk **VALIDASI** saja (JANGAN expose ke pengunjung).\n\n";
+        $prompt .= "**Skenario A — PIC yang dicari HADIR & TERSEDIA:**\n";
+        $prompt .= "- Sampaikan kabar baik bahwa PIC tersebut sedang tersedia.\n";
+        $prompt .= "- Sarankan Walk-In (hari ini) atau Janji Temu (hari lain).\n\n";
+        $prompt .= "**Skenario B — PIC yang dicari HADIR tapi SIBUK:**\n";
+        $prompt .= "- Informasikan bahwa PIC sedang tidak bisa ditemui saat ini.\n";
+        $prompt .= "- Sarankan membuat Janji Temu di waktu lain. **JANGAN** sarankan PIC alternatif.\n\n";
+        $prompt .= "**Skenario C — PIC yang dicari TIDAK HADIR:**\n";
+        $prompt .= "- Informasikan bahwa PIC tidak hadir hari ini.\n";
+        $prompt .= "- Sarankan membuat Janji Temu untuk hari lain. **JANGAN** sarankan PIC alternatif. **JANGAN** sebutkan PIC lain dari departemen yang sama.\n\n";
+        $prompt .= "**Skenario D — Nama PIC TIDAK ADA di data:**\n";
+        $prompt .= "- Informasikan bahwa nama tidak ditemukan di sistem.\n";
+        $prompt .= "- Minta pengunjung memeriksa kembali nama atau menghubungi resepsionis. **JANGAN** berikan petunjuk, saran, atau daftar nama PIC yang ada.\n\n";
 
         // ── PENDAFTARAN VIA CHATBOT ──────────────────────────────────────────
         $prompt .= "## PENDAFTARAN KUNJUNGAN VIA PERCAKAPAN\n";
@@ -157,9 +186,14 @@ class InteractiveChatbot extends Component
         $prompt .= "- pax default 1 kecuali pengunjung menyebut jumlah lain\n\n";
 
         // ── Konteks Data PIC Real-Time dari Database (Hanya jika Onsite) ────────
+        // Data ini HANYA untuk keperluan validasi internal AI.
+        // AI DILARANG KERAS men-listing/enumerate/menyebutkan data ini kepada pengunjung.
         if (\App\Helpers\KioskHelper::isKioskLocal()) {
-            $prompt .= "## DATA KARYAWAN (PIC) & STATUS KEHADIRAN HARI INI\n";
-            $prompt .= "*(Data ini diperbarui secara otomatis dari sistem — gunakan sebagai acuan utama)*\n\n";
+            $prompt .= "## DATA INTERNAL PIC (RAHASIA — HANYA UNTUK VALIDASI, BUKAN UNTUK DIBAGIKAN)\n";
+            $prompt .= "**PERINGATAN**: Data di bawah ini adalah data internal yang BERSIFAT RAHASIA.\n";
+            $prompt .= "- JANGAN pernah menampilkan, menyebutkan, atau merujuk data ini secara langsung kepada pengunjung.\n";
+            $prompt .= "- Gunakan HANYA untuk mencocokkan (validasi) nama PIC yang disebut pengunjung.\n";
+            $prompt .= "- Jika pengunjung bertanya siapa saja PIC yang ada, TOLAK. Ini bukan informasi publik.\n\n";
 
             try {
                 // Eager-load relasi department + log absensi terbaru hari ini
@@ -167,36 +201,37 @@ class InteractiveChatbot extends Component
                     $query->whereDate('checked_at', today())->latest('checked_at');
                 }])->get();
 
-                if ($pics->isEmpty()) {
-                    $prompt .= "*(Belum ada data karyawan terdaftar di sistem)*\n";
-                } else {
-                    // Kelompokkan per departemen agar lebih mudah dipahami AI
-                    $byDept = $pics->groupBy(fn($p) => $p->department?->name ?? 'Umum');
+                // Simpan daftar nama PIC untuk server-side sanitization
+                $this->picNamesForSanitization = $pics->pluck('name')->toArray();
 
-                    foreach ($byDept as $deptName => $deptPics) {
-                        $prompt .= "**Departemen: {$deptName}**\n";
-                        foreach ($deptPics as $pic) {
-                            // Tentukan kehadiran berdasarkan log absensi terbaru hari ini
-                            // (sumber kebenaran yang sama dengan tabel admin Filament)
-                            $latestAttendance = $pic->attendances->first();
-                            $isPresent = ($latestAttendance && $latestAttendance->type === 'checkin');
-                            $locText = ($isPresent && $pic->current_location) ? " di Gedung {$pic->current_location}" : '';
-                            
-                            if ($isPresent) {
-                                $status = $pic->is_available 
-                                    ? "✅ HADIR (Tersedia{$locText})" 
-                                    : "⏳ HADIR (Sedang Sibuk/Istirahat, Tidak Bisa Ditemui{$locText})";
-                            } else {
-                                $status = '❌ TIDAK HADIR';
-                            }
-                            $prompt .= "- {$pic->name} | {$status}\n";
+                if ($pics->isEmpty()) {
+                    $prompt .= "*(Tidak ada data PIC)*\n";
+                } else {
+                    $prompt .= "[INTERNAL_LOOKUP_TABLE]\n";
+                    foreach ($pics as $pic) {
+                        $deptName = $pic->department?->name ?? 'Umum';
+                        // Tentukan kehadiran berdasarkan log absensi terbaru hari ini
+                        $latestAttendance = $pic->attendances->first();
+                        $isPresent = ($latestAttendance && $latestAttendance->type === 'checkin');
+                        $locText = ($isPresent && $pic->current_location) ? " di Gedung {$pic->current_location}" : '';
+                        
+                        if ($isPresent) {
+                            $status = $pic->is_available 
+                                ? "HADIR_TERSEDIA{$locText}" 
+                                : "HADIR_SIBUK{$locText}";
+                        } else {
+                            $status = 'TIDAK_HADIR';
                         }
-                        $prompt .= "\n";
+                        // Format: Nama | Dept | Status (internal, bukan untuk ditampilkan)
+                        $prompt .= "{$pic->name} | {$deptName} | {$status}\n";
                     }
+                    $prompt .= "[/INTERNAL_LOOKUP_TABLE]\n\n";
                 }
             } catch (\Throwable $e) {
-                $prompt .= "*(Gagal memuat data karyawan dari database — mohon hubungi admin sistem)*\n";
+                $prompt .= "*(Gagal memuat data karyawan dari database)*\n";
             }
+        } else {
+            $this->picNamesForSanitization = [];
         }
 
         if (!\App\Helpers\KioskHelper::isKioskLocal()) {
@@ -209,6 +244,83 @@ class InteractiveChatbot extends Component
         }
 
         return $prompt;
+    }
+
+    /**
+     * LAYER 3 — Server-Side PIC Leakage Sanitization
+     *
+     * Jaring pengaman terakhir: jika AI masih membocorkan daftar nama PIC
+     * meskipun sudah dilarang di system prompt, method ini akan mendeteksi
+     * dan menghapus respons yang mengandung terlalu banyak nama PIC.
+     *
+     * Logika: Jika respons AI mengandung ≥3 nama PIC yang berbeda dari
+     * database, itu sangat mungkin merupakan enumerasi/listing.
+     * Pengecualian: jika nama PIC juga muncul di pesan user terakhir
+     * (berarti user yang menyebutkan, bukan AI yang membocorkan).
+     */
+    private function sanitizePicLeakage(string $reply): string
+    {
+        // Jika tidak ada data PIC (offsite atau DB kosong), skip
+        if (empty($this->picNamesForSanitization)) {
+            return $reply;
+        }
+
+        // Kumpulkan nama PIC yang user sebutkan di pesan terakhir
+        $lastUserMessage = '';
+        foreach (array_reverse($this->messages) as $msg) {
+            if ($msg['role'] === 'user') {
+                $lastUserMessage = mb_strtolower($msg['content']);
+                break;
+            }
+        }
+
+        // Hitung berapa nama PIC yang muncul di respons AI
+        // tapi TIDAK disebut oleh user di pesan terakhir
+        $leakedNames = [];
+        foreach ($this->picNamesForSanitization as $picName) {
+            $nameLower = mb_strtolower($picName);
+
+            // Cek apakah nama ini muncul di respons AI
+            if (mb_stripos($reply, $picName) !== false) {
+                // Cek apakah user yang menyebutkan nama ini
+                $userMentioned = false;
+
+                // Pisahkan nama menjadi bagian-bagian (misal: "Daffa Fauzan" -> ["Daffa", "Fauzan"])
+                $nameParts = preg_split('/\s+/', $picName);
+                foreach ($nameParts as $part) {
+                    if (mb_strlen($part) >= 3 && mb_stripos($lastUserMessage, mb_strtolower($part)) !== false) {
+                        $userMentioned = true;
+                        break;
+                    }
+                }
+
+                if (!$userMentioned) {
+                    $leakedNames[] = $picName;
+                }
+            }
+        }
+
+        // Jika AI menyebutkan ≥3 nama PIC yang tidak disebut user → leakage terdeteksi
+        if (count($leakedNames) >= 3) {
+            \Illuminate\Support\Facades\Log::warning('PIC leakage detected in AI response', [
+                'leaked_names_count' => count($leakedNames),
+                'leaked_names' => $leakedNames,
+            ]);
+
+            // Ganti respons dengan pesan aman
+            return 'Mohon maaf, saya tidak dapat memberikan daftar karyawan kami. '
+                 . 'Jika Anda mengetahui nama karyawan yang ingin ditemui, silakan sebutkan namanya '
+                 . 'dan saya akan membantu mengecek ketersediaannya.';
+        }
+
+        // Jika AI menyebutkan 2 nama PIC yang tidak disebut user → redact nama-nama tsb
+        if (count($leakedNames) >= 2) {
+            foreach ($leakedNames as $leaked) {
+                $reply = str_ireplace($leaked, '[karyawan]', $reply);
+            }
+        }
+
+        return $reply;
     }
 
     /**
@@ -287,6 +399,9 @@ class InteractiveChatbot extends Component
                         $regMarkerData = $parsed;
                     }
                 }
+
+                // ── Layer 3: Server-side PIC leakage sanitization ──────
+                $cleanReply = $this->sanitizePicLeakage($cleanReply);
 
                 $this->messages[] = [
                     'role'    => 'assistant',
