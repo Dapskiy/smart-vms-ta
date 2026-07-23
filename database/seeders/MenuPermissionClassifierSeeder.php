@@ -53,6 +53,7 @@ class MenuPermissionClassifierSeeder extends Seeder
                     'View:VisitTrendChart',
                     'View:VisitPurposeChart',
                     'View:LatestGuestsTable',
+                    'View:AdminAiChatWidget',
                 ],
             ],
             'User' => [
@@ -74,6 +75,16 @@ class MenuPermissionClassifierSeeder extends Seeder
                 'slug'       => 'menu',
                 'icon'       => 'heroicon-o-bars-3',
                 'sort_order' => 10,
+            ],
+            'FaceVerificationLog' => [
+                'slug'       => 'face-verification-log',
+                'icon'       => 'heroicon-o-document-text',
+                'sort_order' => 11,
+            ],
+            'PicAttendance' => [
+                'slug'       => 'pic-attendance',
+                'icon'       => 'heroicon-o-clipboard-document-check',
+                'sort_order' => 12,
             ],
         ];
 

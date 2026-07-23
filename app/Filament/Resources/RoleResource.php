@@ -6,6 +6,7 @@ use App\Models\Role;
 use App\Models\Permission;
 use Filament\Forms\Components\TextInput;
 use Filament\Forms\Components\Textarea;
+use Filament\Forms\Components\Checkbox;
 use Filament\Forms\Components\CheckboxList;
 use Filament\Forms\Components\Hidden;
 use Filament\Schemas\Components\Section;
@@ -19,6 +20,8 @@ use Filament\Actions\BulkActionGroup;
 use Filament\Actions\DeleteBulkAction;
 use Filament\Tables\Table;
 use Filament\Tables\Columns\TextColumn;
+
+use Illuminate\Support\Str;
 
 class RoleResource extends Resource
 {
@@ -47,68 +50,106 @@ class RoleResource extends Resource
                 Section::make('Permissions')
                     ->description('Daftar hak akses berdasarkan modul')
                     ->schema(function () {
-                        $menus = \App\Models\Menu::with('permissions')->orderBy('name')->get();
+                        $dashboardWidgets = [
+                            'Dashboard',
+                            'GuestStatsOverview',
+                            'VisitTrendChart',
+                            'VisitPurposeChart',
+                            'LatestGuestsTable',
+                            'AdminAiChatWidget',
+                        ];
+
+                        $allPermissions = Permission::with('menu')->get();
+
+                        // Group permissions dynamically by menu or by resource name
+                        $groupedPermissions = $allPermissions->groupBy(function ($perm) use ($dashboardWidgets) {
+                            if ($perm->menu) {
+                                return $perm->menu->name;
+                            }
+                            if (str_contains($perm->name, ':')) {
+                                $resource = explode(':', $perm->name, 2)[1];
+                                if (in_array($resource, $dashboardWidgets)) {
+                                    return 'Dashboard';
+                                }
+                                return Str::headline($resource);
+                            }
+                            return 'Lainnya';
+                        })->sortKeys();
+
                         $sections = [];
 
-                        foreach ($menus as $menu) {
-                            if ($menu->permissions->isEmpty()) continue;
+                        // Global Centang Semua Checkbox
+                        $sections[] = Section::make('Centang Semua')
+                            ->contained(false)
+                            ->schema([
+                                Checkbox::make('select_all_permissions')
+                                    ->label('Centang Semua Permission')
+                                    ->live()
+                                    ->afterStateHydrated(function ($component, $record) use ($allPermissions) {
+                                        if (!$record) return;
+                                        $allIds = $allPermissions->pluck('id')->toArray();
+                                        $roleIds = $record->permissions->pluck('id')->toArray();
+                                        if (count($allIds) > 0 && count(array_diff($allIds, $roleIds)) === 0) {
+                                            $component->state(true);
+                                        }
+                                    })
+                                    ->afterStateUpdated(function ($state, $set) use ($groupedPermissions) {
+                                        foreach ($groupedPermissions as $groupTitle => $permissions) {
+                                            $groupKey = 'permissions_group_' . Str::slug($groupTitle, '_');
+                                            if ($state) {
+                                                $set($groupKey, $permissions->pluck('id')->toArray());
+                                            } else {
+                                                $set($groupKey, []);
+                                            }
+                                        }
+                                    })
+                                    ->dehydrated(false)
+                            ])
+                            ->columnSpanFull();
 
-                            $sections[] = Section::make($menu->name)
+                        foreach ($groupedPermissions as $groupTitle => $permissions) {
+                            if ($permissions->isEmpty()) continue;
+
+                            $groupKey = 'permissions_group_' . Str::slug($groupTitle, '_');
+
+                            $sections[] = Section::make($groupTitle)
                                 ->contained(false) // Menghapus kotak/tabel container
                                 ->schema([
-                                    CheckboxList::make('permissions_menu_' . $menu->id)
-                                        ->options(function () use ($menu) {
-                                            return $menu->permissions->mapWithKeys(function (Permission $record) {
+                                    CheckboxList::make($groupKey)
+                                        ->options(function () use ($permissions) {
+                                            return $permissions->mapWithKeys(function (Permission $record) {
                                                 // Nama fitur (spasi) nama menu, huruf kecil semua
                                                 $label = strtolower(str_replace(':', ' ', $record->name));
                                                 return [$record->id => trim($label)];
                                             });
                                         })
                                         ->columns(3)
+                                        ->bulkToggleable()
                                         ->hiddenLabel()
                                         ->gridDirection('row')
-                                        ->afterStateHydrated(fn ($component, $record) => $record ? $component->state($record->permissions->where('menu_id', $menu->id)->pluck('id')->toArray()) : null)
-                                        ->dehydrated(false)
-                                ])
-                                ->columnSpanFull();
-                        }
-
-                        // Permissions tanpa menu
-                        $generalPermissions = \App\Models\Permission::whereNull('menu_id')->get();
-                        if ($generalPermissions->isNotEmpty()) {
-                            $sections[] = Section::make('Lainnya')
-                                ->contained(false)
-                                ->schema([
-                                    CheckboxList::make('permissions_general')
-                                        ->options(function () use ($generalPermissions) {
-                                            return $generalPermissions->mapWithKeys(function (Permission $record) {
-                                                $label = strtolower(str_replace(':', ' ', $record->name));
-                                                return [$record->id => trim($label)];
-                                            });
+                                        ->afterStateHydrated(function ($component, $record) use ($permissions) {
+                                            if (!$record) return;
+                                            $permIds = $permissions->pluck('id')->toArray();
+                                            $rolePermIds = $record->permissions->pluck('id')->toArray();
+                                            $intersect = array_values(array_intersect($rolePermIds, $permIds));
+                                            $component->state($intersect);
                                         })
-                                        ->columns(3)
-                                        ->hiddenLabel()
-                                        ->afterStateHydrated(fn ($component, $record) => $record ? $component->state($record->permissions->whereNull('menu_id')->pluck('id')->toArray()) : null)
                                         ->dehydrated(false)
                                 ])
                                 ->columnSpanFull();
                         }
 
-                        // Hidden field to handle syncing
+                        // Hidden field to handle syncing relationships
                         $sections[] = Hidden::make('permissions_sync')
                             ->dehydrated(true)
-                            ->saveRelationshipsUsing(function ($record, $state, $get) use ($menus, $generalPermissions) {
+                            ->saveRelationshipsUsing(function ($record, $state, $get) use ($groupedPermissions) {
                                 $ids = [];
-                                foreach ($menus as $menu) {
-                                    $menuIds = $get('permissions_menu_' . $menu->id);
-                                    if (is_array($menuIds)) {
-                                        $ids = array_merge($ids, $menuIds);
+                                foreach ($groupedPermissions as $groupTitle => $permissions) {
+                                    $groupKey = 'permissions_group_' . Str::slug($groupTitle, '_');
+                                    $selectedIds = $get($groupKey);
+                                    if (is_array($selectedIds)) {
+                                        $ids = array_merge($ids, $selectedIds);
                                     }
-                                }
-                                
-                                $generalIds = $get('permissions_general');
-                                if (is_array($generalIds)) {
-                                    $ids = array_merge($ids, $generalIds);
                                 }
 
                                 $record->permissions()->sync($ids);
