@@ -42,11 +42,11 @@ Smart VMS menyediakan platform terpadu yang mencakup:
 | **Visitor Management** | Registrasi visitor, data identitas, blacklist management |
 | **Appointment System** | Penjadwalan kunjungan (appointment), walk-in registration, approval flow |
 | **Kiosk Self-Service** | Form walk-in, face check-in, face check-out, QR check-in, returning visitor detection |
-| **Face Recognition** | Registrasi wajah, verifikasi check-in/check-out via Euclidean Distance, encrypted face data |
+| **Face Recognition & Liveness** | Registrasi wajah, 3-Stage Active Liveness Detection (Anti-Spoofing), verifikasi via Euclidean Distance, encrypted face data |
 | **PIC Management** | CRUD PIC, departemen, availability toggle, face-based attendance |
 | **Room Management** | CRUD ruang meeting dengan lokasi dan deskripsi |
 | **Dashboard & Analytics** | Statistik harian, tren kunjungan, chart tujuan kunjungan, akurasi biometrik |
-| **AI Chatbot** | Admin AI assistant (OpenAI) dengan konteks real-time dari database |
+| **AI Chatbot** | Admin AI assistant (OpenAI) dengan konteks real-time + 3-layer privacy guard |
 | **RBAC** | Role-based access control dengan Spatie Permission + Filament Shield |
 | **Email Notification** | Notifikasi approval/rejection ke PIC via email |
 | **Data Export** | Export data ke Excel via Filament Excel |
@@ -75,9 +75,10 @@ Smart VMS menyediakan platform terpadu yang mencakup:
 - [x] Kiosk walk-in form (Livewire) — registrasi tamu langsung
 - [x] QR-based check-in (visitor menunjukkan QR code dari invitation)
 - [x] Face registration saat pertama kali check-in
+- [x] 3-Stage Active Liveness Detection (Gerakan kepala kanan/kiri + Ekspresi senyum) anti photo-spoofing
 - [x] Face-based check-in dan check-out mandiri
 - [x] Returning visitor detection (auto-fill data dari face recognition)
-- [x] Kiosk security PIN protection
+- [x] Kiosk security PIN protection & IP Whitelisting
 
 ### Phase 3: Walk-in Approval Flow ✅
 - [x] Walk-in appointment → kirim email approval ke PIC

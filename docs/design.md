@@ -340,4 +340,30 @@ rejected  cancelled
 - Walk-in routes (`/kiosk/*`) tidak memerlukan authentication (publik)
 - PIN mencegah penggunaan non-authorized di kiosk
 - IP whitelist memastikan hanya perangkat di jaringan lokal yang bisa akses
-- `KioskHelper::isKioskLocal()` mengecek apakah request berasal dari IP yang diizinkan
+- `KioskHelper::isKioskLocal()` mengecek meyakinkan apakah request berasal dari IP yang diizinkan
+
+### 4.9 3-Stage Active Liveness Detection Algorithm (Anti-Spoofing)
+
+**Keputusan:** Kiosk mengimplementasikan verifikasi keaktifan wajah interaktif 3-tahap sebelum deskriptor biometrik dikirim ke server.
+
+```mermaid
+graph TD
+    A[Start Face Scan] --> B[Step 1: Straight Face & Snapshot]
+    B --> C[Step 2a: Turn Right ➡]
+    C -->|Nose Ratio < 0.38| D[Step 2b: Turn Left ⬅]
+    D -->|Nose Ratio > 0.62| E[Step 3: Smile Expression 😊]
+    E -->|Happy Expression > 0.60| F[Liveness Passed ✅]
+    F --> G[Extract & Submit 128-dim Descriptor]
+```
+
+**Mekanisme Deteksi:**
+1. **Straight Face**: Menangkap snapshot foto lurus jernih.
+2. **Head Yaw Movement (Gerakan Kepala)**:
+   * Menengok ke Kanan: Rasio posisi hidung `pts[30].x / pts[16].x < 0.38`
+   * Menengok ke Kiri: Rasio posisi hidung `pts[30].x / pts[16].x > 0.62`
+3. **Facial Expression Analysis**:
+   * Deteksi Ekspresi Tersenyum: `det.expressions.happy > 0.60`
+
+**Alasan & Value:**
+- **Anti Photo-Spoofing**: Mencegah kecurangan mengarahkan foto fisik/layar HP ke kamera, karena foto 2D tidak bisa merespons instruksi tengok dan senyum secara interaktif.
+- **Client-Side Real-Time Execution**: Berjalan cepat langsung di browser menggunakan 68-point facial landmarks dari `face-api.js` tanpa membebani server.

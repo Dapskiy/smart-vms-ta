@@ -345,16 +345,17 @@ sequenceDiagram
 | **Performance** | Better query planner untuk complex aggregate (dashboard stats) |
 | **Standards compliance** | Lebih strict — menangkap error lebih awal |
 
-### 4.3 Kenapa Face Recognition di Client-Side (face-api.js)?
+### 4.3 Kenapa Face Recognition & Active Liveness di Client-Side (face-api.js)?
 
 | Pertimbangan | Alasan |
 |-------------|--------|
 | **Tidak perlu Python service** | face-api.js berjalan di browser → tidak perlu Flask/FastAPI server terpisah |
-| **Mengurangi server load** | Feature extraction (128-dimensional descriptor) dilakukan di client |
+| **Mengurangi server load** | Feature extraction (128-dimensional descriptor) & liveness verification dilakukan di client |
+| **Active Liveness Detection** | Verifikasi interaktif 3-tahap (Tengok Kanan/Kiri via landmark `noseRatio` + Senyum via `happy` expression) mencegah serangan foto (photo spoofing) |
 | **Offline capable** | Model TensorFlow.js di-load dari CDN/local, bisa digunakan tanpa internet (setelah cache) |
 | **Euclidean Distance** | Perbandingan descriptor cukup sederhana → bisa dilakukan di PHP backend |
 
-> **Trade-off:** Akurasi lebih rendah dibanding server-side model (dlib, ArcFace). Untuk production, pertimbangkan server-side inference.
+> **Trade-off:** Akurasi lebih rendah dibanding server-side model heavy (dlib, ArcFace). Namun kombinasi dengan **3-Stage Active Liveness** memberikan keamanan anti-spoofing yang sangat tinggi di layar Kiosk.
 
 ### 4.4 Kenapa Face Data Dienkripsi (Tidak Pakai Eloquent Cast)?
 
