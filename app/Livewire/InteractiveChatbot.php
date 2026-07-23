@@ -91,17 +91,24 @@ class InteractiveChatbot extends Component
         $prompt .= "## PENDAFTARAN KUNJUNGAN VIA PERCAKAPAN\n";
         $prompt .= "Kamu BISA mendaftarkan pengunjung langsung melalui percakapan ini.\n\n";
 
-        // ── PERTANYAAN AWAL: WAKTU KUNJUNGAN ──
-        $prompt .= "### LANGKAH PERTAMA — TANYAKAN WAKTU KUNJUNGAN\n";
-        $prompt .= "(Abaikan langkah ini jika pengunjung menggunakan salah satu SHORTCUT TINDAKAN di atas)\n";
-        $prompt .= "Saat pengunjung ingin bertemu PIC/membuat janji temu, SELALU tanyakan dulu:\n";
-        $prompt .= "**\"Apakah Anda ingin berkunjung hari ini, atau untuk jadwal di hari lain (besok/lain waktu)?\"**\n\n";
+        // ── PERTANYAAN AWAL: WAKTU KUNJUNGAN (DYNAMICAL & FLEXIBLE) ──
+        $prompt .= "### PENENTUAN WAKTU KUNJUNGAN (IMPROVISATIF & ALAMI)\n";
+        $prompt .= "(Abaikan langkah ini jika pengunjung sudah menyebutkan waktu atau menggunakan SHORTCUT TINDAKAN di atas)\n";
+        $prompt .= "Saat pengunjung menyatakan ingin bertemu PIC atau membuat janji temu tanpa menyebutkan waktu:\n";
+        $prompt .= "- **TANYAKAN WAKTU KUNJUNGAN SECAARA ALAMI & BERVARIASI**:\n";
+        $prompt .= "  - **DILARANG** menggunakan kalimat kaku atau templatized yang sama berulang-ulang.\n";
+        $prompt .= "  - Berimprovisasilah secara ramah, luwes, dan kontekstual untuk memastikan apakah kunjungan dimaksudkan untuk **HARI INI (Walk-In)** atau **JADWAL HARI LAIN (Appointment)**.\n";
+        $prompt .= "  - *Contoh variasi gaya percakapan (sesuaikan dengan konteks)*:\n";
+        $prompt .= "    • \"Baik, Pak/Bu. Apakah rencana kunjungannya untuk hari ini atau ingin dijadwalkan di hari lain?\"\n";
+        $prompt .= "    • \"Tentu, dengan senang hati. Rencana pertemuannya untuk hari ini atau jadwal mendatang?\"\n";
+        $prompt .= "    • \"Boleh diinformasikan, apakah Anda akan berkunjung sekarang/hari ini, atau untuk tanggal tertentu di lain hari?\"\n";
+        $prompt .= "    • \"Baik, untuk pertemuannya apakah ditujukan untuk hari ini atau ingin membuat janji di lain waktu?\"\n\n";
 
         // ── ALUR HARI INI (WALK-IN) ──
         $prompt .= "### ALUR A — KUNJUNGAN HARI INI (walk-in)\n";
-        $prompt .= "Jika pengunjung menjawab **HARI INI**:\n";
-        $prompt .= "Kamu TIDAK BOLEH menanyakan pertanyaan form (seperti nama, pernah berkunjung, dsb) di dalam chat. Cukup jawab dengan singkat & ramah: **\"Baik, silakan lakukan pendaftaran walk-in melalui form berikut.\"**\n";
-        $prompt .= "Lalu, WAJIB sertakan marker tindakan ini di akhir pesanmu: <!--ACTION:walkin-->\n";
+        $prompt .= "Jika pengunjung menyampaikan bahwa kunjungannya adalah untuk **HARI INI / SEKARANG**:\n";
+        $prompt .= "- Berikan respon ramah dan luwes mengarahkan tamu ke pendaftaran walk-in (misal: \"Baik, silakan lakukan pendaftaran walk-in melalui form yang akan tampil berikut ini.\").\n";
+        $prompt .= "- WAJIB sertakan marker tindakan ini di akhir pesanmu: <!--ACTION:walkin-->\n";
         $prompt .= "Marker tersebut akan otomatis memunculkan pop-up form Kiosk agar tamu bisa menscan wajahnya sendiri.\n\n";
 
         // ── ALUR BESOK/LAIN HARI (APPOINTMENT AUTO-ACC) ──
