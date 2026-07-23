@@ -150,9 +150,7 @@
         <span id="aai-fab-icon" class="w-full h-full flex items-center justify-center text-3xl">🤖</span>
     </button>
 
-</div>
 
-{{-- ── Suggestion Chip Styles (minimal, Tailwind-compatible) ── --}}
 <style>
 .aai-chip {
     @apply bg-indigo-50 dark:bg-indigo-900/40 text-indigo-700 dark:text-indigo-300
@@ -413,81 +411,237 @@
                         'X-CSRF-TOKEN' : activeCsrfToken,
                     },
                     body: JSON.stringify({ message }),
+                    body: JSON.stringify({ message: text })
                 });
 
-                typing.remove();
-                const data = await res.json();
-
-                if (res.status === 419 || res.status === 401) {
-                    msgArea.appendChild(bubbleAssistant("Sesi Anda telah berakhir demi keamanan. Silakan muat ulang (refresh) halaman ini."));
-                } else if (res.ok && data.reply) {
-                    msgArea.appendChild(bubbleAssistant(data.reply));
-                    if (ttsOn) speakText(data.reply);
+                if (!response.ok) throw new Error('Network error');
+                
+                const data = await response.json();
+                this.removeTypingIndicator();
+                
+                if (data.status === 'success') {
+                    this.addMessage(data.reply, 'bot');
                 } else {
-                    msgArea.appendChild(bubbleError(data.error ?? 'Terjadi kesalahan, coba lagi.'));
+                    this.addMessage('Maaf, terjadi kesalahan: ' + data.message, 'bot');
                 }
             } catch (err) {
-                typing.remove();
-                $('aai-messages').appendChild(bubbleError('Koneksi gagal: ' + err.message));
+                this.removeTypingIndicator();
+                this.addMessage('Ups! Gagal terhubung ke AI server.', 'bot');
+                console.error(err);
             } finally {
-                isLoading        = false;
-                input.disabled   = false;
-                sendBtn.disabled = false;
+                isProcessing = false;
                 input.focus();
-                scrollBottom();
             }
         },
 
-        toggleTts() {
-            ttsOn = !ttsOn;
-            const btn = $('aai-tts-btn');
-            btn.textContent = ttsOn ? '🔊' : '🔇';
-            btn.title = ttsOn ? 'Matikan suara' : 'Nyalakan suara';
-            if (!ttsOn) {
-                window.speechSynthesis?.cancel();
-                isSpeaking = false; isPaused = false;
+        suggest(btn) {
+            input.value = btn.innerText;
+            this.sendMessage();
+        },
+
+        addMessage(text, sender) {
+            const wrap = document.createElement('div');
+            wrap.className = `flex ${sender === 'user' ? 'justify-end' : 'justify-start'} w-full`;
+            
+            const bubble = document.createElement('div');
+            // Parse Markdown sederhana (bold, list) jika dari bot
+            let parsedText = text;
+            if (sender === 'bot') {
+                parsedText = parsedText
+                    .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
+                    .replace(/\n- (.*?)/g, '<br>• $1')
+                    .replace(/\n/g, '<br>');
+            }
+
+            bubble.innerHTML = parsedText;
+            
+            if (sender === 'user') {
+                bubble.className = `max-w-[85%] px-4 py-2.5 rounded-2xl rounded-tr-sm text-sm text-white font-medium shadow-sm leading-relaxed
+                                    bg-gradient-to-br from-indigo-500 to-indigo-600`;
+            } else {
+                bubble.className = `relative max-w-[85%] px-4 py-3 rounded-2xl rounded-tl-sm text-sm shadow-sm leading-relaxed
+                                    bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-200 border border-gray-100 dark:border-gray-700
+                                    group`;
+                
+                // Tambahkan tombol Play/Speaker untuk pesan AI
+                const playBtn = document.createElement('button');
+                playBtn.innerHTML = `
+                    <svg class="w-4 h-4 text-gray-400 hover:text-indigo-500 transition-colors" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.536 8.464a5 5 0 010 7.072m2.828-9.9a9 9 0 010 12.728M5 12h4l4-8v16l-4-8H5z" />
+                    </svg>
+                `;
+                playBtn.className = "absolute -right-8 bottom-1 p-1.5 opacity-0 group-hover:opacity-100 transition-opacity bg-white dark:bg-gray-800 rounded-full shadow-sm border border-gray-100 dark:border-gray-700";
+                playBtn.title = "Bacakan teks ini";
+                playBtn.onclick = () => this.speakText(text); // Gunakan text asli (bukan HTML parsed)
+                
+                wrap.appendChild(bubble);
+                wrap.appendChild(playBtn);
+                wrap.className += " relative items-end pr-8"; // Beri ruang untuk tombol play
+            }
+            
+            if (sender === 'user') {
+                wrap.appendChild(bubble);
+            }
+
+            // Hapus welcome dummy jika ada pesan baru
+            const welcome = msgs.querySelector('.text-center.text-gray-500');
+            if(welcome && sender === 'user') welcome.remove();
+
+            msgs.appendChild(wrap);
+            msgs.scrollTop = msgs.scrollHeight;
+        },
+
+        showTypingIndicator() {
+            const id = 'aai-typing';
+            if ($(id)) return;
+
+            const wrap = document.createElement('div');
+            wrap.id = id;
+            wrap.className = 'flex justify-start w-full';
+            wrap.innerHTML = `
+                <div class="px-4 py-3 rounded-2xl rounded-tl-sm bg-gray-50 dark:bg-gray-800 border border-gray-100 dark:border-gray-700 flex gap-1.5 items-center h-[42px]">
+                    <div class="w-2 h-2 bg-indigo-400 rounded-full animate-bounce" style="animation-delay: 0ms"></div>
+                    <div class="w-2 h-2 bg-indigo-400 rounded-full animate-bounce" style="animation-delay: 150ms"></div>
+                    <div class="w-2 h-2 bg-indigo-400 rounded-full animate-bounce" style="animation-delay: 300ms"></div>
+                </div>
+            `;
+            msgs.appendChild(wrap);
+            msgs.scrollTop = msgs.scrollHeight;
+        },
+
+        removeTypingIndicator() {
+            const typing = $('aai-typing');
+            if (typing) typing.remove();
+        },
+
+        // ── Voice Input (STT) ──
+        toggleMic() {
+            if (!recognition) {
+                alert("Browser Anda tidak mendukung fitur Suara.");
+                return;
+            }
+            if (isListening) {
+                recognition.stop();
+            } else {
+                try {
+                    recognition.start();
+                } catch(e) {
+                    console.error("Gagal memulai mic", e);
+                }
+            }
+        },
+
+        stopListening() {
+            isListening = false;
+            micBtn.classList.remove('text-rose-500', 'animate-pulse');
+            input.placeholder = "Tanya sesuatu atau ketik '/'...";
+        },
+
+        // ── Text to Speech (TTS) ──
+        speakText(text) {
+            if (!window.speechSynthesis) {
+                alert("Browser tidak mendukung fitur Text-to-Speech.");
+                return;
+            }
+
+            this.stopSpeech(); // Hentikan suara yang sedang berjalan
+
+            // Bersihkan markdown chars sebelum dibaca
+            const cleanText = text.replace(/[*#_`~-]/g, '').replace(/\n/g, ' ');
+
+            const utterance = new SpeechSynthesisUtterance(cleanText);
+            utterance.lang = 'id-ID';
+            utterance.rate = 1.0;
+            utterance.pitch = 1.0;
+
+            // Cari suara wanita Indonesia jika ada
+            const voices = window.speechSynthesis.getVoices();
+            const idVoice = voices.find(v => v.lang.includes('id') && v.name.toLowerCase().includes('female')) 
+                         || voices.find(v => v.lang.includes('id'));
+            if (idVoice) utterance.voice = idVoice;
+
+            utterance.onstart = () => {
+                isSpeaking = true;
+                isPaused = false;
+                showSpeechControls(true);
+                updateAvatar();
+            };
+
+            utterance.onend = () => {
+                isSpeaking = false;
+                isPaused = false;
                 showSpeechControls(false);
                 updateAvatar();
+            };
+
+            utterance.onerror = (e) => {
+                console.error("TTS Error:", e);
+                this.stopSpeech();
+            };
+
+            window.speechSynthesis.speak(utterance);
+        },
+
+        // Helper TTS
+        updateAvatar() {
+            // Efek gelombang saat bicara
+            const waves = $('aai-spk-waves');
+            if (isSpeaking && !isPaused) {
+                waves.classList.remove('hidden');
+                spkName.textContent = "AI sedang berbicara...";
+            } else {
+                waves.classList.add('hidden');
+                spkName.textContent = "VISITA AI";
+            }
+        },
+
+        showSpeechControls(show) {
+            if (show) {
+                spkCtrl.classList.remove('hidden');
+            } else {
+                spkCtrl.classList.add('hidden');
             }
         },
 
         stopSpeech() {
             window.speechSynthesis?.cancel();
-            isSpeaking = false; isPaused = false;
-            showSpeechControls(false);
-            updateAvatar();
-        },
-
-        pauseResumeSpeech() {
-            if (isPaused) {
-                window.speechSynthesis?.resume();
-                isPaused = false;
-            } else {
-                window.speechSynthesis?.pause();
-                isPaused = true;
-            }
-            updatePauseBtn();
-            updateAvatar();
-        },
-
-        clearHistory() {
-            const msgArea = $('aai-messages');
-            msgArea.innerHTML = `
-                <div class="flex flex-col items-center text-center text-gray-500 dark:text-gray-400 py-4 gap-2">
-                    <span class="text-4xl">✨</span>
-                    <p class="text-[13px]">Riwayat dihapus. Ada yang bisa saya bantu?</p>
-                    <div class="flex flex-wrap gap-1.5 justify-center mt-1">
-                        <button onclick="aaiUI.suggest(this)" class="aai-chip">Siapa yang sedang check-in?</button>
-                        <button onclick="aaiUI.suggest(this)" class="aai-chip">Statistik hari ini</button>
-                        <button onclick="aaiUI.suggest(this)" class="aai-chip">Berapa tamu aktif?</button>
-                    </div>
-                </div>`;
-            window.speechSynthesis?.cancel();
-            isSpeaking = false; isPaused = false;
-            showSpeechControls(false);
+            isSpeaking = false; 
+            isPaused = false;
+            this.showSpeechControls(false);
+            this.updateAvatar();
         },
     };
 
     window.aaiUI = aaiUI;
+    
+    // Define helper functions in outer scope to be used internally
+    function updateAvatar() {
+        aaiUI.updateAvatar();
+    }
+    
+    function showSpeechControls(show) {
+        aaiUI.showSpeechControls(show);
+    }
+    
+    function updatePauseBtn() {
+        const pauseBtn = spkCtrl.querySelector('button');
+        if (isPaused) {
+            pauseBtn.innerHTML = `
+                <svg class="w-4 h-4 text-gray-600 dark:text-gray-300" fill="currentColor" viewBox="0 0 20 20">
+                    <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM9.555 7.168A1 1 0 008 8v4a1 1 0 001.555.832l3-2a1 1 0 000-1.664l-3-2z" clip-rule="evenodd"/>
+                </svg>
+            `;
+            pauseBtn.title = "Lanjutkan";
+        } else {
+            pauseBtn.innerHTML = `
+                <svg class="w-4 h-4 text-gray-600 dark:text-gray-300" fill="currentColor" viewBox="0 0 20 20">
+                    <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zM7 8a1 1 0 012 0v4a1 1 0 11-2 0V8zm5-1a1 1 0 00-1 1v4a1 1 0 102 0V8a1 1 0 00-1-1z" clip-rule="evenodd"/>
+                </svg>
+            `;
+            pauseBtn.title = "Jeda";
+        }
+    }
 })();
 </script>
+
+</div>

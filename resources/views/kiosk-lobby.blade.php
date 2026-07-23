@@ -2147,6 +2147,7 @@
                 <div id="at-result-icon" style="font-size:2.5rem;margin-bottom:0.4rem;"></div>
                 <div id="at-result-name" style="font-size:1.1rem;font-weight:700;color:#f0f4ff;margin-bottom:0.2rem;"></div>
                 <div id="at-result-status" style="font-size:0.82rem;color:#8899bb;"></div>
+                <button onclick="closeAttendanceModal()" style="margin-top:1rem;background:rgba(255,255,255,0.2);border:1px solid rgba(255,255,255,0.4);color:white;padding:0.4rem 1.2rem;border-radius:999px;cursor:pointer;font-size:0.85rem;">Selesai</button>
             </div>
         </div>
     </div>
@@ -2265,7 +2266,6 @@
             }
         }
 
-        let coTimer = null, coSecs = 5;
         function showCoSuccess(d) {
             document.getElementById('co-si-name').textContent    = d.visitor_name  || '-';
             document.getElementById('co-si-pic').textContent     = d.pic_name      || '-';
@@ -2274,15 +2274,13 @@
             document.getElementById('co-si-checkin').textContent  = d.checkin_time  || '-';
             document.getElementById('co-si-checkout').textContent = d.checkout_time || '-';
             document.getElementById('modal-checkout-success').classList.add('active');
-            coSecs = 5; updateCoCountdown();
-            coTimer = setInterval(() => { coSecs--; updateCoCountdown(); if(coSecs<=0) closeCheckoutSuccess(); }, 1000);
+            updateCoCountdown();
         }
         function updateCoCountdown() {
-            document.getElementById('co-countdown-bar').style.width = (coSecs/5*100)+'%';
-            document.getElementById('co-countdown-text').textContent = 'Layar kembali otomatis dalam '+coSecs+' detik';
+            document.getElementById('co-countdown-bar').style.width = '100%';
+            document.getElementById('co-countdown-text').textContent = 'Silakan tekan tombol OK untuk kembali ke tampilan awal';
         }
         function closeCheckoutSuccess() {
-            clearInterval(coTimer);
             window.location.reload();
         }
 
@@ -2359,10 +2357,7 @@ function closeAttendanceModal() {
     if (atLandmarkRAF) { cancelAnimationFrame(atLandmarkRAF); atLandmarkRAF = null; }
     if (atScanStream)  { atScanStream.getTracks().forEach(t => t.stop()); atScanStream = null; }
     clearKioskLandmarks('at-landmark-canvas');
-    document.getElementById('modal-attendance').classList.remove('active');
-    document.getElementById('at-face-loading').style.display     = 'flex';
-    document.getElementById('at-face-camera-wrap').style.display = 'none';
-    document.getElementById('at-result').style.display           = 'none';
+    window.location.reload();
 }
 
 /* FAST landmark loop using requestAnimationFrame */
@@ -2470,7 +2465,7 @@ window.addEventListener('attendance-success', event => {
         gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.5);
         osc.start(ctx.currentTime); osc.stop(ctx.currentTime + 0.5);
     } catch(e) {}
-    setTimeout(() => window.location.reload(), 3000);
+    // User harus klik tombol X (closeAttendanceModal) untuk reload halaman
 });
 
 window.addEventListener('attendance-error', event => {
@@ -2479,14 +2474,8 @@ window.addEventListener('attendance-error', event => {
     if (!modal || !modal.classList.contains('active')) return;
     setAtMsg(d.message || 'Wajah tidak dikenali dalam sistem.', 'error');
     updateAtRing('red');
-    setTimeout(() => {
-        atLivenessStep = 'straight'; atFaceInPlace = false; atProcessing = false; atScanActive = true;
-        updateAtRing('blue');
-        setAtMsg('Posisikan wajah di dalam lingkaran', 'info');
-        atShowArrow('none');
-        const video = document.getElementById('at-face-video');
-        if (video) { atLandmarkLoop(video); atDetectionLoop(video); }
-    }, 3000);
+    // Hapus timer. Pengunjung bisa mencoba lagi dengan menutup modal lalu membuka lagi,
+    // atau Kiosk akan kereload sepenuhnya saat ditutup.
 });
 </script>
 

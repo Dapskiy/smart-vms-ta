@@ -16,8 +16,8 @@
         }
         .form-control {
             width: 100%;
-            background: #ffffff;
-            border: 1px solid #cbd5e1;
+            background: var(--bg-deep, #ffffff);
+            border: 1px solid var(--border-subtle, #cbd5e1);
             color: var(--text-primary);
             padding: 0.75rem 1rem;
             border-radius: 8px;
@@ -72,7 +72,7 @@
             border: 1px solid var(--text-muted);
         }
         .btn-secondary:hover {
-            background: #f1f5f9;
+            background: var(--bg-card-hover, #f1f5f9);
             color: var(--text-primary);
         }
         .text-danger {
@@ -188,7 +188,7 @@
                 <div style="font-size: 1.1rem; font-weight: 600; margin-bottom: 0.25rem;">Sudah Pernah Berkunjung</div>
                 <div style="font-size: 0.85rem; color: #475569; font-weight: normal;">Gunakan Face Scan untuk isi data otomatis</div>
             </button>
-            <button type="button" class="btn" style="background: #f8fafc; border: 1px solid #cbd5e1; color: var(--text-primary); padding: 1.5rem;" wire:click="setNewVisitor">
+            <button type="button" class="btn" style="background: var(--bg-card, #f8fafc); border: 1px solid var(--border-subtle, #cbd5e1); color: var(--text-primary); padding: 1.5rem;" wire:click="setNewVisitor">
                 <div style="font-size: 1.1rem; font-weight: 600; margin-bottom: 0.25rem;">Belum Pernah Berkunjung</div>
                 <div style="font-size: 0.85rem; color: var(--text-secondary); font-weight: normal;">Isi form data diri dan daftar wajah baru</div>
             </button>
@@ -236,7 +236,7 @@
         <div class="form-group">
             <label>Tipe Kunjungan</label>
             @if(\App\Helpers\KioskHelper::isKioskLocal())
-                <div style="display: flex; gap: 1rem; background: #f8fafc; padding: 0.8rem 1rem; border-radius: 8px; border: 1px solid #cbd5e1;">
+                <div style="display: flex; gap: 1rem; background: var(--bg-card, #f8fafc); padding: 0.8rem 1rem; border-radius: 8px; border: 1px solid var(--border-subtle, #cbd5e1);">
                     <label style="display: flex; align-items: center; gap: 0.5rem; color: var(--text-primary); font-weight: normal; cursor: pointer; margin-bottom: 0;">
                         <input type="radio" wire:model.live="visit_type" value="walk-in" style="accent-color: var(--accent-primary); width: 1.2rem; height: 1.2rem;">
                         Bertamu Sekarang

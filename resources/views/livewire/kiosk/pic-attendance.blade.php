@@ -163,6 +163,9 @@
             <div style="margin-top:0.5rem;">
                 <span class="result-badge" id="pa-result-badge"></span>
             </div>
+            <div style="margin-top:1.5rem;">
+                <button onclick="window.location.reload()" style="background:rgba(255,255,255,0.2); border:1px solid rgba(255,255,255,0.4); color:white; padding: 0.5rem 1.5rem; border-radius: 9999px; cursor:pointer; font-size:0.9rem;">Selesai</button>
+            </div>
         </div>
 
         <a href="{{ route('kiosk.welcome') }}" class="back-link">
@@ -438,9 +441,7 @@
                 gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.5);
                 osc.start(ctx.currentTime); osc.stop(ctx.currentTime + 0.5);
             } catch(e) {}
-
-            // Reload page after 4s so kiosk resets cleanly
-            setTimeout(() => window.location.reload(), 4000);
+            // User click Selesai to reload
         });
 
         window.addEventListener('attendance-error', event => {
@@ -453,16 +454,8 @@
             badge.textContent  = '❌ Tidak Dikenali';
             badge.className    = 'result-badge error';
             panel.classList.add('active');
-
-            setTimeout(() => {
-                panel.classList.remove('active');
-                paLivenessStep = 'straight'; paFaceInPlace = false; paPhotoSnap = null; paPrepPhoto = false;
-                updatePaRing('blue');
-                setPaMsg('Posisikan wajah di dalam lingkaran', 'info');
-                showPaArrow('none');
-                paScanActive = true;
-                paScanLoop(document.getElementById('pa-face-video'));
-            }, 3000);
+            
+            // Hapus timer agar user menutup manual menggunakan tombol "Selesai"
         });
 
         // Restore saved location on load
