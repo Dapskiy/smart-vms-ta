@@ -105,30 +105,48 @@ class InteractiveChatbot extends Component
         $prompt .= "Marker tersebut akan otomatis memunculkan pop-up form Kiosk agar tamu bisa menscan wajahnya sendiri.\n\n";
 
         // ── ALUR BESOK/LAIN HARI (APPOINTMENT AUTO-ACC) ──
-        $prompt .= "### ALUR B — JANJI TEMU HARI LAIN (appointment, auto-disetujui)\n";
-        $prompt .= "Jika pengunjung menjawab **BESOK / LAIN HARI / JADWAL NANTI**:\n";
-        $prompt .= "TIDAK perlu tanya pernah berkunjung atau belum. Langsung kumpulkan data berikut secara bertahap:\n";
-        $prompt .= "   a. Nama lengkap\n";
-        $prompt .= "   b. Nama perusahaan/instansi\n";
-        $prompt .= "   c. Nomor telepon/WhatsApp (format: 08xxx)\n";
-        $prompt .= "   d. Nama PIC yang ingin ditemui — HARUS cocok dengan data PIC di bawah\n";
-        $prompt .= "   e. Tanggal kunjungan (YYYY-MM-DD) — harus SETELAH hari ini\n";
-        $prompt .= "   f. Jam kunjungan (HH:mm)\n";
-        $prompt .= "   g. Keperluan/tujuan kunjungan\n";
-        $prompt .= "Setelah semua data lengkap, gunakan marker REGISTER dengan type=\"appointment\". Janji temu ini akan **otomatis disetujui** tanpa perlu konfirmasi email PIC.\n\n";
+        $prompt .= "### ALUR B — JANJI TEMU HARI LAIN (appointment)\n";
+        $prompt .= "Jika pengunjung menjawab **BESOK / LAIN HARI / JADWAL NANTI**:\n\n";
+        $prompt .= "#### ATURAN PENGUMPULAN DATA (CONVERSATIONAL & SLOT-FILLING GUIDELINES):\n";
+        $prompt .= "1. **STEP-BY-STEP COLLECTION (SANGAT KRITIS)**:\n";
+        $prompt .= "   - **DILARANG KERAS** menanyakan seluruh atau banyak field sekaligus dalam bentuk daftar/bullet list.\n";
+        $prompt .= "   - Tanyakan informasi yang belum terisi secara bertahap (maksimal 1 hingga 2 data per balasan) dengan gaya percakapan yang alami dan ramah.\n";
+        $prompt .= "   - Jagalah jawaban agar tetap singkat, jelas, dan langsung supaya terdengar alami saat dibacakan oleh avatar Text-to-Speech (TTS).\n\n";
+        $prompt .= "2. **SMART SLOT-FILLING**:\n";
+        $prompt .= "   - Ekstrak secara otomatis setiap detail informasi yang sudah diberikan oleh pengunjung dari pesan-pesannya.\n";
+        $prompt .= "   - Jika pengunjung memberikan beberapa informasi sekaligus (contoh: \"Saya Budi dari PT ABC mau ketemu Pak Daffa besok jam 10\"), langsung ekstrak: Nama (Budi), Perusahaan (PT ABC), PIC (Pak Daffa), Tanggal (besok -> YYYY-MM-DD), Waktu (10:00).\n";
+        $prompt .= "   - HANYA tanyakan slot data yang MASIH KOSONG dari 7 slot berikut:\n";
+        $prompt .= "     [1. Nama Lengkap] [2. Nama Perusahaan/Instansi] [3. No Telepon/WA] [4. Nama PIC] [5. Tanggal Kunjungan] [6. Jam Kunjungan] [7. Keperluan/Tujuan]\n\n";
+        $prompt .= "3. **VALIDASI & FORMATTING**:\n";
+        $prompt .= "   - Bimbing pengunjung jika informasi ambigu (konversi kata relatif seperti 'besok' atau 'lusa' menjadi YYYY-MM-DD presisi relatif terhadap tanggal saat ini).\n";
+        $prompt .= "   - Pastikan format nomor telepon valid (diawali 08 atau +62).\n";
+        $prompt .= "   - Nama PIC harus merujuk ke data PIC terdaftar di bawah.\n\n";
+        $prompt .= "4. **FINAL CONFIRMATION (KONFIRMASI AKHIR & FORMAT ALIGNMENT)**:\n";
+        $prompt .= "   - Setelah SELURUH 7 slot terisi lengkap, tampilkan ringkasan data secara rapi dan SEJAJAR rata kiri.\n";
+        $prompt .= "   - **FORMAT ALIGNMENT (SANGAT KRITIS)**:\n";
+        $prompt .= "     - DILARANG memberikan spasi/indentasi di awal baris pada teks judul (contoh: 'Data Diri:') maupun pada baris pertanyaan penutup (contoh: 'Apakah data di atas sudah benar?'). Semua teks non-bullet HARUS rapat di batas paling kiri (tanpa spasi awal).\n";
+        $prompt .= "     - Gunakan format list standar berikut:\n";
+        $prompt .= "```\n";
+        $prompt .= "Data Diri Kunjungan:\n";
+        $prompt .= "• Nama: Budi\n";
+        $prompt .= "• Perusahaan: PT ABC\n";
+        $prompt .= "• Telepon: 08123456789\n";
+        $prompt .= "• Menemui: Pak Daffa\n";
+        $prompt .= "• Tanggal: 2026-07-24\n";
+        $prompt .= "• Waktu: 10:00\n";
+        $prompt .= "• Keperluan: Meeting Proyek\n\n";
+        $prompt .= "Apakah data di atas sudah benar?\n";
+        $prompt .= "```\n";
+        $prompt .= "   - Setelah pengunjung mengonfirmasi YA / benar, BARU sertakan marker <!--REGISTER:...--> di AKHIR respons.\n\n";
 
         // ── MARKER PENDAFTARAN ──
         $prompt .= "### MARKER PENDAFTARAN\n";
-        $prompt .= "SETELAH semua data lengkap (baik walk-in maupun appointment), konfirmasi ulang ke pengunjung.\n";
-        $prompt .= "Jika pengunjung setuju, sertakan marker ini di AKHIR respons:\n";
-        $prompt .= "<!--REGISTER:{\"name\":\"...\",\"company\":\"...\",\"phone\":\"...\",\"purpose\":\"...\",\"pic_name\":\"...\",\"pax\":1,\"type\":\"walk-in atau appointment\",\"visit_date\":\"YYYY-MM-DD\",\"visit_time\":\"HH:mm\"}-->\n\n";
+        $prompt .= "SETELAH semua data lengkap dan dikonfirmasi pengunjung, sertakan marker ini di AKHIR respons:\n";
+        $prompt .= "<!--REGISTER:{\"name\":\"...\",\"company\":\"...\",\"phone\":\"...\",\"purpose\":\"...\",\"pic_name\":\"...\",\"pax\":1,\"type\":\"appointment\",\"visit_date\":\"YYYY-MM-DD\",\"visit_time\":\"HH:mm\"}-->\n\n";
         $prompt .= "ATURAN MARKER:\n";
-        $prompt .= "- JANGAN sertakan <!--REGISTER:...--> sampai pengunjung SETUJU\n";
-        $prompt .= "- JANGAN sertakan <!--FACE_LOOKUP--> lebih dari sekali per percakapan\n";
+        $prompt .= "- JANGAN sertakan <!--REGISTER:...--> sampai pengunjung mengonfirmasi data sudah benar\n";
         $prompt .= "- pic_name harus PERSIS sama dengan nama di data PIC di bawah\n";
-        $prompt .= "- type harus \"walk-in\" untuk kunjungan hari ini, \"appointment\" untuk jadwal hari lain\n";
-        $prompt .= "- Untuk walk-in: visit_date dan visit_time boleh kosong (akan diisi otomatis oleh sistem)\n";
-        $prompt .= "- Untuk appointment: visit_date dan visit_time WAJIB diisi\n";
+        $prompt .= "- type harus \"appointment\" untuk jadwal hari lain, \"walk-in\" untuk hari ini\n";
         $prompt .= "- pax default 1 kecuali pengunjung menyebut jumlah lain\n\n";
 
         // ── Konteks Data PIC Real-Time dari Database (Hanya jika Onsite) ────────

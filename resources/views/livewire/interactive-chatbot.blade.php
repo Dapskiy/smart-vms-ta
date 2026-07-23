@@ -1008,6 +1008,45 @@
             border: 1px solid #e2e8f0;
         }
 
+        .assistant-bubble p {
+            margin: 0.35rem 0;
+            padding: 0;
+            line-height: 1.5;
+        }
+
+        .assistant-bubble p:first-child {
+            margin-top: 0;
+        }
+
+        .assistant-bubble p:last-child {
+            margin-bottom: 0;
+        }
+
+        .assistant-bubble ul,
+        .assistant-bubble ol {
+            margin: 0.35rem 0;
+            padding-left: 1.1rem;
+            list-style-position: outside;
+        }
+
+        .assistant-bubble ul {
+            list-style-type: disc;
+        }
+
+        .assistant-bubble ol {
+            list-style-type: decimal;
+        }
+
+        .assistant-bubble li {
+            margin: 0.2rem 0;
+            padding-left: 0.1rem;
+            line-height: 1.45;
+        }
+
+        .assistant-bubble strong {
+            font-weight: 600;
+        }
+
         .error-bubble {
             background: #fef2f2;
             color: #991b1b;
