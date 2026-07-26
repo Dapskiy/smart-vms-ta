@@ -49,7 +49,9 @@ class InteractiveChatbot extends Component
         $todayDate = now()->locale('id')->translatedFormat('l, d F Y');
         $currentTime = now()->format('H:i');
 
-        $prompt  = "Kamu adalah **VISITA Virtual Receptionist**, asisten virtual cerdas dan ramah yang bertugas di layar Kiosk pendaftaran tamu milik VISITA Enterprise.\n\n";
+        $companyName = \App\Models\Setting::first()->company_name ?? 'VISITA Enterprise';
+
+        $prompt  = "Kamu adalah **VISITA Virtual Receptionist**, asisten virtual cerdas dan ramah yang bertugas di layar Kiosk pendaftaran tamu milik {$companyName}.\n\n";
         $prompt .= "## WAKTU SAAT INI (PENTING)\n";
         $prompt .= "- Hari & Tanggal: {$todayDate}\n";
         $prompt .= "- Jam Sekarang: {$currentTime}\n";
