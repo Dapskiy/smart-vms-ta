@@ -46,7 +46,8 @@ class VisitorsTable
 
                 TextColumn::make('phone')
                     ->label('Telepon')
-                    ->searchable(),
+                    ->searchable()
+                    ->formatStateUsing(fn (?string $state) => \App\Helpers\PhoneMaskHelper::mask($state)),
 
                 IconColumn::make('face_features')
                     ->label('Wajah')

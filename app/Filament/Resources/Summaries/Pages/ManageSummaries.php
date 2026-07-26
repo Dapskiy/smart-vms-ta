@@ -203,8 +203,8 @@ class ManageSummaries extends ManageRecords
                                 ->heading('No. Telepon')
                                 ->getStateUsing(function ($record) {
                                     if (empty($record->phone)) return '-';
-                                    if (auth()->user()->hasRole('super_admin')) return $record->phone;
-                                    return \Illuminate\Support\Str::mask($record->phone, '*', 4, -4);
+                                    if (\App\Helpers\PhoneMaskHelper::canReveal()) return $record->phone;
+                                    return \App\Helpers\PhoneMaskHelper::mask($record->phone);
                                 }),
                             \pxlrbt\FilamentExcel\Columns\Column::make('visit_date')->heading('Tanggal Berkunjung')->getStateUsing(function ($record) {
                                 $lastAppointment = $record->appointments()->whereIn('status', ['completed', 'checkout', 'inactive'])->latest('visit_date')->first();

@@ -28,7 +28,8 @@ class AppointmentInfolist
 
                         TextEntry::make('visitor.phone')
                             ->label('No. WhatsApp')
-                            ->placeholder('—'),
+                            ->placeholder('—')
+                            ->formatStateUsing(fn (?string $state) => \App\Helpers\PhoneMaskHelper::mask($state)),
 
                         TextEntry::make('visitor.email')
                             ->label('Email')
