@@ -1006,7 +1006,7 @@
         SISTEM AKTIF &amp; TERHUBUNG
     </div>
 
-    {{-- PIC Attendance (invisible event listener) --}}
+    <!-- Status bar (invisible event listener) -->
     @livewire('kiosk.pic-attendance')
 
     <!-- ==================== JAVASCRIPT ==================== -->
@@ -1306,6 +1306,25 @@
         document.addEventListener('walkin-form-reopen', function () {
             closeFaceScan();
             openWalkinForm();
+        });
+
+        /* -------------------------------------------------------
+           TOKEN CHECKIN MODAL
+        ------------------------------------------------------- */
+        function openTokenForm() {
+            closeMethodPicker();
+            document.getElementById('modal-token').classList.add('active');
+            Livewire.dispatch('openTokenCheckin');
+        }
+
+        function closeTokenForm() {
+            document.getElementById('modal-token').classList.remove('active');
+        }
+
+        document.addEventListener('token-checkin-success', function (e) {
+            closeTokenForm();
+            const data = e.detail.appt;
+            showSuccessPopup(data);
         });
 
         /* -------------------------------------------------------
@@ -1760,7 +1779,7 @@
                 </div>
                 <div class="mb-text"><strong>Scan QR Code</strong><span>Arahkan QR Code tiket Anda ke kamera</span></div>
             </button>
-            <button class="method-btn" onclick="alert(&apos;Fitur Input Token segera hadir!&apos;)">
+            <button class="method-btn" onclick="openTokenForm()">
                 <div class="mb-icon" style="background:rgba(251,191,36,0.1);border:1px solid rgba(251,191,36,0.3);">
                     <svg fill="none" stroke="#fbbf24" stroke-width="1.8" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M7 20l4-16m2 16l4-16M6 9h14M4 15h14"/></svg>
                 </div>
@@ -1780,6 +1799,16 @@
         <div class="modal-box" style="max-width: 500px; max-height: 90vh; overflow-y: auto;">
             <button class="modal-close" onclick="closeWalkinForm()">✕</button>
             @livewire('kiosk-walkin-form')
+        </div>
+    </div>
+
+    <!-- ===== MODAL: TOKEN INPUT ===== -->
+    <div id="modal-token" class="modal-overlay">
+        <div class="modal-box" style="max-width: 440px;">
+            <button class="modal-close" onclick="closeTokenForm()">✕</button>
+            <div class="modal-title" style="margin-bottom:0.2rem;">Check-in via Token</div>
+            <p class="modal-sub" style="margin-bottom:1.5rem;">Masukkan token dari WhatsApp Anda</p>
+            @livewire('kiosk.token-checkin')
         </div>
     </div>
 
