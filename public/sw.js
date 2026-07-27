@@ -1,6 +1,5 @@
-const CACHE_NAME = 'visita-kiosk-cache-v1';
+const CACHE_NAME = 'visita-kiosk-cache-v2';
 const ASSETS_TO_CACHE = [
-    '/',
     '/js/face-api.min.js',
     '/models/face_landmark_68_model-shard1',
     '/models/face_landmark_68_model-weights_manifest.json',

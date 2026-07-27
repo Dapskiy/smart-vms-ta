@@ -3082,5 +3082,35 @@ window.addEventListener('attendance-error', event => {
         }
     })();
 </script>
+
+<!-- ADVANCED ANTI-CACHE & LIVEWIRE 419 FIX -->
+<script>
+    // 1. Force Hard Reload jika Livewire mendeteksi 419 (CSRF Expired)
+    // Secara default Livewire menggunakan window.location.reload() yang sering mengambil dari Disk Cache.
+    // Kita override agar memaksa browser membuang cache.
+    document.addEventListener('livewire:init', () => {
+        Livewire.hook('request.error', ({ status, preventDefault }) => {
+            if (status === 419) {
+                preventDefault();
+                console.warn('[VISITA] CSRF Token basi terdeteksi. Memaksa Hard Reload...');
+                // Trick untuk bypass disk cache saat reload
+                fetch(window.location.href, { cache: 'reload', mode: 'no-cors' })
+                    .then(() => {
+                        window.location.href = window.location.href.split('#')[0];
+                    })
+                    .catch(() => {
+                        window.location.reload(true); // fallback fallback
+                    });
+            }
+        });
+    });
+
+    // 2. Cegah Safari/Chrome menggunakan Back-Forward Cache (BFCache)
+    window.addEventListener('pageshow', function (event) {
+        if (event.persisted || (window.performance && window.performance.navigation.type === 2)) {
+            window.location.reload();
+        }
+    });
+</script>
 </body>
 </html>
