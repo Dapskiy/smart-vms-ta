@@ -4,7 +4,7 @@
 
         <div class="mt-4">
             <x-filament::button type="submit">
-                Save Changes
+                Simpan Pengaturan
             </x-filament::button>
         </div>
     </form>

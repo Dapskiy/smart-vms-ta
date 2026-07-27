@@ -1,6 +1,15 @@
 @php
     $adminName = auth()->user()?->name ?? 'Admin';
     $chatUrl   = route('admin.ai.chat');
+    $hour = now()->setTimezone('Asia/Jakarta')->format('H');
+    $greeting = 'Selamat Pagi';
+    if ($hour >= 11 && $hour < 15) {
+        $greeting = 'Selamat Siang';
+    } elseif ($hour >= 15 && $hour < 18) {
+        $greeting = 'Selamat Sore';
+    } elseif ($hour >= 18) {
+        $greeting = 'Selamat Malam';
+    }
 @endphp
 
 {{-- ══════════════════════════════════════════════════════════
@@ -81,7 +90,7 @@
             <div id="aai-welcome" class="flex flex-col items-center text-center text-gray-500 dark:text-gray-400 py-4 gap-2">
                 <span class="text-4xl">👋</span>
                 <p class="text-[13px] leading-snug">
-                    Halo, <strong class="text-gray-700 dark:text-gray-200">{{ $adminName }}</strong>!<br>
+                    {{ $greeting }}, <strong class="text-gray-700 dark:text-gray-200">{{ $adminName }}</strong>!<br>
                     Tanya saya tentang kondisi kunjungan hari ini.
                 </p>
                 {{-- Suggestion chips --}}

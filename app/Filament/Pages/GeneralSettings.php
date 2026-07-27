@@ -64,14 +64,14 @@ class GeneralSettings extends Page implements HasForms
     {
         return $form
             ->schema([
-                Section::make('Company Identity')
-                    ->description('Set your core company brand details here.')
+                Section::make('Identitas Perusahaan')
+                    ->description('Atur detail merek dan identitas perusahaan Anda di sini.')
                     ->schema([
                         TextInput::make('company_name')
-                            ->label('Company Name')
+                            ->label('Nama Perusahaan')
                             ->required()
                             ->maxLength(255)
-                            ->helperText('This name will be used by the AI Chatbot to greet visitors.'),
+                            ->helperText('Nama ini akan digunakan oleh AI Chatbot saat menyapa pengunjung.'),
                     ])
             ])
             ->statePath('data');
@@ -90,7 +90,7 @@ class GeneralSettings extends Page implements HasForms
         $setting->save();
 
         Notification::make()
-            ->title('Settings Saved')
+            ->title('Pengaturan Berhasil Disimpan')
             ->success()
             ->send();
     }
