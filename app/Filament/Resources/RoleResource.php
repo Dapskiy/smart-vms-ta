@@ -30,7 +30,9 @@ class RoleResource extends Resource
     protected static ?string $model = Role::class;
     protected static \BackedEnum|string|null $navigationIcon = 'heroicon-o-shield-check';
     protected static ?string $slug = 'roles';
-    protected static ?string $navigationLabel = 'Roles';
+    protected static ?string $modelLabel = 'Peran';
+    protected static ?string $pluralModelLabel = 'Peran';
+    protected static ?string $navigationLabel = 'Peran';
 
     public static function form(Schema $schema): Schema
     {

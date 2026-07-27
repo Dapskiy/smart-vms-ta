@@ -13,6 +13,8 @@ use Carbon\Carbon;
 
 class Dashboard extends BaseDashboard
 {
+    protected static \UnitEnum|string|null $navigationGroup = 'Dashboard Utama';
+    protected static ?string $navigationLabel = 'Dashboard';
     public function getTitle(): string | Htmlable
     {
         return 'Dashboard Tamu';

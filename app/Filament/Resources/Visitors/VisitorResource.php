@@ -20,9 +20,9 @@ class VisitorResource extends Resource
 
     protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedUsers;
 
-    protected static ?string $modelLabel = 'Visitor';
+    protected static ?string $modelLabel = 'Pengunjung';
 
-    protected static ?string $pluralModelLabel = 'Manajemen Visitor';
+    protected static ?string $pluralModelLabel = 'Manajemen Pengunjung';
 
     protected static ?string $recordTitleAttribute = 'name';
 

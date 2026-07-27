@@ -23,7 +23,12 @@ class GeneralSettings extends Page implements HasForms
 
     public static function getNavigationGroup(): ?string
     {
-        return 'Settings';
+        return 'Konfigurasi';
+    }
+
+    public static function getNavigationLabel(): string
+    {
+        return 'Pengaturan Umum';
     }
 
     public static function getNavigationSort(): ?int
@@ -33,12 +38,7 @@ class GeneralSettings extends Page implements HasForms
 
     public function getTitle(): string|\Illuminate\Contracts\Support\Htmlable
     {
-        return 'General Settings';
-    }
-
-    public static function getNavigationLabel(): string
-    {
-        return 'General Settings';
+        return 'Pengaturan Umum';
     }
 
     protected string $view = 'filament.pages.general-settings';

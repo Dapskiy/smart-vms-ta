@@ -20,6 +20,11 @@ class AppointmentResource extends Resource
 {
     protected static ?string $model = Appointment::class;
 
+    protected static \UnitEnum|string|null $navigationGroup = 'Janji Temu dan PIC';
+    protected static ?string $modelLabel = 'Janji Temu';
+    protected static ?string $pluralModelLabel = 'Daftar Janji Temu';
+    protected static ?string $navigationLabel = 'Janji Temu';
+
     protected static string|BackedEnum|null $navigationIcon = 'heroicon-o-rectangle-stack';
 
     public static function form(Schema $schema): Schema

@@ -20,13 +20,13 @@ class RoomResource extends Resource
 
     protected static string|BackedEnum|null $navigationIcon = 'heroicon-o-building-office-2';
 
-    protected static ?string $navigationLabel = 'Room Master';
+    protected static ?string $navigationLabel = 'Data Ruangan';
 
     protected static ?string $modelLabel = 'Ruangan';
 
-    protected static ?string $pluralModelLabel = 'Daftar Ruangan';
+    protected static ?string $pluralModelLabel = 'Data Ruangan';
 
-    protected static UnitEnum|string|null $navigationGroup = null;
+    protected static UnitEnum|string|null $navigationGroup = 'Janji Temu dan PIC';
 
     protected static ?int $navigationSort = 3;
 

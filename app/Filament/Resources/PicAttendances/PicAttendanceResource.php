@@ -17,9 +17,13 @@ class PicAttendanceResource extends Resource
 
     protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedClock;
 
-    protected static ?string $modelLabel = 'Absensi';
+    protected static ?string $modelLabel = 'Absensi PIC';
 
     protected static ?string $pluralModelLabel = 'Absensi PIC';
+
+    protected static ?string $navigationLabel = 'Absensi PIC';
+
+    protected static \UnitEnum|string|null $navigationGroup = 'Janji Temu dan PIC';
 
     public static function getNavigationSort(): ?int
     {

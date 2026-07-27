@@ -24,6 +24,10 @@ class PicResource extends Resource
 
     protected static ?string $pluralModelLabel = 'Daftar PIC';
 
+    protected static ?string $navigationLabel = 'Daftar PIC';
+
+    protected static \UnitEnum|string|null $navigationGroup = 'Janji Temu dan PIC';
+
     protected static ?string $recordTitleAttribute = 'name';
 
     public static function form(Schema $schema): Schema

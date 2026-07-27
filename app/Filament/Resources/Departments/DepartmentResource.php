@@ -20,13 +20,13 @@ class DepartmentResource extends Resource
 
     protected static string|BackedEnum|null $navigationIcon = 'heroicon-o-briefcase';
 
-    protected static ?string $navigationLabel = 'Departments';
+    protected static ?string $navigationLabel = 'Departemen';
 
-    protected static ?string $modelLabel = 'Department';
+    protected static ?string $modelLabel = 'Departemen';
 
-    protected static ?string $pluralModelLabel = 'Daftar Department';
+    protected static ?string $pluralModelLabel = 'Daftar Departemen';
 
-    protected static UnitEnum|string|null $navigationGroup = null;
+    protected static UnitEnum|string|null $navigationGroup = 'Janji Temu dan PIC';
 
     protected static ?int $navigationSort = 3;
 

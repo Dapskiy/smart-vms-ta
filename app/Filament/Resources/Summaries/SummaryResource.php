@@ -23,9 +23,9 @@ class SummaryResource extends Resource
     protected static ?string $model = Visitor::class;
 
     protected static string|BackedEnum|null $navigationIcon = 'heroicon-o-clipboard-document-list';
-    protected static UnitEnum|string|null $navigationGroup = null; // Keluarkan dari grup "Appointments"
-    protected static ?string $navigationLabel = 'Summary';
-    protected static ?string $pluralModelLabel = 'Summary Kunjungan';
+    protected static UnitEnum|string|null $navigationGroup = 'Janji Temu dan PIC';
+    protected static ?string $navigationLabel = 'Ringkasan';
+    protected static ?string $pluralModelLabel = 'Ringkasan Kunjungan';
     protected static ?int $navigationSort = 4; // Positioning di bawah Room Master
 
     public static function table(Table $table): Table
