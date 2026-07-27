@@ -12,7 +12,10 @@ use App\Http\Controllers\Guest\EpassController;
 use App\Http\Controllers\AppointmentApprovalController;
 
 Route::get('/', function () {
-    return view('welcome');
+    return response()->view('welcome')
+        ->header('Cache-Control', 'no-cache, no-store, must-revalidate')
+        ->header('Pragma', 'no-cache')
+        ->header('Expires', '0');
 })->name('kiosk.welcome');
 
 // Membuat rute bernama 'login' yang otomatis melempar user ke halaman Filament

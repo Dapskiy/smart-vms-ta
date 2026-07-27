@@ -347,26 +347,27 @@
                 </div>
                 
                 <!-- Chat Input Row -->
-                <div class="chat-input-row" :class="{ 'initial-input-row': !hasChatted }">
+                <div class="chat-input-row" :class="{ 'initial-input-row': !hasChatted }" x-data="{ ready: false }" x-init="$nextTick(() => { ready = true })">
                     <textarea 
                         wire:model="inputMessage" 
                         class="chat-textarea-input" 
-                        placeholder="Type your message..."
+                        :placeholder="ready ? 'Ketik pesan Anda...' : 'Sistem sedang memuat...'"
                         rows="1"
                         x-on:input="$el.style.height='auto'; $el.style.height=$el.scrollHeight+'px'"
                         x-on:keydown.enter.prevent="if (!$event.shiftKey) { $wire.sendMessage(); hasChatted = true; }"
-                        @if($isLoading) disabled @endif
+                        x-bind:disabled="!ready || {{ $isLoading ? 'true' : 'false' }}"
+                        disabled
                     ></textarea>
                     
                     <div class="chat-input-actions">
-                        <button type="button" class="action-btn-mic" @click="startDictation()" :class="{ 'is-listening': isListening }" @if($isLoading) disabled @endif>
+                        <button type="button" class="action-btn-mic" @click="startDictation()" :class="{ 'is-listening': isListening }" x-bind:disabled="!ready || {{ $isLoading ? 'true' : 'false' }}" disabled>
                             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                                 <path d="M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3Z"/>
                                 <path d="M19 10v2a7 7 0 0 1-14 0v-2"/>
                                 <line x1="12" y1="19" x2="12" y2="22"/>
                             </svg>
                         </button>
-                        <button type="button" class="action-btn-send" @click="$wire.sendMessage(); hasChatted = true" wire:loading.attr="disabled" wire:target="sendMessage">
+                        <button type="button" class="action-btn-send" @click="$wire.sendMessage(); hasChatted = true" wire:loading.attr="disabled" wire:target="sendMessage" x-bind:disabled="!ready" disabled>
                             <svg wire:loading.remove wire:target="sendMessage" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
                                 <line x1="22" y1="2" x2="11" y2="13"/>
                                 <polygon points="22 2 15 22 11 13 2 9 22 2"/>
