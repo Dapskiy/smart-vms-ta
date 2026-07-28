@@ -180,76 +180,76 @@
 
     @if ($step === 0)
         <!-- Step 0: Pemilihan Visitor -->
-        <div class="modal-title" style="font-size: 1.25rem; margin-bottom: 0.5rem; text-align: center;">Selamat Datang</div>
-        <p style="text-align: center; color: var(--text-secondary); margin-bottom: 2rem;">Apakah Anda sudah pernah berkunjung ke sini sebelumnya?</p>
+        <div class="modal-title" style="font-size: 1.25rem; margin-bottom: 0.5rem; text-align: center;">{{ $lang === 'en' ? 'Welcome' : 'Selamat Datang' }}</div>
+        <p style="text-align: center; color: var(--text-secondary); margin-bottom: 2rem;">{{ $lang === 'en' ? 'Have you visited here before?' : 'Apakah Anda sudah pernah berkunjung ke sini sebelumnya?' }}</p>
         
         <div style="display: flex; flex-direction: column; gap: 1rem;">
             <button type="button" class="btn" style="background: #e0e7ff; border: 1px solid rgba(79, 70, 229, 0.3); color: #4f46e5; padding: 1.5rem;" wire:click="setReturningVisitor">
-                <div style="font-size: 1.1rem; font-weight: 600; margin-bottom: 0.25rem;">Sudah Pernah Berkunjung</div>
-                <div style="font-size: 0.85rem; color: #475569; font-weight: normal;">Gunakan Face Scan untuk isi data otomatis</div>
+                <div style="font-size: 1.1rem; font-weight: 600; margin-bottom: 0.25rem;">{{ $lang === 'en' ? 'Returning Visitor' : 'Sudah Pernah Berkunjung' }}</div>
+                <div style="font-size: 0.85rem; color: #475569; font-weight: normal;">{{ $lang === 'en' ? 'Use Face Scan to auto-fill data' : 'Gunakan Face Scan untuk isi data otomatis' }}</div>
             </button>
             <button type="button" class="btn" style="background: var(--bg-card, #f8fafc); border: 1px solid var(--border-subtle, #cbd5e1); color: var(--text-primary); padding: 1.5rem;" wire:click="setNewVisitor">
-                <div style="font-size: 1.1rem; font-weight: 600; margin-bottom: 0.25rem;">Belum Pernah Berkunjung</div>
-                <div style="font-size: 0.85rem; color: var(--text-secondary); font-weight: normal;">Isi form data diri dan daftar wajah baru</div>
+                <div style="font-size: 1.1rem; font-weight: 600; margin-bottom: 0.25rem;">{{ $lang === 'en' ? 'First Time Visitor' : 'Belum Pernah Berkunjung' }}</div>
+                <div style="font-size: 0.85rem; color: var(--text-secondary); font-weight: normal;">{{ $lang === 'en' ? 'Fill out the form and register your face' : 'Isi form data diri dan daftar wajah baru' }}</div>
             </button>
         </div>
     @endif
 
     @if ($step === 1)
         <!-- Step 1: Data Diri Tamu -->
-        <div class="modal-title" style="font-size: 1.25rem; margin-bottom: 1.5rem; text-align: center;">Informasi Tamu</div>
+        <div class="modal-title" style="font-size: 1.25rem; margin-bottom: 1.5rem; text-align: center;">{{ $lang === 'en' ? 'Guest Information' : 'Informasi Tamu' }}</div>
         
         <div class="form-group">
-            <label>Nama Lengkap</label>
-            <input type="text" wire:model="name" class="form-control" placeholder="Cth: Daffa Dewantara">
+            <label>{{ $lang === 'en' ? 'Full Name' : 'Nama Lengkap' }}</label>
+            <input type="text" wire:model="name" class="form-control" placeholder="{{ $lang === 'en' ? 'Ex: John Doe' : 'Cth: Daffa Dewantara' }}">
             @error('name') <span class="text-danger">{{ $message }}</span> @enderror
         </div>
 
         <div class="form-group">
-            <label>Instansi / Perusahaan</label>
-            <input type="text" wire:model="company" class="form-control" placeholder="Cth: PT XYZ Indonesia">
+            <label>{{ $lang === 'en' ? 'Company / Organization' : 'Instansi / Perusahaan' }}</label>
+            <input type="text" wire:model="company" class="form-control" placeholder="{{ $lang === 'en' ? 'Ex: PT XYZ Indonesia' : 'Cth: PT XYZ Indonesia' }}">
             @error('company') <span class="text-danger">{{ $message }}</span> @enderror
         </div>
 
         <div class="form-group">
-            <label>No. Handphone (WA)</label>
-            <input type="tel" wire:model="phone" class="form-control" placeholder="Cth: 08123456789">
+            <label>{{ $lang === 'en' ? 'Phone Number (WhatsApp)' : 'No. Handphone (WA)' }}</label>
+            <input type="tel" wire:model="phone" class="form-control" placeholder="{{ $lang === 'en' ? 'Ex: 08123456789' : 'Cth: 08123456789' }}">
             @error('phone') <span class="text-danger">{{ $message }}</span> @enderror
         </div>
 
         <div class="form-group">
-            <label>Jumlah Rombongan</label>
+            <label>{{ $lang === 'en' ? 'Group Size' : 'Jumlah Rombongan' }}</label>
             <input type="number" wire:model="pax" class="form-control" min="1" max="50">
             @error('pax') <span class="text-danger">{{ $message }}</span> @enderror
         </div>
 
         <div class="form-actions">
-            <button type="button" class="btn btn-secondary" wire:click="previousStep">⬅ Kembali</button>
-            <button type="button" class="btn btn-primary" wire:click="nextStep">Selanjutnya ➔</button>
+            <button type="button" class="btn btn-secondary" wire:click="previousStep">⬅ {{ $lang === 'en' ? 'Back' : 'Kembali' }}</button>
+            <button type="button" class="btn btn-primary" wire:click="nextStep">{{ $lang === 'en' ? 'Next' : 'Selanjutnya' }} ➔</button>
         </div>
     @endif
 
     @if ($step === 2)
         <!-- Step 2: Tujuan Kunjungan -->
-        <div class="modal-title" style="font-size: 1.25rem; margin-bottom: 1.5rem; text-align: center;">Tujuan Kunjungan</div>
+        <div class="modal-title" style="font-size: 1.25rem; margin-bottom: 1.5rem; text-align: center;">{{ $lang === 'en' ? 'Visit Purpose' : 'Tujuan Kunjungan' }}</div>
         
         <div class="form-group">
-            <label>Tipe Kunjungan</label>
+            <label>{{ $lang === 'en' ? 'Visit Type' : 'Tipe Kunjungan' }}</label>
             @if(\App\Helpers\KioskHelper::isKioskLocal())
                 <div style="display: flex; gap: 1rem; background: var(--bg-card, #f8fafc); padding: 0.8rem 1rem; border-radius: 8px; border: 1px solid var(--border-subtle, #cbd5e1);">
                     <label style="display: flex; align-items: center; gap: 0.5rem; color: var(--text-primary); font-weight: normal; cursor: pointer; margin-bottom: 0;">
                         <input type="radio" wire:model.live="visit_type" value="walk-in" style="accent-color: var(--accent-primary); width: 1.2rem; height: 1.2rem;">
-                        Bertamu Sekarang
+                        {{ $lang === 'en' ? 'Visit Now' : 'Bertamu Sekarang' }}
                     </label>
                     <label style="display: flex; align-items: center; gap: 0.5rem; color: var(--text-primary); font-weight: normal; cursor: pointer; margin-bottom: 0;">
                         <input type="radio" wire:model.live="visit_type" value="appointment" style="accent-color: var(--accent-primary); width: 1.2rem; height: 1.2rem;">
-                        Buat Janji (Hari Lain)
+                        {{ $lang === 'en' ? 'Schedule (Another Day)' : 'Buat Janji (Hari Lain)' }}
                     </label>
                 </div>
                 @error('visit_type') <span class="text-danger">{{ $message }}</span> @enderror
             @else
                 <div style="background: rgba(79, 70, 229, 0.1); color: #4f46e5; padding: 0.8rem 1rem; border-radius: 8px; border: 1px solid rgba(79, 70, 229, 0.2); font-weight: 600;">
-                    📅 Buat Janji (Hari Lain)
+                    📅 {{ $lang === 'en' ? 'Schedule (Another Day)' : 'Buat Janji (Hari Lain)' }}
                 </div>
             @endif
         </div>
@@ -257,12 +257,12 @@
         @if($visit_type === 'appointment')
             <div style="display: flex; gap: 1rem; margin-bottom: 1.25rem;">
                 <div class="form-group" style="flex: 1; margin-bottom: 0;">
-                    <label>Tanggal Kunjungan</label>
+                    <label>{{ $lang === 'en' ? 'Visit Date' : 'Tanggal Kunjungan' }}</label>
                     <input type="date" wire:model="visit_date" class="form-control" style="color-scheme: light;">
                     @error('visit_date') <span class="text-danger">{{ $message }}</span> @enderror
                 </div>
                 <div class="form-group" style="flex: 1; margin-bottom: 0;">
-                    <label>Jam</label>
+                    <label>{{ $lang === 'en' ? 'Time' : 'Jam' }}</label>
                     <input type="time" wire:model="visit_time" class="form-control" style="color-scheme: light;">
                     @error('visit_time') <span class="text-danger">{{ $message }}</span> @enderror
                 </div>
@@ -270,9 +270,9 @@
         @endif
 
         <div class="form-group">
-            <label>Departemen Tujuan</label>
+            <label>{{ $lang === 'en' ? 'Target Department' : 'Departemen Tujuan' }}</label>
             <select wire:model.live="department_id" class="form-control">
-                <option value="">-- Pilih Departemen --</option>
+                <option value="">{{ $lang === 'en' ? '-- Select Department --' : '-- Pilih Departemen --' }}</option>
                 @foreach($departments as $dept)
                     <option value="{{ $dept->id }}">{{ $dept->name }}</option>
                 @endforeach
@@ -281,23 +281,23 @@
         </div>
 
         <div class="form-group">
-            <label>PIC / Karyawan yang Dituju</label>
+            <label>{{ $lang === 'en' ? 'PIC / Employee to Meet' : 'PIC / Karyawan yang Dituju' }}</label>
             
             @if(!$department_id)
-                <input type="text" class="form-control" placeholder="Pilih departemen terlebih dahulu..." disabled style="opacity: 0.5;">
+                <input type="text" class="form-control" placeholder="{{ $lang === 'en' ? 'Select a department first...' : 'Pilih departemen terlebih dahulu...' }}" disabled style="opacity: 0.5;">
             @elseif($selected_pic_id)
                 <div class="selected-pic-card">
                     <div>
-                        <div style="font-size: 0.8rem; color: #475569;">Karyawan Terpilih:</div>
+                        <div style="font-size: 0.8rem; color: #475569;">{{ $lang === 'en' ? 'Selected Employee:' : 'Karyawan Terpilih:' }}</div>
                         <div class="name">👤 {{ $selected_pic_name }}</div>
                     </div>
-                    <button type="button" wire:click="resetPicSelection">Ubah</button>
+                    <button type="button" wire:click="resetPicSelection">{{ $lang === 'en' ? 'Change' : 'Ubah' }}</button>
                 </div>
             @else
-                <input type="text" wire:model.live.debounce.500ms="search_pic" class="form-control" placeholder="Ketik nama karyawan... (min. 2 huruf)">
+                <input type="text" wire:model.live.debounce.500ms="search_pic" class="form-control" placeholder="{{ $lang === 'en' ? 'Type employee name... (min. 2 chars)' : 'Ketik nama karyawan... (min. 2 huruf)' }}">
                 
                 @if($is_searching)
-                    <div style="font-size: 0.8rem; color: var(--text-secondary); margin-top: 0.5rem;">Mencari...</div>
+                    <div style="font-size: 0.8rem; color: var(--text-secondary); margin-top: 0.5rem;">{{ $lang === 'en' ? 'Searching...' : 'Mencari...' }}</div>
                 @elseif(strlen($search_pic) >= 2)
                     @if($search_status === 'found')
                         <div class="pic-search-results">
@@ -306,20 +306,20 @@
                                     <div style="font-weight: 500; display: flex; justify-content: space-between; align-items: center;">
                                         {{ $pic['name'] }}
                                         @if(!$pic['is_available'])
-                                            <span style="font-size: 0.7rem; background: var(--accent-rose); color: white; padding: 2px 6px; border-radius: 4px;">Belum Check-In</span>
+                                            <span style="font-size: 0.7rem; background: var(--accent-rose); color: white; padding: 2px 6px; border-radius: 4px;">{{ $lang === 'en' ? 'Not Checked-In' : 'Belum Check-In' }}</span>
                                         @endif
                                     </div>
-                                    <div style="font-size: 0.75rem; color: var(--text-secondary);">Klik untuk memilih</div>
+                                    <div style="font-size: 0.75rem; color: var(--text-secondary);">{{ $lang === 'en' ? 'Click to select' : 'Klik untuk memilih' }}</div>
                                 </div>
                             @endforeach
                         </div>
                     @elseif($search_status === 'typing')
                         <div style="font-size: 0.85rem; color: var(--text-secondary); margin-top: 0.5rem; font-style: italic;">
-                            Teruskan mengetik nama karyawan secara spesifik...
+                            {{ $lang === 'en' ? 'Keep typing the employee name more specifically...' : 'Teruskan mengetik nama karyawan secara spesifik...' }}
                         </div>
                     @elseif($search_status === 'not_found')
                         <div style="font-size: 0.85rem; color: #d97706; margin-top: 0.5rem; padding: 0.5rem; background: rgba(251, 191, 36, 0.1); border-radius: 4px;">
-                            Mohon maaf, nama karyawan tidak ditemukan pada departemen tersebut. Silakan hubungi Resepsionis.
+                            {{ $lang === 'en' ? 'Sorry, employee name not found in that department. Please contact the Receptionist.' : 'Mohon maaf, nama karyawan tidak ditemukan pada departemen tersebut. Silakan hubungi Resepsionis.' }}
                         </div>
                     @endif
                 @endif
@@ -328,16 +328,16 @@
         </div>
 
         <div class="form-group">
-            <label>Keperluan</label>
-            <textarea wire:model="purpose" class="form-control" rows="3" placeholder="Tuliskan tujuan kunjungan Anda dengan jelas..."></textarea>
+            <label>{{ $lang === 'en' ? 'Purpose' : 'Keperluan' }}</label>
+            <textarea wire:model="purpose" class="form-control" rows="3" placeholder="{{ $lang === 'en' ? 'Describe your visit purpose clearly...' : 'Tuliskan tujuan kunjungan Anda dengan jelas...' }}"></textarea>
             @error('purpose') <span class="text-danger">{{ $message }}</span> @enderror
         </div>
 
         <div class="form-actions">
-            <button type="button" class="btn btn-secondary" wire:click="previousStep">⬅ Kembali</button>
+            <button type="button" class="btn btn-secondary" wire:click="previousStep">⬅ {{ $lang === 'en' ? 'Back' : 'Kembali' }}</button>
             <button type="button" class="btn btn-primary" wire:click="submit" wire:loading.attr="disabled">
-                <span wire:loading.remove wire:target="submit">Selesaikan Registrasi</span>
-                <span wire:loading wire:target="submit">Memproses...</span>
+                <span wire:loading.remove wire:target="submit">{{ $lang === 'en' ? 'Complete Registration' : 'Selesaikan Registrasi' }}</span>
+                <span wire:loading wire:target="submit">{{ $lang === 'en' ? 'Processing...' : 'Memproses...' }}</span>
             </button>
         </div>
     @endif

@@ -1206,6 +1206,8 @@
         setInterval(updateClock, 1000);
 
         window.appLang = 'id';
+        // Translation helper for JS face scan messages
+        window.t = function(id, en) { return window.appLang === 'en' ? en : id; };
         function setLang(lang) {
             window.appLang = lang;
             
@@ -2324,25 +2326,25 @@
     <div id="modal-method" class="modal-overlay">
         <div class="modal-box">
             <button class="modal-close" onclick="closeMethodPicker()">✕</button>
-            <div class="modal-title">Sudah Ada Janji?</div>
-            <p class="modal-sub">Pilih cara verifikasi janji temu Anda</p>
+            <div class="modal-title" data-lang-id="Sudah Ada Janji?" data-lang-en="Have Appointment?">Sudah Ada Janji?</div>
+            <p class="modal-sub" data-lang-id="Pilih cara verifikasi janji temu Anda" data-lang-en="Choose your appointment verification method">Pilih cara verifikasi janji temu Anda</p>
             <button class="method-btn" onclick="openQrScanner('qr')">
                 <div class="mb-icon" style="background:rgba(99,102,241,0.15);border:1px solid rgba(99,102,241,0.3);">
                     <svg fill="none" stroke="#818cf8" stroke-width="1.8" viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><path d="M14 14h.01M18 14h.01M14 18h.01M18 18h.01M16 16v.01"/></svg>
                 </div>
-                <div class="mb-text"><strong>Scan QR Code</strong><span>Arahkan QR Code tiket Anda ke kamera</span></div>
+                <div class="mb-text"><strong data-lang-id="Scan QR Code" data-lang-en="Scan QR Code">Scan QR Code</strong><span data-lang-id="Arahkan QR Code tiket Anda ke kamera" data-lang-en="Point your ticket QR Code at the camera">Arahkan QR Code tiket Anda ke kamera</span></div>
             </button>
             <button class="method-btn" onclick="openQrScanner('token')">
                 <div class="mb-icon" style="background:rgba(251,191,36,0.1);border:1px solid rgba(251,191,36,0.3);">
                     <svg fill="none" stroke="#fbbf24" stroke-width="1.8" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M7 20l4-16m2 16l4-16M6 9h14M4 15h14"/></svg>
                 </div>
-                <div class="mb-text"><strong>Masukkan Token</strong><span>Ketik kode token reservasi Anda</span></div>
+                <div class="mb-text"><strong data-lang-id="Masukkan Token" data-lang-en="Enter Token">Masukkan Token</strong><span data-lang-id="Ketik kode token reservasi Anda" data-lang-en="Type your reservation token code">Ketik kode token reservasi Anda</span></div>
             </button>
             <button class="method-btn" onclick="openFaceScan('checkin')">
                 <div class="mb-icon" style="background:rgba(16,185,129,0.1);border:1px solid rgba(16,185,129,0.3);">
                     <svg fill="none" stroke="#10b981" stroke-width="1.8" viewBox="0 0 24 24"><circle cx="12" cy="8" r="4"/><path stroke-linecap="round" stroke-linejoin="round" d="M3 20c0-4 4-7 9-7s9 3 9 7"/><path stroke-linecap="round" d="M7 3.5A9 9 0 0 0 3 11M17 3.5A9 9 0 0 1 21 11"/></svg>
                 </div>
-                <div class="mb-text"><strong>Scan Wajah</strong><span>Untuk tamu yang pernah check-in sebelumnya</span></div>
+                <div class="mb-text"><strong data-lang-id="Scan Wajah" data-lang-en="Face Scan">Scan Wajah</strong><span data-lang-id="Untuk tamu yang pernah check-in sebelumnya" data-lang-en="For guests who have checked-in before">Untuk tamu yang pernah check-in sebelumnya</span></div>
             </button>
         </div>
     </div>
@@ -2351,8 +2353,8 @@
     <div id="modal-qr-scan" class="modal-overlay">
         <div class="modal-box" style="max-width: 500px;">
             <button class="modal-close" onclick="closeQrScanner()">✕</button>
-            <div class="modal-title" id="qr-scan-title">Scan QR Code</div>
-            <p class="modal-sub" id="qr-scan-subtitle">Silakan arahkan QR Code tiket janji temu Anda ke kamera lobi Kiosk</p>
+            <div class="modal-title" id="qr-scan-title" data-lang-id="Scan QR Code" data-lang-en="Scan QR Code">Scan QR Code</div>
+            <p class="modal-sub" id="qr-scan-subtitle" data-lang-id="Silakan arahkan QR Code tiket janji temu Anda ke kamera lobi Kiosk" data-lang-en="Please point your appointment ticket QR Code at the Kiosk camera">Silakan arahkan QR Code tiket janji temu Anda ke kamera lobi Kiosk</p>
             
             <!-- Area Scanner Kamera (Akan menyala jika mode scan QR) -->
             <div id="qr-camera-wrap" style="display: none; flex-direction: column; align-items: center; justify-content: center; background: #0f172a; border-radius: 12px; padding: 15px; position: relative; margin-bottom: 20px;">
@@ -2362,10 +2364,10 @@
 
             <!-- Input Manual Token (Selalu ada sebagai fallback atau jika dalam mode input token) -->
             <div class="form-group" style="text-align: left;">
-                <label for="qr-token-input" style="font-weight: 500; margin-bottom: 8px; display: block; color: var(--text-secondary);">Kode Janji Temu (Token / Visit ID):</label>
+                <label for="qr-token-input" style="font-weight: 500; margin-bottom: 8px; display: block; color: var(--text-secondary);" data-lang-id="Kode Janji Temu (Token / Visit ID):" data-lang-en="Appointment Code (Token / Visit ID):">Kode Janji Temu (Token / Visit ID):</label>
                 <div style="display: flex; gap: 10px;">
                     <input type="text" id="qr-token-input" class="form-control" placeholder="Contoh: V-202607-001 atau Token" style="text-transform: uppercase; font-family: monospace; font-size: 1.1rem; letter-spacing: 1px;">
-                    <button type="button" class="btn btn-primary" onclick="submitQrTokenManual()" style="padding: 10px 20px;">Verifikasi</button>
+                    <button type="button" class="btn btn-primary" onclick="submitQrTokenManual()" style="padding: 10px 20px;" data-lang-id="Verifikasi" data-lang-en="Verify">Verifikasi</button>
                 </div>
                 <div id="qr-error-msg" class="text-danger" style="margin-top: 10px; font-weight: 500; display: none;"></div>
             </div>
@@ -2384,11 +2386,11 @@
     <div id="modal-face" class="modal-overlay">
         <div class="modal-box face-modal-box">
             <button class="modal-close" onclick="closeFaceScan()">✕</button>
-            <div class="modal-title" style="margin-bottom:0.2rem;">Verifikasi Wajah</div>
-            <p class="modal-sub" style="margin-bottom:1rem;">Tengok kanan lalu kiri untuk verifikasi</p>
+            <div class="modal-title" style="margin-bottom:0.2rem;" data-lang-id="Verifikasi Wajah" data-lang-en="Face Verification">Verifikasi Wajah</div>
+            <p class="modal-sub" style="margin-bottom:1rem;" data-lang-id="Tengok kanan lalu kiri untuk verifikasi" data-lang-en="Look right then left to verify">Tengok kanan lalu kiri untuk verifikasi</p>
             <div id="face-loading" style="display:flex;flex-direction:column;align-items:center;justify-content:center;height:280px;gap:1rem;">
                 <svg style="width:2.5rem;height:2.5rem;color:#6366f1;animation:kp-spin 1s linear infinite;" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="3" stroke-dasharray="40" stroke-dashoffset="10"/></svg>
-                <span style="color:#8899bb;font-size:0.85rem;">Memuat model AI...</span>
+                <span style="color:#8899bb;font-size:0.85rem;" data-lang-id="Memuat model AI..." data-lang-en="Loading AI model...">Memuat model AI...</span>
             </div>
             <div id="face-camera-wrap" style="display:none;flex-direction:column;align-items:center;gap:0.5rem;">
                 <div style="position:relative;width:272px;height:272px;flex-shrink:0;">
@@ -2438,7 +2440,7 @@
             </div>
             <!-- Fallback/Skip Button -->
             <div id="face-fallback-wrap" style="margin-top: 1rem; display: flex; justify-content: center;">
-                <button id="btn-skip-face" onclick="skipFaceScan()" class="btn-ok" style="background: #475569; font-size: 0.85rem; padding: 0.6rem 1.5rem; display: none; border-radius: 0.5rem; border: none; color: #fff; cursor: pointer; font-weight: 600; font-family: 'Poppins', sans-serif;">
+                <button id="btn-skip-face" onclick="skipFaceScan()" class="btn-ok" style="background: #475569; font-size: 0.85rem; padding: 0.6rem 1.5rem; display: none; border-radius: 0.5rem; border: none; color: #fff; cursor: pointer; font-weight: 600; font-family: 'Poppins', sans-serif;" data-lang-id="Daftar Tanpa Wajah (Manual)" data-lang-en="Register Without Face (Manual)">
                     Daftar Tanpa Wajah (Manual)
                 </button>
             </div>
@@ -2452,21 +2454,21 @@
             <div class="success-icon">
                 <svg fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24" style="width:2.5rem;height:2.5rem;color:#10b981;"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg>
             </div>
-            <div class="success-heading">Check-in Berhasil! 🎉</div>
-            <p class="success-sub">Selamat datang, data kunjungan Anda telah dicatat.</p>
+            <div class="success-heading" data-lang-id="Check-in Berhasil! 🎉" data-lang-en="Check-in Successful! 🎉">Check-in Berhasil! 🎉</div>
+            <p class="success-sub" data-lang-id="Selamat datang, data kunjungan Anda telah dicatat." data-lang-en="Welcome, your visit data has been recorded.">Selamat datang, data kunjungan Anda telah dicatat.</p>
             <div class="info-grid">
-                <div class="info-item"><label>Nama Tamu</label><span id="si-name">-</span></div>
-                <div class="info-item"><label>Instansi</label><span id="si-company">-</span></div>
-                <div class="info-item"><label>No. Telepon</label><span id="si-phone">-</span></div>
-                <div class="info-item"><label>PIC / Host</label><span id="si-pic">-</span></div>
-                <div class="info-item"><label>Departemen</label><span id="si-department">-</span></div>
-                <div class="info-item"><label>Tanggal</label><span id="si-date">-</span></div>
-                <div class="info-item"><label>Jam</label><span id="si-time">-</span></div>
-                <div class="info-item" style="grid-column:1/-1;"><label>Keperluan</label><span id="si-purpose">-</span></div>
+                <div class="info-item"><label data-lang-id="Nama Tamu" data-lang-en="Guest Name">Nama Tamu</label><span id="si-name">-</span></div>
+                <div class="info-item"><label data-lang-id="Instansi" data-lang-en="Company">Instansi</label><span id="si-company">-</span></div>
+                <div class="info-item"><label data-lang-id="No. Telepon" data-lang-en="Phone Number">No. Telepon</label><span id="si-phone">-</span></div>
+                <div class="info-item"><label data-lang-id="PIC / Host" data-lang-en="PIC / Host">PIC / Host</label><span id="si-pic">-</span></div>
+                <div class="info-item"><label data-lang-id="Departemen" data-lang-en="Department">Departemen</label><span id="si-department">-</span></div>
+                <div class="info-item"><label data-lang-id="Tanggal" data-lang-en="Date">Tanggal</label><span id="si-date">-</span></div>
+                <div class="info-item"><label data-lang-id="Jam" data-lang-en="Time">Jam</label><span id="si-time">-</span></div>
+                <div class="info-item" style="grid-column:1/-1;"><label data-lang-id="Keperluan" data-lang-en="Purpose">Keperluan</label><span id="si-purpose">-</span></div>
             </div>
             <div class="countdown-bar-wrap"><div id="countdown-bar" class="countdown-bar" style="width:100%;"></div></div>
             <p id="countdown-text" class="countdown-text"></p>
-            <button class="btn-ok" onclick="closeSuccessPopup()">OK, Terima Kasih</button>
+            <button class="btn-ok" onclick="closeSuccessPopup()" data-lang-id="OK, Terima Kasih" data-lang-en="OK, Thank You">OK, Terima Kasih</button>
         </div>
     </div>
     
@@ -2478,13 +2480,13 @@
                     <path stroke-linecap="round" stroke-linejoin="round" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/>
                 </svg>
             </div>
-            <div class="waiting-heading">Menunggu Persetujuan PIC<span class="waiting-dots"></span></div>
-            <p class="waiting-sub">
+            <div class="waiting-heading" data-lang-id="Menunggu Persetujuan PIC" data-lang-en="Waiting for PIC Approval">Menunggu Persetujuan PIC<span class="waiting-dots"></span></div>
+            <p class="waiting-sub" data-lang-id="Notifikasi telah dikirim ke <strong id='wa-pic-name'>PIC</strong>.<br>Layar ini akan otomatis berubah setelah PIC merespon." data-lang-en="Notification has been sent to <strong id='wa-pic-name'>PIC</strong>.<br>This screen will automatically update after PIC responds.">
                 Notifikasi telah dikirim ke <strong id="wa-pic-name">PIC</strong>.<br>
                 Layar ini akan otomatis berubah setelah PIC merespon.
             </p>
-            <p class="waiting-timer" id="wa-timer">Menunggu respon...</p>
-            <button class="btn-cancel-waiting" onclick="cancelWaitingApproval()">Batalkan</button>
+            <p class="waiting-timer" id="wa-timer" data-lang-id="Menunggu respon..." data-lang-en="Waiting for response...">Menunggu respon...</p>
+            <button class="btn-cancel-waiting" onclick="cancelWaitingApproval()" data-lang-id="Batalkan" data-lang-en="Cancel">Batalkan</button>
         </div>
     </div>
 
@@ -2496,14 +2498,14 @@
                     <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/>
                 </svg>
             </div>
-            <div class="rejected-heading">Kunjungan Ditolak</div>
-            <p class="rejected-sub">
+            <div class="rejected-heading" data-lang-id="Kunjungan Ditolak" data-lang-en="Visit Rejected">Kunjungan Ditolak</div>
+            <p class="rejected-sub" data-lang-id="Mohon maaf, PIC tidak dapat menerima kunjungan Anda saat ini.<br>Silakan hubungi Resepsionis untuk informasi lebih lanjut." data-lang-en="Sorry, the PIC cannot receive your visit at this time.<br>Please contact the Receptionist for more information.">
                 Mohon maaf, PIC tidak dapat menerima kunjungan Anda saat ini.<br>
                 Silakan hubungi Resepsionis untuk informasi lebih lanjut.
             </p>
             <div class="countdown-bar-wrap"><div id="rejected-countdown-bar" class="countdown-bar" style="width:100%;background:#f43f5e;"></div></div>
             <p id="rejected-countdown-text" class="countdown-text"></p>
-            <button class="btn-ok" onclick="closeRejectedPopup()">Kembali</button>
+            <button class="btn-ok" onclick="closeRejectedPopup()" data-lang-id="Kembali" data-lang-en="Back">Kembali</button>
         </div>
     </div>
 
@@ -2614,11 +2616,11 @@
     <div id="modal-checkout-face" class="modal-overlay">
         <div class="modal-box face-modal-box">
             <button class="modal-close" onclick="closeCheckoutFaceScan()">✕</button>
-            <div class="modal-title" style="margin-bottom:0.2rem;">Check-Out Mandiri</div>
-            <p class="modal-sub" style="margin-bottom:1rem;">Scan wajah untuk check-out — tengok kanan lalu kiri</p>
+            <div class="modal-title" style="margin-bottom:0.2rem;" data-lang-id="Check-Out Mandiri" data-lang-en="Self Check-Out">Check-Out Mandiri</div>
+            <p class="modal-sub" style="margin-bottom:1rem;" data-lang-id="Scan wajah untuk check-out — tengok kanan lalu kiri" data-lang-en="Face scan for check-out — look right then left">Scan wajah untuk check-out — tengok kanan lalu kiri</p>
             <div id="co-face-loading" style="display:flex;flex-direction:column;align-items:center;justify-content:center;height:280px;gap:1rem;">
                 <svg style="width:2.5rem;height:2.5rem;color:#10b981;animation:kp-spin 1s linear infinite;" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="3" stroke-dasharray="40" stroke-dashoffset="10"/></svg>
-                <span style="color:#8899bb;font-size:0.85rem;">Memuat model AI...</span>
+                <span style="color:#8899bb;font-size:0.85rem;" data-lang-id="Memuat model AI..." data-lang-en="Loading AI model...">Memuat model AI...</span>
             </div>
             <div id="co-face-camera-wrap" style="display:none;flex-direction:column;align-items:center;gap:0.5rem;">
                 <div style="position:relative;width:272px;height:272px;flex-shrink:0;">

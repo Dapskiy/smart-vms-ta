@@ -5,13 +5,21 @@ namespace App\Livewire\Kiosk;
 use App\Models\Appointment;
 use Carbon\Carbon;
 use Livewire\Component;
+use Livewire\Attributes\On;
 
 class TokenCheckin extends Component
 {
+    public string $lang = 'id';
     public $token = '';
     public $errorMessage = '';
 
     protected $listeners = ['openTokenCheckin' => 'resetModal'];
+
+    #[On('setLang')]
+    public function setLanguage($lang)
+    {
+        $this->lang = $lang;
+    }
 
     public function resetModal()
     {

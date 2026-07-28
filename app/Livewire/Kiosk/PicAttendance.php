@@ -8,12 +8,19 @@ use Livewire\Component;
 use Livewire\Attributes\On;
 class PicAttendance extends Component
 {
+    public string $lang = 'id';
     public $message = 'Memulai kamera...';
     public $messageType = 'info'; // info, success, error
     
     // Variables for holding temporary matched state to debounce the same person
     public $lastMatchedPicId = null;
     public $lastMatchedTime = null;
+
+    #[On('setLang')]
+    public function setLanguage($lang)
+    {
+        $this->lang = $lang;
+    }
 
     #[On('process-pic-face')]
     public function processFace($descriptor, $location = 'SA')

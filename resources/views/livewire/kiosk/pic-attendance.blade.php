@@ -99,15 +99,15 @@
 
     <div class="kiosk-shell">
         <div>
-            <div class="page-title">Absensi Karyawan • <span id="kiosk-location-display" style="color: #818cf8;">SA</span></div>
-            <p class="page-sub">Tengok kanan lalu kiri untuk verifikasi wajah</p>
+            <div class="page-title" data-lang-id="Absensi Karyawan • <span id='kiosk-location-display' style='color: #818cf8;'>SA</span>" data-lang-en="Employee Attendance • <span id='kiosk-location-display' style='color: #818cf8;'>SA</span>">Absensi Karyawan • <span id="kiosk-location-display" style="color: #818cf8;">SA</span></div>
+            <p class="page-sub" data-lang-id="Tengok kanan lalu kiri untuk verifikasi wajah" data-lang-en="Look right then left for face verification">Tengok kanan lalu kiri untuk verifikasi wajah</p>
         </div>
 
         <!-- Face Scan Box — identical to #modal-face in welcome.blade.php -->
         <div class="face-box">
             <div id="pa-face-loading" style="display:flex;flex-direction:column;align-items:center;justify-content:center;height:280px;gap:1rem;">
                 <svg style="width:2.5rem;height:2.5rem;color:#6366f1;animation:kp-spin 1s linear infinite;" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="3" stroke-dasharray="40" stroke-dashoffset="10"/></svg>
-                <span style="color:#8899bb;font-size:0.85rem;">Memuat model AI...</span>
+                <span style="color:#8899bb;font-size:0.85rem;" data-lang-id="Memuat model AI..." data-lang-en="Loading AI model...">Memuat model AI...</span>
             </div>
             <div id="pa-face-camera-wrap" style="display:none;flex-direction:column;align-items:center;gap:0.5rem;">
                 <div style="position:relative;width:272px;height:272px;flex-shrink:0;">
@@ -164,11 +164,11 @@
                 <span class="result-badge" id="pa-result-badge"></span>
             </div>
             <div style="margin-top:1.5rem;">
-                <button onclick="window.location.reload()" style="background:rgba(255,255,255,0.2); border:1px solid rgba(255,255,255,0.4); color:white; padding: 0.5rem 1.5rem; border-radius: 9999px; cursor:pointer; font-size:0.9rem;">Selesai</button>
+                <button onclick="window.location.reload()" style="background:rgba(255,255,255,0.2); border:1px solid rgba(255,255,255,0.4); color:white; padding: 0.5rem 1.5rem; border-radius: 9999px; cursor:pointer; font-size:0.9rem;" data-lang-id="Selesai" data-lang-en="Done">Selesai</button>
             </div>
         </div>
 
-        <a href="{{ route('kiosk.welcome') }}" class="back-link">
+        <a href="{{ route('kiosk.welcome') }}" class="back-link" data-lang-id="<svg style='width:1rem;height:1rem;' fill='none' stroke='currentColor' stroke-width='2' viewBox='0 0 24 24'><path stroke-linecap='round' stroke-linejoin='round' d='M19 12H5M12 5l-7 7 7 7'/></svg> Back to Main Screen" data-lang-en="<svg style='width:1rem;height:1rem;' fill='none' stroke='currentColor' stroke-width='2' viewBox='0 0 24 24'><path stroke-linecap='round' stroke-linejoin='round' d='M19 12H5M12 5l-7 7 7 7'/></svg> Back to Main Screen">
             <svg style="width:1rem;height:1rem;" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M19 12H5M12 5l-7 7 7 7"/></svg>
             Kembali ke Layar Utama
         </a>

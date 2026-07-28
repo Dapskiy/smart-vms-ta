@@ -15,6 +15,15 @@ use Livewire\Attributes\On;
 
 class KioskWalkinForm extends Component
 {
+    // Language
+    public string $lang = 'id';
+
+    #[On('setLang')]
+    public function setLanguage($lang)
+    {
+        $this->lang = $lang;
+    }
+
     // Form fields
     public $name = '';
     public $company = '';
