@@ -302,14 +302,25 @@
                     @if($search_status === 'found')
                         <div class="pic-search-results">
                             @foreach($pic_results as $pic)
-                                <div class="pic-result-item" wire:click="selectPic({{ $pic['id'] }}, '{{ addslashes($pic['name']) }}')">
-                                    <div style="font-weight: 500; display: flex; justify-content: space-between; align-items: center;">
+                                @php
+                                    $isWalkIn = ($visit_type === 'walk-in');
+                                    $isTodayAppointment = ($visit_type === 'appointment' && $visit_date && date('Y-m-d', strtotime($visit_date)) === date('Y-m-d'));
+                                    $isDisabled = (($isWalkIn || $isTodayAppointment) && !$pic['is_available']);
+                                @endphp
+                                <div class="pic-result-item" @if(!$isDisabled) wire:click="selectPic({{ $pic['id'] }}, '{{ addslashes($pic['name']) }}')" @endif style="{{ $isDisabled ? 'opacity: 0.6; cursor: not-allowed; background: #f8fafc;' : '' }}">
+                                    <div style="font-weight: 500; display: flex; justify-content: space-between; align-items: center; color: {{ $isDisabled ? 'var(--text-muted)' : 'inherit' }};">
                                         {{ $pic['name'] }}
-                                        @if(!$pic['is_available'])
-                                            <span style="font-size: 0.7rem; background: var(--accent-rose); color: white; padding: 2px 6px; border-radius: 4px;">{{ $lang === 'en' ? 'Not Checked-In' : 'Belum Check-In' }}</span>
+                                        @if($isDisabled)
+                                            <span style="font-size: 0.7rem; background: var(--accent-rose); color: white; padding: 2px 6px; border-radius: 4px;">{{ $lang === 'en' ? 'Not Available' : 'Tidak Tersedia' }}</span>
+                                        @elseif(!$pic['is_available'])
+                                            <span style="font-size: 0.7rem; background: var(--text-muted); color: white; padding: 2px 6px; border-radius: 4px;">{{ $lang === 'en' ? 'Absent Today' : 'Tidak Hadir' }}</span>
                                         @endif
                                     </div>
-                                    <div style="font-size: 0.75rem; color: var(--text-secondary);">{{ $lang === 'en' ? 'Click to select' : 'Klik untuk memilih' }}</div>
+                                    @if(!$isDisabled)
+                                        <div style="font-size: 0.75rem; color: var(--text-secondary);">{{ $lang === 'en' ? 'Click to select' : 'Klik untuk memilih' }}</div>
+                                    @else
+                                        <div style="font-size: 0.75rem; color: var(--accent-rose);">{{ $lang === 'en' ? 'Cannot meet today' : 'Tidak bisa ditemui hari ini' }}</div>
+                                    @endif
                                 </div>
                             @endforeach
                         </div>
