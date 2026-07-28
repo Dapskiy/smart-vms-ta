@@ -115,20 +115,21 @@ class InteractiveChatbot extends Component
         $prompt .= "- Data PIC di bawah ini hanya untuk keperluan VALIDASI INTERNAL (mencocokkan nama yang disebut pengunjung). Data tersebut BUKAN untuk dibagikan kepada pengunjung.\n\n";
         $prompt .= "### KAPAN BOLEH MENYEBUTKAN NAMA PIC\n";
         $prompt .= "Nama PIC **HANYA BOLEH** disebut dalam respons jika memenuhi SEMUA syarat berikut:\n";
-        $prompt .= "1. Pengunjung SUDAH LEBIH DULU menyebutkan nama PIC secara spesifik (misal: \"saya mau ketemu Pak Daffa\").\n";
-        $prompt .= "2. Nama yang disebutkan pengunjung COCOK (match) dengan salah satu nama di data internal. **PENTING (PARTIAL MATCH/NAMA PANGGILAN)**: Jika pengunjung hanya menyebutkan 1 kata atau nama panggilan (misal: 'Pak Rexa'), kamu WAJIB mencocokkannya dengan nama lengkap yang mengandung kata tersebut di data internal (misal: 'Rexa Alvinando'). Jika ada yang cocok sebagian, asumsikan itu benar dan otomatis gunakan NAMA LENGKAP tersebut untuk balasan dan di dalam marker pendaftaran.\n";
+        $prompt .= "1. Pengunjung SUDAH LEBIH DULU menyebutkan nama PIC (baik sebagian maupun lengkap).\n";
+        $prompt .= "2. Nama yang disebutkan pengunjung COCOK (match) dengan salah satu nama di data internal.\n";
+        $prompt .= "   - **JIKA PENGUNJUNG SUDAH MENYEBUT NAMA LENGKAP** (misal: 'Naufal Setiawan'): Langsung cek kehadiran dan tawarkan solusi sesuai Skenario di bawah.\n";
+        $prompt .= "   - **JIKA PENGUNJUNG HANYA MENYEBUT NAMA PENDEK/PANGGILAN** (misal: 'Pak Naufal'): Kamu **WAJIB** memvalidasinya terlebih dahulu. Contoh: *\"Apakah yang Anda maksud adalah Bapak Naufal Setiawan?\"*\n";
         $prompt .= "3. Kamu HANYA mengonfirmasi nama yang disebutkan pengunjung tersebut — TIDAK menyebutkan nama PIC lain.\n\n";
         $prompt .= "### SKENARIO PIC TIDAK DITEMUKAN\n";
         $prompt .= "Jika pengunjung menyebutkan nama PIC yang **TIDAK ADA** di data internal:\n";
         $prompt .= "- **DILARANG** memberikan daftar PIC yang benar, saran PIC alternatif, atau clue nama-nama PIC yang mirip.\n";
-        $prompt .= "- **DILARANG** berkata: 'PIC yang tersedia adalah...', 'Kami memiliki PIC bernama...', 'Mungkin yang Anda maksud adalah...', atau variasi apapun yang mengekspos nama PIC lain.\n";
-        $prompt .= "- **WAJIB** jawab seperti ini (atau improvisasi dengan esensi yang sama tanpa membocorkan nama PIC apapun):\n";
-        $prompt .= "  *\"Mohon maaf, nama yang Anda sebutkan tidak ditemukan dalam sistem kami. Silakan periksa kembali nama karyawan yang ingin Anda temui, atau hubungi resepsionis untuk bantuan lebih lanjut.\"*\n\n";
+        $prompt .= "- **WAJIB** jawab dengan sangat sopan seperti ini:\n";
+        $prompt .= "  *\"Mohon maaf, nama yang Anda sebutkan sepertinya tidak ditemukan dalam sistem kami. Boleh saya tahu nama lengkap atau departemen beliau agar saya bisa bantu cek kembali? Atau Anda juga bisa menghubungi resepsionis kami untuk bantuan lebih lanjut.\"*\n\n";
         $prompt .= "### SKENARIO PIC HADIR TAPI TIDAK AVAILABLE (SIBUK)\n";
         $prompt .= "Jika pengunjung menanyakan PIC yang HADIR tapi is_available=false (sibuk):\n";
-        $prompt .= "- **BOLEH** menyebutkan nama PIC tersebut (karena pengunjung yang menyebut duluan).\n";
-        $prompt .= "- **DILARANG** menyarankan PIC alternatif dari departemen yang sama atau departemen lain.\n";
-        $prompt .= "- Sarankan untuk membuat janji temu di waktu lain, atau menunggu.\n\n";
+        $prompt .= "- **BOLEH** menyebutkan nama lengkap PIC tersebut.\n";
+        $prompt .= "- Informasikan dengan bahasa yang empati: *\"Mohon maaf, Bapak/Ibu [Nama Lengkap] saat ini sedang ada agenda/sibuk dan belum bisa ditemui hari ini.\"*\n";
+        $prompt .= "- Langsung tawarkan solusi: *\"Namun jangan khawatir, saya bisa bantu buatkan Janji Temu (Appointment) untuk jadwal lain (besok, lusa, atau minggu depan). Apakah Anda ingin menjadwalkannya?\"*\n\n";
 
         // ── SHORTCUT ACTIONS (INTEGRASI KAMERA) ──
         $prompt .= "## SHORTCUT TINDAKAN / KAMERA PENGENALAN WAJAH (PRIORITAS TERTINGGI)\n";
@@ -143,17 +144,16 @@ class InteractiveChatbot extends Component
         $prompt .= "## LOGIKA REKOMENDASI KUNJUNGAN\n";
         $prompt .= "Gunakan data internal PIC untuk **VALIDASI** saja (JANGAN expose ke pengunjung).\n\n";
         $prompt .= "**Skenario A — PIC yang dicari HADIR & TERSEDIA:**\n";
-        $prompt .= "- Sampaikan kabar baik bahwa PIC tersebut sedang tersedia.\n";
-        $prompt .= "- Sarankan Walk-In (hari ini) atau Janji Temu (hari lain).\n\n";
+        $prompt .= "- Sampaikan kabar gembira dengan antusias: *\"Kabar baik! Bapak/Ibu [Nama PIC] saat ini berada di kantor dan tersedia.\"*\n";
+        $prompt .= "- Tawarkan opsi fleksibel: *\"Apakah Anda ingin Bertamu Sekarang (Walk-In), atau ingin membuat Janji Temu untuk hari lain?\"*\n\n";
         $prompt .= "**Skenario B — PIC yang dicari HADIR tapi SIBUK:**\n";
-        $prompt .= "- Informasikan bahwa PIC sedang tidak bisa ditemui saat ini.\n";
-        $prompt .= "- Sarankan membuat Janji Temu di waktu lain. **JANGAN** sarankan PIC alternatif.\n\n";
+        $prompt .= "- (Sama seperti aturan Skenario Sibuk di atas: minta maaf dan tawarkan jadwal ulang ke hari lain).\n\n";
         $prompt .= "**Skenario C — PIC yang dicari TIDAK HADIR:**\n";
-        $prompt .= "- Informasikan bahwa PIC tidak hadir hari ini.\n";
-        $prompt .= "- Sarankan membuat Janji Temu untuk hari lain. **JANGAN** sarankan PIC alternatif. **JANGAN** sebutkan PIC lain dari departemen yang sama.\n\n";
+        $prompt .= "- Sampaikan dengan empati dan sopan: *\"Mohon maaf, Bapak/Ibu [Nama PIC] kebetulan sedang tidak berada di kantor hari ini.\"*\n";
+        $prompt .= "- **Tawarkan Solusi:** *\"Namun, Anda tetap bisa membuat Janji Temu (Appointment) untuk jadwal lain saat beliau sudah kembali (misal: besok, lusa, atau minggu depan). Apakah Anda ingin saya bantu buatkan jadwalnya?\"*\n";
+        $prompt .= "- **DILARANG** sarankan PIC alternatif.\n\n";
         $prompt .= "**Skenario D — Nama PIC TIDAK ADA di data:**\n";
-        $prompt .= "- Informasikan bahwa nama tidak ditemukan di sistem.\n";
-        $prompt .= "- Minta pengunjung memeriksa kembali nama atau menghubungi resepsionis. **JANGAN** berikan petunjuk, saran, atau daftar nama PIC yang ada.\n\n";
+        $prompt .= "- (Sama seperti aturan PIC tidak ditemukan di atas).\n\n";
 
         // ── PENDAFTARAN VIA CHATBOT ──────────────────────────────────────────
         $prompt .= "## PENDAFTARAN KUNJUNGAN VIA PERCAKAPAN\n";
@@ -191,7 +191,8 @@ class InteractiveChatbot extends Component
         $prompt .= "   - Ekstrak secara otomatis setiap detail informasi yang sudah diberikan oleh pengunjung dari pesan-pesannya.\n";
         $prompt .= "   - Jika pengunjung memberikan beberapa informasi sekaligus (contoh: \"Saya Budi dari PT ABC mau ketemu Pak Daffa besok jam 10\"), langsung ekstrak: Nama (Budi), Perusahaan (PT ABC), PIC (Pak Daffa), Tanggal (besok -> YYYY-MM-DD), Waktu (10:00).\n";
         $prompt .= "   - HANYA tanyakan slot data yang MASIH KOSONG dari 7 slot berikut:\n";
-        $prompt .= "     [1. Nama Lengkap] [2. Nama Perusahaan/Instansi] [3. No Telepon/WA] [4. Nama PIC] [5. Tanggal Kunjungan] [6. Jam Kunjungan] [7. Keperluan/Tujuan]\n\n";
+        $prompt .= "     [1. Nama Lengkap] [2. Nama Perusahaan/Instansi] [3. No Telepon/WA] [4. Nama PIC] [5. Tanggal Kunjungan] [6. Jam Kunjungan] [7. Keperluan/Tujuan]\n";
+        $prompt .= "   - **SANGAT PENTING**: Jangan pernah menghilangkan/melewatkan permintaan [Tanggal Kunjungan]. Walaupun kamu sebelumnya berkata 'untuk besok', kamu TETAP WAJIB menanyakan 'Untuk tanggal berapa?' atau memasukkan 'Tanggal Kunjungan' ke dalam list pertanyaanmu agar data akurat.\n\n";
         $prompt .= "3. **VALIDASI & FORMATTING**:\n";
         $prompt .= "   - Bimbing pengunjung jika informasi ambigu (konversi kata relatif seperti 'besok' atau 'lusa' menjadi YYYY-MM-DD presisi relatif terhadap tanggal saat ini).\n";
         $prompt .= "   - Pastikan format nomor telepon valid (diawali 08 atau +62).\n";

@@ -519,48 +519,52 @@ class KioskWalkinForm extends Component
     private function createAppointmentRecord(Visitor $visitor)
     {
         $isWalkIn = $this->visit_type === 'walk-in';
-        $approvalToken = $isWalkIn ? Str::uuid()->toString() : null;
 
         $appointment = Appointment::create([
             'visit_id'       => VisitIdService::generate(),
             'visitor_id'     => $visitor->id,
             'pic_id'         => $this->selected_pic_id,
             'type'           => $this->visit_type,
-            'status'         => 'pending', // Walk-in dan appointment mulai dari pending
+            'status'         => $isWalkIn ? 'active' : 'pending',
             'visit_date'     => $isWalkIn ? now()->toDateString() : $this->visit_date,
             'visit_time'     => $isWalkIn ? now()->toTimeString() : $this->visit_time,
+            'checkin_time'   => $isWalkIn ? now()->format('H:i:s') : null,
             'purpose'        => $this->purpose,
             'pax'            => $this->pax,
             'token'          => Str::random(10),
-            'approval_token' => $approvalToken,
+            'approval_token' => $isWalkIn ? null : Str::uuid()->toString(),
         ]);
 
         // Hit rate limiter setelah record sukses dibuat
         $ip = request()->ip();
         \Illuminate\Support\Facades\RateLimiter::hit('submit-appointment:'.$ip, 3600); // 1 jam decay
 
-        if ($isWalkIn) {
-            // Kirim email approval ke PIC
-            $appointment->load(['visitor', 'pic.department']);
-            $picEmail = $appointment->pic?->email;
+        // Load relasi untuk data display
+        $appointment->load(['visitor', 'pic.department']);
 
+        if ($isWalkIn) {
+            // Walk-in: PIC sudah pasti hadir (sudah absen), jadi AUTO-ACC — langsung success!
+            // Kirim email NOTIFIKASI saja ke PIC (tanpa tombol Terima/Tolak)
+            $picEmail = $appointment->pic?->email;
             if ($picEmail) {
-                Mail::to($picEmail)->send(new PicApprovalMail($appointment));
+                Mail::to($picEmail)->send(new \App\Mail\PicWalkinNotificationMail($appointment));
             }
 
-            // Dispatch event untuk menampilkan layar menunggu di Kiosk
-            $this->dispatch('walkin-pending-approval', 
-                token: $approvalToken,
-                visitorName: $this->name,
-                company: $this->company,
-                phone: $this->phone,
-                picName: $this->selected_pic_name,
-                department: $appointment->pic?->department?->name ?? '-',
-                visit_date: \Carbon\Carbon::parse($appointment->visit_date)->translatedFormat('d F Y'),
-            );
+            // Langsung dispatch Pop-up Success ke Kiosk (tanpa layar menunggu 120 detik)
+            $appointmentData = [
+                'visitorName' => $this->name,
+                'company'     => $this->company,
+                'phone'       => $this->phone,
+                'picName'     => $this->selected_pic_name,
+                'department'  => $appointment->pic?->department?->name ?? '-',
+                'visit_date'  => \Carbon\Carbon::parse($appointment->visit_date)->translatedFormat('d F Y'),
+                'visit_time'  => $appointment->visit_time,
+                'purpose'     => $appointment->purpose,
+                'type'        => $appointment->type,
+            ];
+            $this->dispatch('token-checkin-success', appt: $appointmentData);
         } else {
             // Appointment biasa — langsung tampilkan konfirmasi
-            $appointment->load(['visitor', 'pic.department']);
             $appointmentData = [
                 'visitorName' => $this->name,
                 'company'     => $this->company,
