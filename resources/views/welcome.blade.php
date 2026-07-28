@@ -7,7 +7,7 @@
     <meta http-equiv="Pragma" content="no-cache">
     <meta http-equiv="Expires" content="0">
     <meta name="csrf-token" content="{{ csrf_token() }}">
-    <title>VISITA — Selamat Datang</title>
+    <title id="page-title">VISITA — Selamat Datang</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
@@ -1029,9 +1029,9 @@
                 <div>
                     <div class="logo-text">VISITA<span class="logo-dot">.</span></div>
                     @if(\App\Helpers\KioskHelper::isKioskLocal())
-                        <div class="logo-tagline">Enterprise Visitor Management • <span id="kiosk-location-display" style="font-weight: 700; color: var(--accent-primary);">SA</span></div>
+                        <div class="logo-tagline"><span data-lang-id="Enterprise Visitor Management" data-lang-en="Enterprise Visitor Management">Enterprise Visitor Management</span> • <span id="kiosk-location-display" style="font-weight: 700; color: var(--accent-primary);">SA</span></div>
                     @else
-                        <div class="logo-tagline">Enterprise Visitor Management • <span style="font-weight: 700; color: #ef4444; background: rgba(239, 68, 68, 0.1); padding: 0.15rem 0.4rem; border-radius: 0.25rem; font-size: 0.75rem;">Offsite (Terbatas)</span></div>
+                        <div class="logo-tagline"><span data-lang-id="Enterprise Visitor Management" data-lang-en="Enterprise Visitor Management">Enterprise Visitor Management</span> • <span style="font-weight: 700; color: #ef4444; background: rgba(239, 68, 68, 0.1); padding: 0.15rem 0.4rem; border-radius: 0.25rem; font-size: 0.75rem;" data-lang-id="Offsite (Terbatas)" data-lang-en="Offsite (Limited)">Offsite (Terbatas)</span></div>
                     @endif
                 </div>
             </div>
@@ -1041,13 +1041,13 @@
                     <div class="clock-time">
                         <span id="clock-h">--</span><span class="clock-colon">:</span><span id="clock-m">--</span>
                     </div>
-                    <div class="clock-date" id="clock-date">Memuat tanggal...</div>
+                    <div class="clock-date" id="clock-date" data-lang-id="Memuat tanggal..." data-lang-en="Loading date...">Memuat tanggal...</div>
                 </div>
                 <div class="header-controls">
                     <div class="lang-switch">
-                        <span class="lang-btn active">ID</span>
+                        <span class="lang-btn active" id="btn-lang-id" onclick="setLang('id')">ID</span>
                         <span class="lang-divider">|</span>
-                        <span class="lang-btn">EN</span>
+                        <span class="lang-btn" id="btn-lang-en" onclick="setLang('en')">EN</span>
                     </div>
                     <div class="settings-wrap">
                         <button class="settings-btn" id="settings-toggle" title="Settings">
@@ -1058,7 +1058,7 @@
                         </button>
                         <!-- Settings Dropdown -->
                         <div class="settings-dropdown" id="settings-dropdown">
-                            <div class="settings-dropdown-title">Tampilan</div>
+                            <div class="settings-dropdown-title" data-lang-id="Tampilan" data-lang-en="Appearance">Tampilan</div>
                             <button class="theme-option" id="theme-light" onclick="setTheme('light')">
                                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>
                                 <span>Light Mode</span>
@@ -1094,7 +1094,7 @@
             </div>
             <div class="status-bar">
                 <div class="status-dot"></div>
-                SISTEM AKTIF &amp; TERHUBUNG
+                <span data-lang-id="SISTEM AKTIF &amp; TERHUBUNG" data-lang-en="SYSTEM ACTIVE &amp; CONNECTED">SISTEM AKTIF &amp; TERHUBUNG</span>
             </div>
         </footer>
 
@@ -1176,9 +1176,12 @@
         /* -------------------------------------------------------
            CLOCK & DATE
         ------------------------------------------------------- */
-        const DAYS_ID   = ['Minggu','Senin','Selasa','Rabu','Kamis','Jumat','Sabtu'];
+        const DAYS_ID = ['Minggu','Senin','Selasa','Rabu','Kamis','Jumat','Sabtu'];
         const MONTHS_ID = ['Januari','Februari','Maret','April','Mei','Juni',
                            'Juli','Agustus','September','Oktober','November','Desember'];
+                           
+        const DAYS_EN = ['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
+        const MONTHS_EN = ['January','February','March','April','May','June','July','August','September','October','November','December'];
 
         function padTwo(n) { return String(n).padStart(2, '0'); }
 
@@ -1186,9 +1189,11 @@
             const now  = new Date();
             const h    = padTwo(now.getHours());
             const m    = padTwo(now.getMinutes());
-            const day  = DAYS_ID[now.getDay()];
+            
+            const isEn = window.appLang === 'en';
+            const day  = isEn ? DAYS_EN[now.getDay()] : DAYS_ID[now.getDay()];
             const date = now.getDate();
-            const mon  = MONTHS_ID[now.getMonth()];
+            const mon  = isEn ? MONTHS_EN[now.getMonth()] : MONTHS_ID[now.getMonth()];
             const yr   = now.getFullYear();
 
             document.getElementById('clock-h').textContent    = h;
@@ -1199,6 +1204,28 @@
 
         updateClock();
         setInterval(updateClock, 1000);
+
+        window.appLang = 'id';
+        function setLang(lang) {
+            window.appLang = lang;
+            
+            // Update active button
+            document.querySelectorAll('.lang-btn').forEach(btn => btn.classList.remove('active'));
+            document.getElementById('btn-lang-' + lang).classList.add('active');
+
+            // Trigger clock update for date text
+            updateClock();
+            
+            // Translate static elements
+            document.querySelectorAll('[data-lang-id]').forEach(el => {
+                el.innerHTML = el.getAttribute('data-lang-' + lang);
+            });
+            
+            // Dispatch to Livewire Chatbot if available
+            if (window.Livewire) {
+                window.Livewire.dispatch('setLang', { lang: lang });
+            }
+        }
 
         /* -------------------------------------------------------
            SETTINGS DROPDOWN & THEME TOGGLE

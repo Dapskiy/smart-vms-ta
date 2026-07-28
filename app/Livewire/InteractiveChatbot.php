@@ -28,6 +28,15 @@ class InteractiveChatbot extends Component
     /** @var string|null Pesan error jika API gagal */
     public ?string $error = null;
 
+    /** @var string Bahasa Kiosk (id|en) */
+    public string $lang = 'id';
+
+    #[On('setLang')]
+    public function setLang($lang)
+    {
+        $this->lang = $lang;
+    }
+
     // ── Registration State ────────────────────────────────────────
     /** @var array Collected registration data from AI conversation */
     public array $regData = [];
@@ -49,13 +58,25 @@ class InteractiveChatbot extends Component
         $todayDate = now()->locale('id')->translatedFormat('l, d F Y');
         $currentTime = now()->format('H:i');
         $hour = now()->setTimezone('Asia/Jakarta')->format('H');
-        $timeGreeting = 'Selamat Pagi';
-        if ($hour >= 11 && $hour < 15) {
-            $timeGreeting = 'Selamat Siang';
-        } elseif ($hour >= 15 && $hour < 18) {
-            $timeGreeting = 'Selamat Sore';
-        } elseif ($hour >= 18) {
-            $timeGreeting = 'Selamat Malam';
+        
+        if ($this->lang === 'en') {
+            $timeGreeting = 'Good Morning';
+            if ($hour >= 11 && $hour < 15) {
+                $timeGreeting = 'Good Afternoon';
+            } elseif ($hour >= 15 && $hour < 18) {
+                $timeGreeting = 'Good Evening';
+            } elseif ($hour >= 18) {
+                $timeGreeting = 'Good Night';
+            }
+        } else {
+            $timeGreeting = 'Selamat Pagi';
+            if ($hour >= 11 && $hour < 15) {
+                $timeGreeting = 'Selamat Siang';
+            } elseif ($hour >= 15 && $hour < 18) {
+                $timeGreeting = 'Selamat Sore';
+            } elseif ($hour >= 18) {
+                $timeGreeting = 'Selamat Malam';
+            }
         }
 
         $companyName = \App\Models\Setting::first()->company_name ?? 'VISITA Enterprise';
@@ -70,9 +91,15 @@ class InteractiveChatbot extends Component
         // ── Aturan Personalitas ───────────────────────────────────────────────
         $prompt .= "## ATURAN UTAMA & PERSONALITAS\n";
         $prompt .= "1. **Sikap**: Sangat ramah, sopan, profesional, dan percaya diri. Bayangkan kamu adalah resepsionis bintang lima yang siap melayani.\n";
-        $prompt .= "   - **GREETING (WAJIB)**: Pada pesan pertama di awal percakapan (misal saat pengunjung menyapa 'halo'), kamu WAJIB menyapa dan memperkenalkan diri beserta nama perusahaan dengan format: \"{$timeGreeting}, Bapak/Ibu. Selamat datang di {$companyName}, saya adalah VISITA...\" lalu sebutkan secara singkat apa saja yang bisa kamu lakukan (misal: membantu pendaftaran tamu, membuat janji temu, dan mengecek kehadiran karyawan).\n";
-        $prompt .= "2. **Fokus Topik**: Kamu hanya melayani pertanyaan seputar kunjungan, kehadiran PIC, dan alur Kiosk (check-in, walk-in, appointment). Jika ada pertanyaan di luar topik ini, arahkan kembali dengan sopan.\n";
-        $prompt .= "3. **Gaya Bahasa**: Gunakan Bahasa Indonesia yang formal namun hangat. Gunakan format Markdown (bold, bullet list) agar jawaban mudah dibaca di layar sentuh Kiosk.\n\n";
+        if ($this->lang === 'en') {
+            $prompt .= "   - **GREETING (WAJIB)**: Pada pesan pertama di awal percakapan, kamu WAJIB menyapa dengan format: \"{$timeGreeting}, Sir/Madam. Welcome to {$companyName}, I am VISITA...\" dan sebutkan kemampuanmu (misal: visitor registration, appointments, employee attendance).\n";
+            $prompt .= "2. **Fokus Topik**: Kamu hanya melayani pertanyaan seputar kunjungan, kehadiran PIC, dan alur Kiosk (check-in, walk-in, appointment). Jika ada pertanyaan di luar topik ini, arahkan kembali dengan sopan.\n";
+            $prompt .= "3. **Gaya Bahasa**: Kamu WAJIB menjawab sepenuhnya dalam Bahasa Inggris (English). Gunakan gaya bahasa profesional dan ramah. Gunakan format Markdown (bold, bullet list) agar jawaban mudah dibaca di layar sentuh Kiosk.\n\n";
+        } else {
+            $prompt .= "   - **GREETING (WAJIB)**: Pada pesan pertama di awal percakapan (misal saat pengunjung menyapa 'halo'), kamu WAJIB menyapa dan memperkenalkan diri beserta nama perusahaan dengan format: \"{$timeGreeting}, Bapak/Ibu. Selamat datang di {$companyName}, saya adalah VISITA...\" lalu sebutkan secara singkat apa saja yang bisa kamu lakukan (misal: membantu pendaftaran tamu, membuat janji temu, dan mengecek kehadiran karyawan).\n";
+            $prompt .= "2. **Fokus Topik**: Kamu hanya melayani pertanyaan seputar kunjungan, kehadiran PIC, dan alur Kiosk (check-in, walk-in, appointment). Jika ada pertanyaan di luar topik ini, arahkan kembali dengan sopan.\n";
+            $prompt .= "3. **Gaya Bahasa**: Gunakan Bahasa Indonesia yang formal namun hangat. Gunakan format Markdown (bold, bullet list) agar jawaban mudah dibaca di layar sentuh Kiosk.\n\n";
+        }
 
         // ── Aturan Privasi & Keamanan (Kritis — MULTI-LAYER) ─────────────────
         $prompt .= "## PRIVASI & KEAMANAN KIOSK (LEVEL TERTINGGI — WAJIB DIPATUHI)\n";

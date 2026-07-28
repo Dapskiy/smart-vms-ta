@@ -178,8 +178,8 @@
                                 </svg>
                             </div>
                             <div class="card-body">
-                                <div class="card-title">Sudah Ada Janji</div>
-                                <div class="card-sub">Scan QR Code</div>
+                                <div class="card-title" data-lang-id="Sudah Ada Janji" data-lang-en="Have Appointment">{{ $lang === 'en' ? 'Have Appointment' : 'Sudah Ada Janji' }}</div>
+                                <div class="card-sub" data-lang-id="Scan QR Code" data-lang-en="Scan QR Code">{{ $lang === 'en' ? 'Scan QR Code' : 'Scan QR Code' }}</div>
                             </div>
                         </div>
 
@@ -192,8 +192,8 @@
                                 </svg>
                             </div>
                             <div class="card-body">
-                                <div class="card-title">Check-Out</div>
-                                <div class="card-sub">Check-out mandiri</div>
+                                <div class="card-title" data-lang-id="Check-Out" data-lang-en="Check-Out">{{ $lang === 'en' ? 'Check-Out' : 'Check-Out' }}</div>
+                                <div class="card-sub" data-lang-id="Check-out mandiri" data-lang-en="Self check-out">{{ $lang === 'en' ? 'Self check-out' : 'Check-out mandiri' }}</div>
                             </div>
                         </div>
 
@@ -208,8 +208,8 @@
                                 </svg>
                             </div>
                             <div class="card-body">
-                                <div class="card-title">Tamu Baru</div>
-                                <div class="card-sub">Walk-in</div>
+                                <div class="card-title" data-lang-id="Tamu Baru" data-lang-en="New Visitor">{{ $lang === 'en' ? 'New Visitor' : 'Tamu Baru' }}</div>
+                                <div class="card-sub" data-lang-id="Walk-in" data-lang-en="Walk-in">{{ $lang === 'en' ? 'Walk-in' : 'Walk-in' }}</div>
                             </div>
                         </div>
 
@@ -223,8 +223,8 @@
                                 </svg>
                             </div>
                             <div class="card-body">
-                                <div class="card-title">Absensi</div>
-                                <div class="card-sub">Khusus Karyawan</div>
+                                <div class="card-title" data-lang-id="Absensi" data-lang-en="Attendance">{{ $lang === 'en' ? 'Attendance' : 'Absensi' }}</div>
+                                <div class="card-sub" data-lang-id="Khusus Karyawan" data-lang-en="Staff Only">{{ $lang === 'en' ? 'Staff Only' : 'Khusus Karyawan' }}</div>
                             </div>
                         </div>
                     @else
@@ -239,8 +239,8 @@
                                 </svg>
                             </div>
                             <div class="card-body">
-                                <div class="card-title" style="color: var(--accent-primary);">Buat Janji Temu</div>
-                                <div class="card-sub">Appointment Kunjungan</div>
+                                <div class="card-title" style="color: var(--accent-primary);" data-lang-id="Buat Janji Temu" data-lang-en="Make Appointment">{{ $lang === 'en' ? 'Make Appointment' : 'Buat Janji Temu' }}</div>
+                                <div class="card-sub" data-lang-id="Appointment Kunjungan" data-lang-en="Visit Appointment">{{ $lang === 'en' ? 'Visit Appointment' : 'Appointment Kunjungan' }}</div>
                             </div>
                         </div>
                     @endif
@@ -253,9 +253,15 @@
             
             <!-- Greeting Card (Moved from left panel, no box, large text) -->
             <div class="right-panel-greeting">
-                <h2>Hola!</h2>
-                <p>Saya <span class="brand-highlight">Visita</span>, AI Assistant Anda</p>
-                <p class="greeting-subtitle">Saya bisa membantu Anda membuat pertemuan dengan PIC yang sesuai dengan kebutuhan Anda</p>
+                @if($lang === 'en')
+                    <h2>Hello!</h2>
+                    <p>I am <span class="brand-highlight">Visita</span>, your AI Assistant</p>
+                    <p class="greeting-subtitle">I can help you make an appointment with the PIC that best suits your needs</p>
+                @else
+                    <h2>Hola!</h2>
+                    <p>Saya <span class="brand-highlight">Visita</span>, AI Assistant Anda</p>
+                    <p class="greeting-subtitle">Saya bisa membantu Anda membuat pertemuan dengan PIC yang sesuai dengan kebutuhan Anda</p>
+                @endif
             </div>
 
             <div class="chat-card-panel">
@@ -340,10 +346,10 @@
                 
                 <!-- Suggested Chips -->
                 <div class="chat-suggested-chips" :class="{ 'centered-chips': !hasChatted }">
-                    <button type="button" class="chip-btn" @click="$wire.selectSuggestedChip('Saya ingin bertemu karyawan'); hasChatted = true" x-show="hasChatted">Bertemu Karyawan</button>
-                    <button type="button" class="chip-btn" @click="$wire.selectSuggestedChip('Bagaimana cara check-in?'); hasChatted = true" x-show="hasChatted">Cara Check-in</button>
-                    <button type="button" class="chip-btn" @click="$wire.selectSuggestedChip('Buat janji temu baru'); hasChatted = true" x-show="hasChatted">Buat Janji Temu</button>
-                    <button type="button" class="chip-btn" @click="$wire.selectSuggestedChip('Tolong jelaskan aturan kunjungan di sini'); hasChatted = true" x-show="hasChatted">Aturan Kunjungan</button>
+                    <button type="button" class="chip-btn" @click="$wire.selectSuggestedChip(window.appLang === 'en' ? 'I want to meet an employee' : 'Saya ingin bertemu karyawan'); hasChatted = true" x-show="hasChatted" data-lang-id="Bertemu Karyawan" data-lang-en="Meet Employee">{{ $lang === 'en' ? 'Meet Employee' : 'Bertemu Karyawan' }}</button>
+                    <button type="button" class="chip-btn" @click="$wire.selectSuggestedChip(window.appLang === 'en' ? 'How do I check-in?' : 'Bagaimana cara check-in?'); hasChatted = true" x-show="hasChatted" data-lang-id="Cara Check-in" data-lang-en="How to Check-in">{{ $lang === 'en' ? 'How to Check-in' : 'Cara Check-in' }}</button>
+                    <button type="button" class="chip-btn" @click="$wire.selectSuggestedChip(window.appLang === 'en' ? 'Make a new appointment' : 'Buat janji temu baru'); hasChatted = true" x-show="hasChatted" data-lang-id="Buat Janji Temu" data-lang-en="Make Appointment">{{ $lang === 'en' ? 'Make Appointment' : 'Buat Janji Temu' }}</button>
+                    <button type="button" class="chip-btn" @click="$wire.selectSuggestedChip(window.appLang === 'en' ? 'Please explain the visit rules here' : 'Tolong jelaskan aturan kunjungan di sini'); hasChatted = true" x-show="hasChatted" data-lang-id="Aturan Kunjungan" data-lang-en="Visit Rules">{{ $lang === 'en' ? 'Visit Rules' : 'Aturan Kunjungan' }}</button>
                 </div>
                 
                 <!-- Chat Input Row -->
@@ -351,7 +357,7 @@
                     <textarea 
                         wire:model="inputMessage" 
                         class="chat-textarea-input" 
-                        :placeholder="ready ? 'Ketik pesan Anda...' : 'Sistem sedang memuat...'"
+                        :placeholder="ready ? '{{ $lang === 'en' ? 'Type your message...' : 'Ketik pesan Anda...' }}' : '{{ $lang === 'en' ? 'System loading...' : 'Sistem sedang memuat...' }}'"
                         rows="1"
                         x-on:input="$el.style.height='auto'; $el.style.height=$el.scrollHeight+'px'"
                         x-on:keydown.enter.prevent="if (!$event.shiftKey) { $wire.sendMessage(); hasChatted = true; }"

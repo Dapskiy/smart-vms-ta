@@ -24,7 +24,7 @@ class AutoCheckoutVisitors extends Command
 
         // Cari semua appointment yang masih aktif (visitor belum check-out)
         $activeAppointments = Appointment::where('status', 'active')
-            ->whereDate('visit_date', today())
+            ->whereDate('visit_date', '<=', today())
             ->with('visitor')
             ->get();
 

@@ -60,16 +60,32 @@ class SummaryResource extends Resource
 
                 TextColumn::make('appointments.checkout_time')
                     ->label('Checkout')
+                    ->badge()
+                    ->color(function (Visitor $record) {
+                        $apt = $record->appointments->first();
+                        if ($apt?->checkout_method === 'system') {
+                            return 'danger';
+                        }
+                        return 'success';
+                    })
                     ->getStateUsing(function (Visitor $record) {
                         $apt = $record->appointments->first();
                         if (!$apt) return '-';
+                        
+                        $timeStr = '-';
                         if ($apt->checkout_time) {
                             $time = $apt->checkout_time;
-                            return is_string($time)
+                            $timeStr = is_string($time)
                                 ? \Carbon\Carbon::parse($time)->format('H:i')
                                 : $time->format('H:i');
+                        } else {
+                            $timeStr = \Carbon\Carbon::parse($apt->updated_at)->format('H:i');
                         }
-                        return \Carbon\Carbon::parse($apt->updated_at)->format('H:i');
+
+                        if ($apt->checkout_method === 'system') {
+                            return $timeStr . ' (Auto)';
+                        }
+                        return $timeStr;
                     }),
 
                 TextColumn::make('name')
