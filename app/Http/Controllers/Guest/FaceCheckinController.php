@@ -137,6 +137,14 @@ class FaceCheckinController extends Controller
             ], 404);
         }
 
+        // Validasi: Janji temu (Appointment) WAJIB di-ACC oleh PIC terlebih dahulu
+        if ($appointment->status === 'pending' && $appointment->approved_at === null) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Janji temu Anda belum disetujui oleh PIC.',
+            ], 403);
+        }
+
         // Perform check-in
         $appointment->update([
             'status'       => 'active',
@@ -212,6 +220,14 @@ class FaceCheckinController extends Controller
             return response()->json([
                 'success' => false,
                 'message' => 'Janji temu sudah check-in sebelumnya.',
+            ]);
+        }
+
+        // Validasi: Janji temu (Appointment) WAJIB di-ACC oleh PIC terlebih dahulu
+        if ($appointment->approved_at === null) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Janji temu Anda belum disetujui oleh PIC.',
             ]);
         }
 

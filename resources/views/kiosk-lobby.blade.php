@@ -1631,6 +1631,11 @@
         function showSuccessPopup(appt) {
             document.getElementById('si-name').textContent  = appt.visitor_name  || '-';
             document.getElementById('si-pic').textContent   = appt.pic_name      || '-';
+            
+            // Set text for new alert box
+            const picNameText = appt.pic_name || 'PIC';
+            document.getElementById('si-pic-room').textContent = 'Bapak/Ibu ' + picNameText;
+            
             document.getElementById('si-room').textContent  = appt.room_name     || '-';
             document.getElementById('si-date').textContent  = appt.visit_date    || '-';
             document.getElementById('si-time').textContent  = appt.visit_time    || '-';
@@ -1886,6 +1891,9 @@
             </div>
             <div class="success-heading">Check-in Berhasil! 🎉</div>
             <p class="success-sub">Selamat datang, data kunjungan Anda telah dicatat.</p>
+            <div style="background: rgba(16, 185, 129, 0.1); border: 1px solid rgba(16, 185, 129, 0.3); color: #047857; padding: 1rem; border-radius: 8px; margin: 1rem 0; font-weight: 600; text-align: center; font-size: 1.1rem;">
+                Silakan segera menuju ruangan <span id="si-pic-room">PIC</span>
+            </div>
             <div class="info-grid">
                 <div class="info-item"><label>Nama Tamu</label><span id="si-name">-</span></div>
                 <div class="info-item"><label>Instansi</label><span id="si-company">-</span></div>

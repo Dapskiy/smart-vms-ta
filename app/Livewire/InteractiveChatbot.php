@@ -774,35 +774,34 @@ class InteractiveChatbot extends Component
     private function createChatbotAppointment(Visitor $visitor): void
     {
         $isWalkIn = ($this->regData['type'] ?? 'walk-in') === 'walk-in';
-        $approvalToken = $isWalkIn ? Str::uuid()->toString() : null;
 
-        // Untuk appointment (future), status langsung 'active' (auto-ACC)
-        // Untuk walk-in (hari ini), status 'pending' (menunggu approval PIC via email)
-        $appointmentStatus = $isWalkIn ? 'pending' : 'active';
-
+        // Logika disamakan dengan KioskWalkinForm:
+        // Walk-in = otomatis ACC (active, checkin_time = now)
+        // Appointment = pending (menunggu email PIC)
         $appointment = Appointment::create([
             'visit_id'       => VisitIdService::generate(),
             'visitor_id'     => $visitor->id,
             'pic_id'         => $this->regData['pic_id'],
             'type'           => $this->regData['type'] ?? 'walk-in',
-            'status'         => $appointmentStatus,
+            'status'         => $isWalkIn ? 'active' : 'pending',
             'visit_date'     => $isWalkIn ? now()->toDateString() : ($this->regData['visit_date'] ?: now()->toDateString()),
             'visit_time'     => $isWalkIn ? now()->toTimeString() : ($this->regData['visit_time'] ?: now()->format('H:i')),
+            'checkin_time'   => $isWalkIn ? now()->format('H:i:s') : null,
             'purpose'        => $this->regData['purpose'] ?? '-',
             'pax'            => $this->regData['pax'] ?? 1,
             'token'          => Str::random(10),
-            'approval_token' => $approvalToken,
-            'approved_at'    => $isWalkIn ? null : now(),
+            'approval_token' => $isWalkIn ? null : Str::uuid()->toString(),
         ]);
 
         if ($isWalkIn) {
             $appointment->load(['visitor', 'pic.department']);
             $picEmail = $appointment->pic?->email;
             if ($picEmail) {
-                Mail::to($picEmail)->send(new PicApprovalMail($appointment));
+                // Untuk walk-in, kirim notifikasi saja tanpa tombol approval
+                Mail::to($picEmail)->send(new \App\Mail\PicWalkinNotificationMail($appointment));
             }
-            $this->dispatch('walkin-pending-approval',
-                token: $approvalToken,
+            $this->dispatch('walkin-pending-approval', // Ini cuma trigger UI Kiosk agar buka popup success
+                token: null, // No approval token needed for walk-in now
                 visitorName: $this->regData['name'],
                 company: $this->regData['company'],
                 phone: $this->regData['phone'],
@@ -810,8 +809,14 @@ class InteractiveChatbot extends Component
                 department: $appointment->pic?->department?->name ?? '-',
                 visit_date: \Carbon\Carbon::parse($appointment->visit_date)->translatedFormat('d F Y'),
             );
+            $successMsg = '✅ **Registrasi berhasil!** Anda telah disetujui (Walk-In). Silakan masuk ke ruangan.';
         } else {
             $appointment->load(['visitor', 'pic.department']);
+            $picEmail = $appointment->pic?->email;
+            if ($picEmail) {
+                // Untuk appointment, kirim email persetujuan (ada tombol approve/reject)
+                Mail::to($picEmail)->send(new \App\Mail\PicApprovalMail($appointment));
+            }
             $this->dispatch('appointment-success', appt: [
                 'visitorName' => $this->regData['name'],
                 'company'     => $this->regData['company'],
@@ -824,11 +829,11 @@ class InteractiveChatbot extends Component
                 'type'        => $appointment->type,
                 'token'       => $appointment->token,
             ]);
+            
+            $qrUrl = "https://api.qrserver.com/v1/create-qr-code/?size=250x250&data=" . urlencode($appointment->token);
+            $successMsg = "✅ **Janji temu berhasil dibuat!** Menunggu persetujuan PIC.\n\nToken Anda: **{$appointment->token}**\n\nGunakan QR Code berikut untuk Check-in saat tiba di lokasi:\n\n![QR Code]({$qrUrl})";
         }
 
-        $successMsg = $isWalkIn
-            ? '✅ **Registrasi berhasil!** Menunggu persetujuan dari karyawan yang dituju...'
-            : '✅ **Janji temu berhasil dibuat dan otomatis disetujui!** Silakan datang sesuai jadwal. Token Anda: **' . $appointment->token . '**';
         $this->messages[] = ['role' => 'assistant', 'content' => $successMsg];
 
         $this->regData = [];

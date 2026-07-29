@@ -59,9 +59,10 @@ class TokenCheckin extends Component
             return;
         }
 
-        // Jika walkin belum di-ACC
-        if ($appointment->status === 'pending' && $appointment->type === 'walk-in') {
-            $this->errorMessage = 'Janji temu (Walk-In) Anda masih menunggu persetujuan PIC.';
+        // Validasi: Janji temu (Appointment) WAJIB di-ACC oleh PIC terlebih dahulu
+        // (Walk-in sudah otomatis active di KioskWalkinForm, jadi yang pending pasti Appointment)
+        if ($appointment->status === 'pending' && $appointment->approved_at === null) {
+            $this->errorMessage = 'Janji temu Anda belum disetujui oleh PIC.';
             return;
         }
 

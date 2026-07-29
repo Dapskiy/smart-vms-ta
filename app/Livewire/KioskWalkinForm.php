@@ -562,7 +562,7 @@ class KioskWalkinForm extends Component
                 'purpose'     => $appointment->purpose,
                 'type'        => $appointment->type,
             ];
-            $this->dispatch('token-checkin-success', appt: $appointmentData);
+            $this->dispatch('walkin-success', appt: $appointmentData);
         } else {
             // Appointment biasa — langsung tampilkan konfirmasi
             $appointmentData = [
@@ -575,6 +575,7 @@ class KioskWalkinForm extends Component
                 'visit_time'  => $appointment->visit_time,
                 'purpose'     => $appointment->purpose,
                 'type'        => $appointment->type,
+                'token'       => $appointment->token, // Ditambahkan untuk QR Code
             ];
             $this->dispatch('appointment-success', appt: $appointmentData);
         }

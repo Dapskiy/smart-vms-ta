@@ -1435,7 +1435,7 @@
             closeWalkinForm();
             const data = e.detail.appt;
             document.querySelector('#modal-success .success-heading').textContent = 'Registrasi Berhasil! 🎉';
-            document.querySelector('#modal-success .success-sub').textContent = 'Silakan masuk dan melapor ke pos keamanan';
+            document.querySelector('#modal-success .success-sub').innerHTML = 'Silakan masuk dan segera menuju ruangan Bapak/Ibu <strong>' + (data.picName || 'PIC') + '</strong>.';
             document.getElementById('si-name').textContent = data.visitorName || '-';
             document.getElementById('si-company').textContent = data.company || '-';
             document.getElementById('si-phone').textContent = data.phone || '-';
@@ -1444,6 +1444,8 @@
             document.getElementById('si-date').textContent = data.visit_date || '-';
             document.getElementById('si-time').textContent = new Date().toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' });
             document.getElementById('si-purpose').textContent = data.purpose || '-';
+            document.getElementById('si-token-container').style.display = 'none'; // Ensure token is hidden
+            
             
             document.getElementById('modal-success').classList.add('active');
             
@@ -1619,9 +1621,20 @@
             document.getElementById('si-time').textContent = data.visit_time || '-';
             document.getElementById('si-purpose').textContent = data.purpose || '-';
             
+            // Tampilkan Token & QR Code jika tersedia
+            if (data.token) {
+                document.getElementById('si-token-container').style.display = 'flex';
+                document.getElementById('si-token').textContent = data.token;
+                document.getElementById('si-qr').src = 'https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=' + data.token;
+                document.getElementById('si-qr').style.display = 'block';
+                successSecondsLeft = 20; // Beri waktu lebih lama (20 detik) agar pengunjung bisa memfoto QR
+            } else {
+                document.getElementById('si-token-container').style.display = 'none';
+                successSecondsLeft = 5;
+            }
+            
             document.getElementById('modal-success').classList.add('active');
             
-            successSecondsLeft = 5;
             updateCountdown();
             clearInterval(successTimer);
             successTimer = setInterval(() => {
@@ -2465,6 +2478,13 @@
                 <div class="info-item"><label data-lang-id="Tanggal" data-lang-en="Date">Tanggal</label><span id="si-date">-</span></div>
                 <div class="info-item"><label data-lang-id="Jam" data-lang-en="Time">Jam</label><span id="si-time">-</span></div>
                 <div class="info-item" style="grid-column:1/-1;"><label data-lang-id="Keperluan" data-lang-en="Purpose">Keperluan</label><span id="si-purpose">-</span></div>
+                
+                <div id="si-token-container" class="info-item" style="display:none; grid-column:1/-1; text-align:center; padding: 1rem; background: #f8fafc; border-radius: 8px; border: 1px dashed #cbd5e1; margin-top: 0.5rem; justify-content: center; align-items: center; flex-direction: column;">
+                    <label data-lang-id="Token & QR Code Check-in" data-lang-en="Check-in Token & QR" style="font-weight: 600; color: #4f46e5; margin-bottom: 0.5rem;">Token & QR Code Check-in</label>
+                    <div id="si-token" style="font-size: 1.5rem; font-weight: 800; letter-spacing: 2px; margin-bottom: 0.8rem; color: #0f172a;">-</div>
+                    <img id="si-qr" src="" alt="QR Code" style="width: 150px; height: 150px; border-radius: 8px; border: 1px solid #e2e8f0; background: white; padding: 0.2rem; display: none;">
+                    <div style="font-size: 0.8rem; color: #64748b; margin-top: 0.5rem;" data-lang-id="Simpan QR atau Token ini. Gunakan untuk Check-in saat Anda tiba." data-lang-en="Save this QR or Token. Use it to check-in when you arrive.">Simpan QR/Token ini. Gunakan untuk Check-in di Kiosk.</div>
+                </div>
             </div>
             <div class="countdown-bar-wrap"><div id="countdown-bar" class="countdown-bar" style="width:100%;"></div></div>
             <p id="countdown-text" class="countdown-text"></p>
