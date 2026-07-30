@@ -16,9 +16,14 @@ class LatestGuestsTable extends BaseWidget
     public function table(Table $table): Table
     {
         return $table
-            ->query(
-                Appointment::query()->with('visitor')->latest()
-            )
+            ->query(function () {
+                $query = Appointment::query()->with('visitor')->latest();
+                $currentUser = auth()->user();
+                if ($currentUser && !$currentUser->hasRole('super_admin') && $currentUser->pic) {
+                    $query->where('pic_id', $currentUser->pic->id);
+                }
+                return $query;
+            })
             ->columns([
                 Tables\Columns\TextColumn::make('visitor.name')
                     ->label('NAMA TAMU')

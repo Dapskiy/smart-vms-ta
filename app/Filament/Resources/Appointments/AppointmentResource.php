@@ -65,7 +65,7 @@ class AppointmentResource extends Resource
             ->where('status', '!=', 'completed');
 
         $currentUser = auth()->user();
-        if ($currentUser && $currentUser->pic) {
+        if ($currentUser && !$currentUser->hasRole('super_admin') && $currentUser->pic) {
             $query->where('pic_id', $currentUser->pic->id);
         }
 

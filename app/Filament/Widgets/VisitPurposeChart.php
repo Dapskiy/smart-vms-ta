@@ -16,13 +16,24 @@ class VisitPurposeChart extends ChartWidget
 
     protected function getData(): array
     {
+        $currentUser = auth()->user();
+        $isPic = $currentUser && !$currentUser->hasRole('super_admin') && $currentUser->pic;
+        $picId = $isPic ? $currentUser->pic->id : null;
+
+        $cacheKey = 'dashboard_visit_purpose' . ($isPic ? '_pic_' . $picId : '_admin');
+
         // Cache 5 menit — data distribusi keperluan berubah jarang
-        $results = Cache::remember('dashboard_visit_purpose', 300, function () {
-            return Appointment::query()
+        $results = Cache::remember($cacheKey, 300, function () use ($isPic, $picId) {
+            $query = Appointment::query()
                 ->whereIn('status', ['completed', 'checkout', 'inactive'])
                 ->whereNotNull('purpose')
-                ->where('purpose', '!=', '')
-                ->selectRaw('purpose, COUNT(*) as total')
+                ->where('purpose', '!=', '');
+            
+            if ($isPic) {
+                $query->where('pic_id', $picId);
+            }
+            
+            return $query->selectRaw('purpose, COUNT(*) as total')
                 ->groupBy('purpose')
                 ->orderByDesc('total')
                 ->limit(8)

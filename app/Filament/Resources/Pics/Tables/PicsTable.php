@@ -17,6 +17,7 @@ class PicsTable
     public static function configure(Table $table): Table
     {
         return $table
+            ->poll('10s')
             ->columns([
                 TextColumn::make('name')
                     ->label('Nama')
@@ -35,7 +36,7 @@ class PicsTable
                 IconColumn::make('is_present')
                     ->label('Status Hadir')
                     ->boolean()
-                    ->state(fn ($record) => $record->attendances()->whereDate('checked_at', today())->latest('checked_at')->first()?->type === 'checkin'),
+                    ->state(fn ($record) => ($record->attendances()->whereDate('checked_at', today())->latest('checked_at')->first()?->type === 'checkin') && $record->is_available),
                 TextColumn::make('current_location')
                     ->label('Lokasi Saat Ini')
                     ->badge()

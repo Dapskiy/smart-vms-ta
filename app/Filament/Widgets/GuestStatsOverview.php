@@ -19,11 +19,20 @@ class GuestStatsOverview extends BaseWidget
         $today = Carbon::today();
         $yesterday = Carbon::yesterday();
 
+        $currentUser = auth()->user();
+        $isPic = $currentUser && !$currentUser->hasRole('super_admin') && $currentUser->pic;
+        $picId = $isPic ? $currentUser->pic->id : null;
+
+        $cacheKey = 'dashboard_guest_stats_' . $today->toDateString() . ($isPic ? '_pic_' . $picId : '_admin');
+
         // ── Optimisasi: 4 query COUNT terpisah → 1 query conditional count ──
-        // Cache 2 menit agar dashboard tidak overload saat multi-user akses bersamaan
-        $stats = Cache::remember('dashboard_guest_stats_' . $today->toDateString(), 120, function () use ($today) {
-            return DB::table('appointments')
-                ->selectRaw("
+        $stats = Cache::remember($cacheKey, 60, function () use ($today, $isPic, $picId) {
+            $query = DB::table('appointments');
+            if ($isPic) {
+                $query->where('pic_id', $picId);
+            }
+            
+            return $query->selectRaw("
                     COUNT(CASE WHEN visit_date = ? THEN 1 END) as today_total,
                     COUNT(CASE WHEN status IN ('checked_in', 'active') THEN 1 END) as active_count,
                     COUNT(CASE WHEN visit_date = ? AND status IN ('pending', 'approved') THEN 1 END) as waiting_count,
@@ -39,9 +48,13 @@ class GuestStatsOverview extends BaseWidget
         $waitingCount = $stats->waiting_count ?? 0;
         $completedThisMonth = $stats->completed_month ?? 0;
 
-        // Kemarin tetap query terpisah (ringan, 1 COUNT)
-        $yesterdayCount = Cache::remember('dashboard_yesterday_count_' . $yesterday->toDateString(), 300, function () use ($yesterday) {
-            return Appointment::whereDate('visit_date', $yesterday)->count();
+        $yesterdayCacheKey = 'dashboard_yesterday_count_' . $yesterday->toDateString() . ($isPic ? '_pic_' . $picId : '_admin');
+        $yesterdayCount = Cache::remember($yesterdayCacheKey, 60, function () use ($yesterday, $isPic, $picId) {
+            $q = Appointment::whereDate('visit_date', $yesterday);
+            if ($isPic) {
+                $q->where('pic_id', $picId);
+            }
+            return $q->count();
         });
 
         $trendTamu = $todayCount - $yesterdayCount;

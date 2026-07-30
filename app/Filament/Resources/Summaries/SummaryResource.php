@@ -180,7 +180,7 @@ class SummaryResource extends Resource
     // (Opsional) Mencegah user mengakses data detail jika diakali lewat URL
     public static function canView($record): bool
     {
-        return auth()->user()->can('ViewAny:Visitor');
+        return auth()->user()->can('View:Visitor');
     }
 
     public static function getEloquentQuery(): Builder
@@ -188,7 +188,7 @@ class SummaryResource extends Resource
         $query = parent::getEloquentQuery();
         $currentUser = auth()->user();
         
-        if ($currentUser && $currentUser->pic) {
+        if ($currentUser && !$currentUser->hasRole('super_admin') && $currentUser->pic) {
             $picId = $currentUser->pic->id;
             
             $query->with(['appointments' => function ($q) use ($picId) {

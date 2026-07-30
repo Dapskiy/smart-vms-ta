@@ -23,16 +23,27 @@ class VisitTrendChart extends ChartWidget
         $startDate = Carbon::today()->subDays(6);
         $endDate = Carbon::today();
 
+        $currentUser = auth()->user();
+        $isPic = $currentUser && !$currentUser->hasRole('super_admin') && $currentUser->pic;
+        $picId = $isPic ? $currentUser->pic->id : null;
+
+        $cacheKey = 'dashboard_visit_trend_' . $endDate->toDateString() . ($isPic ? '_pic_' . $picId : '_admin');
+
         // ── Optimisasi: 7 query dalam loop → 1 query GROUP BY ──
         // Cache 5 menit (data historis berubah jarang)
         $results = Cache::remember(
-            'dashboard_visit_trend_' . $endDate->toDateString(),
+            $cacheKey,
             300,
-            function () use ($startDate, $endDate) {
-                return DB::table('appointments')
-                    ->selectRaw('visit_date::date as date, COUNT(*) as total')
+            function () use ($startDate, $endDate, $isPic, $picId) {
+                $query = DB::table('appointments')
                     ->whereIn('status', ['completed', 'checkout', 'inactive'])
-                    ->whereBetween('visit_date', [$startDate->toDateString(), $endDate->toDateString()])
+                    ->whereBetween('visit_date', [$startDate->toDateString(), $endDate->toDateString()]);
+
+                if ($isPic) {
+                    $query->where('pic_id', $picId);
+                }
+
+                return $query->selectRaw('visit_date::date as date, COUNT(*) as total')
                     ->groupBy(DB::raw('visit_date::date'))
                     ->pluck('total', 'date')
                     ->toArray();
