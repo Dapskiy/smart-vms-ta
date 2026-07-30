@@ -600,8 +600,10 @@
             z-index: 100;
             background: rgba(15, 23, 42, 0.45);
             backdrop-filter: blur(8px);
-            align-items: center;
+            align-items: flex-start;
             justify-content: center;
+            overflow-y: auto;
+            padding: 2vh 0;
         }
         .modal-overlay.active { display: flex; }
 
@@ -684,42 +686,48 @@
 
         /* Success popup */
         .success-box {
-            width: min(94vw, 520px);
+            width: min(94vw, 480px);
             text-align: center;
+            margin: auto;
+            max-height: 96vh;
+            overflow-y: auto;
+            padding: 1.5rem 1.5rem 1.2rem;
         }
+        .success-box::-webkit-scrollbar { width: 4px; }
+        .success-box::-webkit-scrollbar-thumb { background: rgba(99,102,241,0.3); border-radius: 4px; }
         .success-icon {
-            width: 5rem; height: 5rem;
+            width: 3.5rem; height: 3.5rem;
             border-radius: 50%;
             background: rgba(16,185,129,0.15);
             border: 2px solid #10b981;
             display: flex; align-items: center; justify-content: center;
-            margin: 0 auto 1.2rem;
+            margin: 0 auto 0.8rem;
         }
-        .success-icon svg { width: 2.5rem; height: 2.5rem; color: #10b981; }
-        .success-heading { font-size: 1.5rem; font-weight: 700; color: #0f172a; margin-bottom: 0.3rem; }
-        .success-sub     { font-size: 0.85rem; color: #475569; margin-bottom: 1.5rem; }
+        .success-icon svg { width: 1.8rem; height: 1.8rem; color: #10b981; }
+        .success-heading { font-size: 1.25rem; font-weight: 700; color: #0f172a; margin-bottom: 0.2rem; }
+        .success-sub     { font-size: 0.8rem; color: #475569; margin-bottom: 1rem; }
         .info-grid {
             display: grid;
             grid-template-columns: 1fr 1fr;
-            gap: 0.75rem;
+            gap: 0.5rem;
             text-align: left;
-            margin-bottom: 1.5rem;
+            margin-bottom: 1rem;
         }
         .info-item {
             background: #f8fafc;
             border: 1px solid #e2e8f0;
-            border-radius: 0.75rem;
-            padding: 0.75rem 1rem;
+            border-radius: 0.6rem;
+            padding: 0.5rem 0.75rem;
         }
-        .info-item label { font-size: 0.65rem; letter-spacing: 0.1em; text-transform: uppercase; color: #4f46e5; display: block; margin-bottom: 0.2rem; }
-        .info-item span  { font-size: 0.9rem; font-weight: 600; color: #0f172a; }
+        .info-item label { font-size: 0.6rem; letter-spacing: 0.08em; text-transform: uppercase; color: #4f46e5; display: block; margin-bottom: 0.15rem; }
+        .info-item span  { font-size: 0.82rem; font-weight: 600; color: #0f172a; }
         .btn-ok {
-            padding: 0.9rem 3rem;
+            padding: 0.7rem 2.5rem;
             background: linear-gradient(135deg, #6366f1, #4f46e5);
             border: none;
             border-radius: 0.875rem;
             color: #fff;
-            font-size: 1rem;
+            font-size: 0.9rem;
             font-weight: 700;
             font-family: 'Poppins', sans-serif;
             cursor: pointer;

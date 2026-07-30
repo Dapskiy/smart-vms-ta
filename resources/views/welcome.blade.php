@@ -589,8 +589,10 @@
             z-index: 100;
             background: rgba(15, 23, 42, 0.45);
             backdrop-filter: blur(8px);
-            align-items: center;
+            align-items: flex-start;
             justify-content: center;
+            overflow-y: auto;
+            padding: 2vh 0;
         }
         .modal-overlay.active { display: flex; }
 
@@ -673,42 +675,48 @@
 
         /* Success popup */
         .success-box {
-            width: min(94vw, 520px);
+            width: min(94vw, 480px);
             text-align: center;
+            margin: auto;
+            max-height: 96vh;
+            overflow-y: auto;
+            padding: 1.5rem 1.5rem 1.2rem;
         }
+        .success-box::-webkit-scrollbar { width: 4px; }
+        .success-box::-webkit-scrollbar-thumb { background: rgba(99,102,241,0.3); border-radius: 4px; }
         .success-icon {
-            width: 5rem; height: 5rem;
+            width: 3.5rem; height: 3.5rem;
             border-radius: 50%;
             background: rgba(16,185,129,0.15);
             border: 2px solid #10b981;
             display: flex; align-items: center; justify-content: center;
-            margin: 0 auto 1.2rem;
+            margin: 0 auto 0.8rem;
         }
-        .success-icon svg { width: 2.5rem; height: 2.5rem; color: #10b981; }
-        .success-heading { font-size: 1.5rem; font-weight: 700; color: #0f172a; margin-bottom: 0.3rem; }
-        .success-sub     { font-size: 0.85rem; color: #475569; margin-bottom: 1.5rem; }
+        .success-icon svg { width: 1.8rem; height: 1.8rem; color: #10b981; }
+        .success-heading { font-size: 1.25rem; font-weight: 700; color: #0f172a; margin-bottom: 0.2rem; }
+        .success-sub     { font-size: 0.8rem; color: #475569; margin-bottom: 1rem; }
         .info-grid {
             display: grid;
             grid-template-columns: 1fr 1fr;
-            gap: 0.75rem;
+            gap: 0.5rem;
             text-align: left;
-            margin-bottom: 1.5rem;
+            margin-bottom: 1rem;
         }
         .info-item {
             background: #f8fafc;
             border: 1px solid #e2e8f0;
-            border-radius: 0.75rem;
-            padding: 0.75rem 1rem;
+            border-radius: 0.6rem;
+            padding: 0.5rem 0.75rem;
         }
-        .info-item label { font-size: 0.65rem; letter-spacing: 0.1em; text-transform: uppercase; color: #4f46e5; display: block; margin-bottom: 0.2rem; }
-        .info-item span  { font-size: 0.9rem; font-weight: 600; color: #0f172a; }
+        .info-item label { font-size: 0.6rem; letter-spacing: 0.08em; text-transform: uppercase; color: #4f46e5; display: block; margin-bottom: 0.15rem; }
+        .info-item span  { font-size: 0.82rem; font-weight: 600; color: #0f172a; }
         .btn-ok {
-            padding: 0.9rem 3rem;
+            padding: 0.7rem 2.5rem;
             background: linear-gradient(135deg, #6366f1, #4f46e5);
             border: none;
             border-radius: 0.875rem;
             color: #fff;
-            font-size: 1rem;
+            font-size: 0.9rem;
             font-weight: 700;
             font-family: 'Poppins', sans-serif;
             cursor: pointer;
@@ -2501,11 +2509,11 @@
                 <div class="info-item"><label data-lang-id="Jam" data-lang-en="Time">Jam</label><span id="si-time">-</span></div>
                 <div class="info-item" style="grid-column:1/-1;"><label data-lang-id="Keperluan" data-lang-en="Purpose">Keperluan</label><span id="si-purpose">-</span></div>
                 
-                <div id="si-token-container" class="info-item" style="display:none; grid-column:1/-1; text-align:center; padding: 1rem; background: #f8fafc; border-radius: 8px; border: 1px dashed #cbd5e1; margin-top: 0.5rem; justify-content: center; align-items: center; flex-direction: column;">
-                    <label data-lang-id="Token & QR Code Check-in" data-lang-en="Check-in Token & QR" style="font-weight: 600; color: #4f46e5; margin-bottom: 0.5rem;">Token & QR Code Check-in</label>
-                    <div id="si-token" style="font-size: 1.5rem; font-weight: 800; letter-spacing: 2px; margin-bottom: 0.8rem; color: #0f172a;">-</div>
-                    <img id="si-qr" src="" alt="QR Code" style="width: 150px; height: 150px; border-radius: 8px; border: 1px solid #e2e8f0; background: white; padding: 0.2rem; display: none;">
-                    <div style="font-size: 0.8rem; color: #64748b; margin-top: 0.5rem;" data-lang-id="Simpan QR atau Token ini. Gunakan untuk Check-in saat Anda tiba." data-lang-en="Save this QR or Token. Use it to check-in when you arrive.">Simpan QR/Token ini. Gunakan untuk Check-in di Kiosk.</div>
+                <div id="si-token-container" class="info-item" style="display:none; grid-column:1/-1; text-align:center; padding: 0.75rem; background: #f8fafc; border-radius: 8px; border: 1px dashed #cbd5e1; margin-top: 0.25rem; justify-content: center; align-items: center; flex-direction: column;">
+                    <label data-lang-id="Token & QR Code Check-in" data-lang-en="Check-in Token & QR" style="font-weight: 600; color: #4f46e5; margin-bottom: 0.3rem;">Token & QR Code Check-in</label>
+                    <div id="si-token" style="font-size: 1.2rem; font-weight: 800; letter-spacing: 2px; margin-bottom: 0.5rem; color: #0f172a;">-</div>
+                    <img id="si-qr" src="" alt="QR Code" style="width: 120px; height: 120px; border-radius: 8px; border: 1px solid #e2e8f0; background: white; padding: 0.2rem; display: none;">
+                    <div style="font-size: 0.72rem; color: #64748b; margin-top: 0.3rem;" data-lang-id="Simpan QR atau Token ini. Gunakan untuk Check-in saat Anda tiba." data-lang-en="Save this QR or Token. Use it to check-in when you arrive.">Simpan QR/Token ini. Gunakan untuk Check-in di Kiosk.</div>
                 </div>
             </div>
             <div class="countdown-bar-wrap"><div id="countdown-bar" class="countdown-bar" style="width:100%;"></div></div>
