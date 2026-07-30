@@ -16,6 +16,7 @@ class LatestGuestsTable extends BaseWidget
     public function table(Table $table): Table
     {
         return $table
+            ->poll('5s')
             ->query(function () {
                 $query = Appointment::query()->with('visitor')->latest();
                 $currentUser = auth()->user();

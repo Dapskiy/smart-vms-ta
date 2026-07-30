@@ -55,6 +55,10 @@ class KioskWalkinForm extends Component
     // Pending approval state
     public $pending_approval_token = null;
 
+    // Duplicate face override: user confirmed they are a different person
+    public bool $duplicateOverride = false;
+    public ?string $duplicateWarningName = null;
+
     public function mount()
     {
         if (!\App\Helpers\KioskHelper::isKioskLocal()) {
@@ -74,6 +78,8 @@ class KioskWalkinForm extends Component
         $this->is_verified_returning = false;
         $this->verified_visitor_id = null;
         $this->reset(['name', 'company', 'phone', 'purpose', 'pax', 'department_id', 'search_pic', 'selected_pic_id', 'selected_pic_name', 'pic_results', 'visit_date', 'visit_time']);
+        $this->duplicateOverride = false;
+        $this->duplicateWarningName = null;
         $this->resetValidation();
         $this->resetErrorBag();
     }
@@ -149,6 +155,17 @@ class KioskWalkinForm extends Component
             $this->dispatch('walkin-form-reopen');
             $this->addError('general', 'Wajah tidak dikenali. Silakan mendaftar sebagai tamu baru.');
         }
+    }
+
+    /**
+     * User confirms they are a different person despite face similarity.
+     * Sets override flag and re-triggers face scan to continue registration.
+     */
+    public function confirmDifferentPerson(): void
+    {
+        $this->duplicateOverride = true;
+        $this->duplicateWarningName = null;
+        $this->dispatch('retrigger-face-scan');
     }
 
     public function updatedDepartmentId()
@@ -420,19 +437,22 @@ class KioskWalkinForm extends Component
 
         // 2. Global Face Duplicate Check (Anti-Spoofing / Anti-Duplicate)
         // Memastikan wajah pengunjung baru ini tidak pernah didaftarkan atas nama orang lain
-        $allOtherVisitors = Visitor::whereNotNull('face_features')->where('id', '!=', $visitor->id)->get();
-        $globalThreshold = 0.45; // Cukup ketat untuk deteksi duplikat
+        if (!$this->duplicateOverride) {
+            $allOtherVisitors = Visitor::whereNotNull('face_features')->where('id', '!=', $visitor->id)->get();
+            $globalThreshold = 0.35; // Diperketat dari 0.45 agar saudara/mirip tidak false-positive
 
-        foreach ($allOtherVisitors as $otherVisitor) {
-            $otherStored = $otherVisitor->face_features ?? [];
-            if (!is_array($otherStored)) continue;
-            if (isset($otherStored[0]) && !is_array($otherStored[0])) $otherStored = [$otherStored];
+            foreach ($allOtherVisitors as $otherVisitor) {
+                $otherStored = $otherVisitor->face_features ?? [];
+                if (!is_array($otherStored)) continue;
+                if (isset($otherStored[0]) && !is_array($otherStored[0])) $otherStored = [$otherStored];
 
-            foreach ($otherStored as $otherDescriptor) {
-                if ($this->euclideanDistance($otherDescriptor, $descriptor) <= $globalThreshold) {
-                    $this->addError('general', 'Wajah Anda sudah terdaftar atas nama ' . $otherVisitor->name . '. Silakan gunakan opsi "Sudah Pernah Berkunjung".');
-                    $this->dispatch('walkin-error'); 
-                    return;
+                foreach ($otherStored as $otherDescriptor) {
+                    if ($this->euclideanDistance($otherDescriptor, $descriptor) <= $globalThreshold) {
+                        // Simpan nama duplikat & dispatch event ke UI untuk konfirmasi
+                        $this->duplicateWarningName = $otherVisitor->name;
+                        $this->dispatch('walkin-duplicate-warning', name: $otherVisitor->name);
+                        return;
+                    }
                 }
             }
         }

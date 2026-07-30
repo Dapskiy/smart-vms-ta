@@ -1090,7 +1090,10 @@
         <!-- FOOTER -->
         <footer class="kiosk-footer">
             <div class="footer-copy">
-                &copy; <span id="footer-year"></span> <strong>VISITA</strong> — Visitor Management System
+                &copy; <span id="footer-year"></span> 
+                <a href="/admin" style="text-decoration: none; color: inherit; cursor: default;" title="Portal Karyawan / Admin">
+                    <strong>VISITA</strong>
+                </a> — Visitor Management System
             </div>
             <div class="status-bar">
                 <div class="status-dot"></div>
@@ -1670,6 +1673,25 @@
         document.addEventListener('walkin-error', function () {
             closeFaceScan();
             openWalkinForm(); // Kembali ke form walkin untuk melihat error
+        });
+
+        document.addEventListener('walkin-duplicate-warning', function (e) {
+            closeFaceScan();
+            const name = e.detail?.name || 'seseorang';
+            const confirmed = confirm(
+                'Wajah Anda terdeteksi mirip dengan "' + name + '" yang sudah terdaftar.\n\n' +
+                'Jika Anda memang ORANG BERBEDA (misal saudara/keluarga), klik OK untuk melanjutkan pendaftaran.\n\n' +
+                'Jika Anda memang ' + name + ', klik Batal lalu gunakan opsi "Sudah Pernah Berkunjung".'
+            );
+            if (confirmed) {
+                Livewire.dispatch('confirmDifferentPerson');
+            } else {
+                openWalkinForm();
+            }
+        });
+
+        document.addEventListener('retrigger-face-scan', function () {
+            openFaceScan('walkin-register');
         });
 
         document.addEventListener('walkin-form-reopen', function () {

@@ -12,6 +12,7 @@ use Illuminate\Support\Facades\DB;
 class GuestStatsOverview extends BaseWidget
 {
     protected static ?int $sort = 1;
+    protected ?string $pollingInterval = '5s';
 
     protected function getStats(): array
     {
@@ -26,7 +27,7 @@ class GuestStatsOverview extends BaseWidget
         $cacheKey = 'dashboard_guest_stats_' . $today->toDateString() . ($isPic ? '_pic_' . $picId : '_admin');
 
         // ── Optimisasi: 4 query COUNT terpisah → 1 query conditional count ──
-        $stats = Cache::remember($cacheKey, 60, function () use ($today, $isPic, $picId) {
+        $stats = Cache::remember($cacheKey, 5, function () use ($today, $isPic, $picId) {
             $query = DB::table('appointments');
             if ($isPic) {
                 $query->where('pic_id', $picId);
@@ -49,7 +50,7 @@ class GuestStatsOverview extends BaseWidget
         $completedThisMonth = $stats->completed_month ?? 0;
 
         $yesterdayCacheKey = 'dashboard_yesterday_count_' . $yesterday->toDateString() . ($isPic ? '_pic_' . $picId : '_admin');
-        $yesterdayCount = Cache::remember($yesterdayCacheKey, 60, function () use ($yesterday, $isPic, $picId) {
+        $yesterdayCount = Cache::remember($yesterdayCacheKey, 5, function () use ($yesterday, $isPic, $picId) {
             $q = Appointment::whereDate('visit_date', $yesterday);
             if ($isPic) {
                 $q->where('pic_id', $picId);
@@ -103,7 +104,7 @@ class GuestStatsOverview extends BaseWidget
                 ->color($successRate >= 90 ? 'success' : ($successRate >= 70 ? 'warning' : 'danger')),
 
             Stat::make('Rata-rata Euclidean Distance', $avgDistanceStr)
-                ->description('Threshold batas: 0.50')
+                ->description('Threshold batas: 0.35 (duplikat) / 0.50 (checkin)')
                 ->descriptionIcon('heroicon-m-calculator')
                 ->color('info'),
         ];

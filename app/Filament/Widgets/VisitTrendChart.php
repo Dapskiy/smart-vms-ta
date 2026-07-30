@@ -15,6 +15,7 @@ class VisitTrendChart extends ChartWidget
     protected static ?int $sort = 3;
     protected int | string | array $columnSpan = 'full';
     protected ?string $maxHeight = '280px';
+    protected ?string $pollingInterval = '5s';
 
     protected function getData(): array
     {
@@ -30,10 +31,10 @@ class VisitTrendChart extends ChartWidget
         $cacheKey = 'dashboard_visit_trend_' . $endDate->toDateString() . ($isPic ? '_pic_' . $picId : '_admin');
 
         // ── Optimisasi: 7 query dalam loop → 1 query GROUP BY ──
-        // Cache 5 menit (data historis berubah jarang)
+        // Cache 5 detik untuk mengakomodasi polling
         $results = Cache::remember(
             $cacheKey,
-            300,
+            5,
             function () use ($startDate, $endDate, $isPic, $picId) {
                 $query = DB::table('appointments')
                     ->whereIn('status', ['completed', 'checkout', 'inactive'])

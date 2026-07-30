@@ -5,6 +5,7 @@ namespace App\Filament\Pages;
 use App\Models\Setting;
 use Filament\Schemas\Components\Section;
 use Filament\Forms\Components\TextInput;
+use Filament\Forms\Components\Textarea;
 use Filament\Forms\Concerns\InteractsWithForms;
 use Filament\Forms\Contracts\HasForms;
 use Filament\Schemas\Schema;
@@ -51,6 +52,7 @@ class GeneralSettings extends Page implements HasForms
         if ($setting) {
             $this->form->fill([
                 'company_name' => $setting->company_name,
+                'company_description' => $setting->company_description,
             ]);
         }
     }
@@ -72,6 +74,11 @@ class GeneralSettings extends Page implements HasForms
                             ->required()
                             ->maxLength(255)
                             ->helperText('Nama ini akan digunakan oleh AI Chatbot saat menyapa pengunjung.'),
+                        Textarea::make('company_description')
+                            ->label('Deskripsi Perusahaan')
+                            ->rows(4)
+                            ->maxLength(1000)
+                            ->helperText('Deskripsi singkat tentang perusahaan (misal: "perusahaan ini bergerak di bidang garmen..."). Ini akan menjadi konteks tambahan bagi AI Chatbot saat berinteraksi dengan tamu.'),
                     ])
             ])
             ->statePath('data');
@@ -87,6 +94,7 @@ class GeneralSettings extends Page implements HasForms
         }
         
         $setting->company_name = $data['company_name'];
+        $setting->company_description = $data['company_description'] ?? null;
         $setting->save();
 
         Notification::make()

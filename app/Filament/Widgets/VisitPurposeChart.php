@@ -13,6 +13,7 @@ class VisitPurposeChart extends ChartWidget
     protected static ?int $sort = 4;
     protected int | string | array $columnSpan = 2;
     protected ?string $maxHeight = '300px';
+    protected ?string $pollingInterval = '5s';
 
     protected function getData(): array
     {
@@ -22,8 +23,8 @@ class VisitPurposeChart extends ChartWidget
 
         $cacheKey = 'dashboard_visit_purpose' . ($isPic ? '_pic_' . $picId : '_admin');
 
-        // Cache 5 menit — data distribusi keperluan berubah jarang
-        $results = Cache::remember($cacheKey, 300, function () use ($isPic, $picId) {
+        // Cache 5 detik untuk mengakomodasi polling
+        $results = Cache::remember($cacheKey, 5, function () use ($isPic, $picId) {
             $query = Appointment::query()
                 ->whereIn('status', ['completed', 'checkout', 'inactive'])
                 ->whereNotNull('purpose')

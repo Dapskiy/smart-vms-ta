@@ -25,7 +25,7 @@ class FaceValidationController extends Controller
 
         $incoming   = $request->input('descriptor');
         $currentId  = $request->input('visitor_id');
-        $threshold  = 0.45; // Lebih ketat dari threshold check-in (0.5)
+        $threshold  = 0.35; // Diperketat dari 0.45 agar saudara/mirip tidak false-positive
 
         $visitors = Visitor::whereNotNull('face_features')->get();
 

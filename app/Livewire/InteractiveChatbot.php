@@ -79,9 +79,15 @@ class InteractiveChatbot extends Component
             }
         }
 
-        $companyName = \App\Models\Setting::first()->company_name ?? 'VISITA Enterprise';
+        $setting = \App\Models\Setting::first();
+        $companyName = $setting->company_name ?? 'VISITA Enterprise';
+        $companyDesc = $setting->company_description ?? '';
 
         $prompt  = "Kamu adalah **VISITA Virtual Receptionist**, asisten virtual cerdas dan ramah yang bertugas di layar Kiosk pendaftaran tamu milik {$companyName}.\n\n";
+        if (!empty($companyDesc)) {
+            $prompt .= "## PROFIL PERUSAHAAN (KONTEKS TAMBAHAN)\n";
+            $prompt .= "{$companyDesc}\n\n";
+        }
         $prompt .= "## WAKTU SAAT INI (PENTING)\n";
         $prompt .= "- Hari & Tanggal: {$todayDate}\n";
         $prompt .= "- Jam Sekarang: {$currentTime}\n";
@@ -92,11 +98,11 @@ class InteractiveChatbot extends Component
         $prompt .= "## ATURAN UTAMA & PERSONALITAS\n";
         $prompt .= "1. **Sikap**: Sangat ramah, sopan, profesional, dan percaya diri. Bayangkan kamu adalah resepsionis bintang lima yang siap melayani.\n";
         if ($this->lang === 'en') {
-            $prompt .= "   - **GREETING (WAJIB)**: Pada pesan pertama di awal percakapan, kamu WAJIB menyapa dengan format: \"{$timeGreeting}, Sir/Madam. Welcome to {$companyName}, I am VISITA...\" dan sebutkan kemampuanmu (misal: visitor registration, appointments, employee attendance).\n";
+            $prompt .= "   - **GREETING (WAJIB)**: Pada pesan pertama di awal percakapan, kamu WAJIB menyapa dengan format: \"{$timeGreeting}, Sir/Madam. Welcome to {$companyName}" . (!empty($companyDesc) ? ", a company engaged in..." : "") . "\". Jika ada deskripsi perusahaan, sertakan penjelasan singkatnya. Lalu perkenalkan dirimu sebagai VISITA dan sebutkan kemampuanmu (misal: visitor registration, appointments, employee attendance).\n";
             $prompt .= "2. **Fokus Topik**: Kamu hanya melayani pertanyaan seputar kunjungan, kehadiran PIC, dan alur Kiosk (check-in, walk-in, appointment). Jika ada pertanyaan di luar topik ini, arahkan kembali dengan sopan.\n";
             $prompt .= "3. **Gaya Bahasa**: Kamu WAJIB menjawab sepenuhnya dalam Bahasa Inggris (English). Gunakan gaya bahasa profesional dan ramah. Gunakan format Markdown (bold, bullet list) agar jawaban mudah dibaca di layar sentuh Kiosk.\n\n";
         } else {
-            $prompt .= "   - **GREETING (WAJIB)**: Pada pesan pertama di awal percakapan (misal saat pengunjung menyapa 'halo'), kamu WAJIB menyapa dan memperkenalkan diri beserta nama perusahaan dengan format: \"{$timeGreeting}, Bapak/Ibu. Selamat datang di {$companyName}, saya adalah VISITA...\" lalu sebutkan secara singkat apa saja yang bisa kamu lakukan (misal: membantu pendaftaran tamu, membuat janji temu, dan mengecek kehadiran karyawan).\n";
+            $prompt .= "   - **GREETING (WAJIB)**: Pada pesan pertama di awal percakapan (misal saat pengunjung menyapa 'halo'), kamu WAJIB menyapa dan memperkenalkan diri beserta nama perusahaan dengan format: \"{$timeGreeting}, Bapak/Ibu. Selamat datang di {$companyName}" . (!empty($companyDesc) ? " (sertakan penjelasan singkat tentang perusahaan berdasarkan profil di atas)" : "") . ".\". Lalu perkenalkan dirimu sebagai VISITA dan sebutkan secara singkat apa saja yang bisa kamu lakukan (misal: membantu pendaftaran tamu, membuat janji temu, dan mengecek kehadiran karyawan).\n";
             $prompt .= "2. **Fokus Topik**: Kamu hanya melayani pertanyaan seputar kunjungan, kehadiran PIC, dan alur Kiosk (check-in, walk-in, appointment). Jika ada pertanyaan di luar topik ini, arahkan kembali dengan sopan.\n";
             $prompt .= "3. **Gaya Bahasa**: Gunakan Bahasa Indonesia yang formal namun hangat. Gunakan format Markdown (bold, bullet list) agar jawaban mudah dibaca di layar sentuh Kiosk.\n\n";
         }
@@ -557,7 +563,7 @@ class InteractiveChatbot extends Component
         $visitors = Visitor::whereNotNull('face_features')->get();
         $bestMatch = null;
         $bestDistance = 1.0;
-        $threshold = 0.5;
+        $threshold = 0.40; // Diperketat dari 0.50 agar saudara/mirip tidak false-positive
 
         foreach ($visitors as $visitor) {
             $stored = $visitor->face_features ?? [];

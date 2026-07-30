@@ -1303,6 +1303,25 @@
             openWalkinForm(); // Kembali ke form walkin untuk melihat error
         });
 
+        document.addEventListener('walkin-duplicate-warning', function (e) {
+            closeFaceScan();
+            const name = e.detail?.name || 'seseorang';
+            const confirmed = confirm(
+                'Wajah Anda terdeteksi mirip dengan "' + name + '" yang sudah terdaftar.\n\n' +
+                'Jika Anda memang ORANG BERBEDA (misal saudara/keluarga), klik OK untuk melanjutkan pendaftaran.\n\n' +
+                'Jika Anda memang ' + name + ', klik Batal lalu gunakan opsi "Sudah Pernah Berkunjung".'
+            );
+            if (confirmed) {
+                Livewire.dispatch('confirmDifferentPerson');
+            } else {
+                openWalkinForm();
+            }
+        });
+
+        document.addEventListener('retrigger-face-scan', function () {
+            openFaceScan('walkin-register');
+        });
+
         document.addEventListener('walkin-form-reopen', function () {
             closeFaceScan();
             openWalkinForm();
