@@ -278,12 +278,14 @@
                         @foreach($messages as $msg)
                             <div class="chat-bubble-row {{ $msg['role'] === 'user' ? 'user-row' : 'assistant-row' }}">
                                 @if($msg['role'] === 'assistant')
-                                    <div class="chat-bubble assistant-bubble">
+                                    <div class="chat-bubble assistant-bubble" style="display: flex; align-items: flex-start; justify-content: space-between; gap: 8px;">
                                         <span
                                             wire:key="msg-{{ md5($msg['content']) }}"
                                             x-data="{ md: @js($msg['content']) }"
                                             x-html="window.marked ? window.marked.parse(md) : md"
+                                            style="flex: 1;"
                                         ></span>
+                                        <button @click="window.speakText(@js($msg['content']))" style="background: transparent; border: none; cursor: pointer; opacity: 0.7; padding: 2px 4px; font-size: 14px;" title="Putar Suara">🔊</button>
                                     </div>
                                 @else
                                     <div class="chat-bubble user-bubble">
@@ -397,33 +399,105 @@
 
         (function () {
             'use strict';
-            let indoVoice = null;
-            function loadVoices() {
+            let currentAudio = null;
+            let fallbackIndoVoice = null;
+
+            function loadFallbackVoices() {
                 const voices = window.speechSynthesis?.getVoices() ?? [];
-                indoVoice = voices.find(v => v.lang === 'id-ID' || v.name.includes('Indonesia')) ?? null;
+                fallbackIndoVoice = voices.find(v => v.name.includes('Gadis') || v.lang === 'id-ID' || v.name.includes('Indonesia')) ?? null;
             }
             if ('speechSynthesis' in window) {
                 window.speechSynthesis.getVoices();
-                window.speechSynthesis.addEventListener('voiceschanged', loadVoices);
-                loadVoices();
+                window.speechSynthesis.addEventListener('voiceschanged', loadFallbackVoices);
+                loadFallbackVoices();
             }
+
             function fireTtsEvent(name) { window.dispatchEvent(new CustomEvent(name)); }
+
             window.speakText = function (text) {
-                if (!text || !('speechSynthesis' in window)) return;
-                window.speechSynthesis.cancel();
-                const plain = text.replace(/[*_`#>~|\-]+/g,' ').replace(/\n+/g,'. ').replace(/\s{2,}/g,' ').trim();
+                if (!text) return;
+
+                // Hentikan suara yang sedang berjalan
+                window.stopAiSpeech();
+
+                const plain = text.replace(/<!--.*?-->/gs, '').replace(/[*_`#>~|\-]+/g, ' ').replace(/\n+/g, '. ').replace(/\s{2,}/g, ' ').trim();
                 if (!plain) return;
+
+                // Gunakan backend Edge TTS (id-ID-GadisNeural)
+                const ttsUrl = '/api/tts?text=' + encodeURIComponent(plain);
+                const audio = new Audio(ttsUrl);
+                currentAudio = audio;
+
+                audio.onplay = () => {
+                    fireTtsEvent('tts-started');
+                };
+
+                audio.onended = () => {
+                    currentAudio = null;
+                    fireTtsEvent('tts-ended');
+                };
+
+                audio.onerror = (e) => {
+                    console.warn("Edge TTS failed, falling back to Web Speech API", e);
+                    currentAudio = null;
+                    fallbackSpeak(plain);
+                };
+
+                const playPromise = audio.play();
+                if (playPromise !== undefined) {
+                    playPromise.catch(err => {
+                        console.warn("Edge TTS play failed (e.g. autoplay restriction), falling back", err);
+                        currentAudio = null;
+                        fallbackSpeak(plain);
+                    });
+                }
+            };
+
+            function fallbackSpeak(plain) {
+                if (!('speechSynthesis' in window)) {
+                    fireTtsEvent('tts-ended');
+                    return;
+                }
+                window.speechSynthesis.cancel();
                 const utt = new SpeechSynthesisUtterance(plain);
-                utt.lang='id-ID'; utt.rate=1.25; utt.pitch=1.0; utt.volume=1.0;
-                if (indoVoice) utt.voice = indoVoice;
+                utt.lang = 'id-ID';
+                utt.rate = 1.0;
+                utt.pitch = 1.0;
+                if (fallbackIndoVoice) utt.voice = fallbackIndoVoice;
+
                 utt.onend = () => fireTtsEvent('tts-ended');
                 utt.onerror = () => fireTtsEvent('tts-ended');
                 fireTtsEvent('tts-started');
                 window.speechSynthesis.speak(utt);
+            }
+
+            window.stopAiSpeech = () => {
+                if (currentAudio) {
+                    currentAudio.pause();
+                    currentAudio.currentTime = 0;
+                    currentAudio = null;
+                }
+                if (window.speechSynthesis) {
+                    window.speechSynthesis.cancel();
+                }
+                fireTtsEvent('tts-ended');
             };
-            window.stopAiSpeech    = () => { window.speechSynthesis?.cancel(); fireTtsEvent('tts-ended'); };
-            window.pauseAiSpeech   = () => { window.speechSynthesis?.pause(); };
-            window.resumeAiSpeech  = () => { window.speechSynthesis?.resume(); };
+
+            window.pauseAiSpeech = () => {
+                if (currentAudio) {
+                    currentAudio.pause();
+                } else if (window.speechSynthesis) {
+                    window.speechSynthesis.pause();
+                }
+            };
+
+            window.resumeAiSpeech = () => {
+                if (currentAudio) {
+                    currentAudio.play().catch(() => {});
+                } else if (window.speechSynthesis) {
+                    window.speechSynthesis.resume();
+                }
+            };
         })();
     </script>
 

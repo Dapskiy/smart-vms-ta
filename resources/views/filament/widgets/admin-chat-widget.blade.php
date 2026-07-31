@@ -276,24 +276,51 @@
             : "{{ asset('assets/images/chatbot/avatar-greeting-1.png') }}";
     }
 
+    let currentAdminAudio = null;
+
     function speakText(text) {
-        if (!('speechSynthesis' in window)) return;
-        window.speechSynthesis.cancel();
+        if (!text) return;
+        aaiUI.stopSpeech();
         const plain = text.replace(/[*_`#>~|\-]+/g,' ').replace(/\n+/g,'. ').replace(/\s{2,}/g,' ').trim();
         if (!plain) return;
 
-        const utt   = new SpeechSynthesisUtterance(plain);
-        utt.lang    = 'id-ID';
-        utt.rate    = 1.25;
-        utt.pitch   = 1.0;
-        utt.volume  = 1.0;
+        const ttsUrl = '/api/tts?text=' + encodeURIComponent(plain);
+        const audio = new Audio(ttsUrl);
+        currentAdminAudio = audio;
+
+        audio.onplay = () => {
+            isSpeaking = true; isPaused = false; showSpeechControls(true); updateAvatar();
+        };
+        audio.onended = () => {
+            currentAdminAudio = null;
+            isSpeaking = false; isPaused = false; showSpeechControls(false); updateAvatar();
+        };
+        audio.onerror = (e) => {
+            console.warn("Admin Edge TTS failed, using fallback", e);
+            currentAdminAudio = null;
+            fallbackAdminSpeak(plain);
+        };
+        audio.play().catch(err => {
+            console.warn("Admin Edge TTS play failed, using fallback", err);
+            currentAdminAudio = null;
+            fallbackAdminSpeak(plain);
+        });
+    }
+
+    function fallbackAdminSpeak(plain) {
+        if (!('speechSynthesis' in window)) return;
+        window.speechSynthesis.cancel();
+        const utt = new SpeechSynthesisUtterance(plain);
+        utt.lang = 'id-ID';
+        utt.rate = 1.0;
+        utt.pitch = 1.0;
         const voices = window.speechSynthesis.getVoices();
-        const voice  = voices.find(v => v.lang === 'id-ID' || v.name.includes('Indonesia'));
+        const voice = voices.find(v => v.name.includes('Gadis') || v.lang === 'id-ID' || v.name.includes('Indonesia'));
         if (voice) utt.voice = voice;
 
-        utt.onstart  = () => { isSpeaking = true; isPaused = false; showSpeechControls(true); updateAvatar(); };
-        utt.onend    = () => { isSpeaking = false; isPaused = false; showSpeechControls(false); updateAvatar(); };
-        utt.onerror  = () => { isSpeaking = false; isPaused = false; showSpeechControls(false); updateAvatar(); };
+        utt.onstart = () => { isSpeaking = true; isPaused = false; showSpeechControls(true); updateAvatar(); };
+        utt.onend = () => { isSpeaking = false; isPaused = false; showSpeechControls(false); updateAvatar(); };
+        utt.onerror = () => { isSpeaking = false; isPaused = false; showSpeechControls(false); updateAvatar(); };
 
         window.speechSynthesis.speak(utt);
     }
@@ -548,47 +575,7 @@
 
         // ── Text to Speech (TTS) ──
         speakText(text) {
-            if (!window.speechSynthesis) {
-                alert("Browser tidak mendukung fitur Text-to-Speech.");
-                return;
-            }
-
-            this.stopSpeech(); // Hentikan suara yang sedang berjalan
-
-            // Bersihkan markdown chars sebelum dibaca
-            const cleanText = text.replace(/[*#_`~-]/g, '').replace(/\n/g, ' ');
-
-            const utterance = new SpeechSynthesisUtterance(cleanText);
-            utterance.lang = 'id-ID';
-            utterance.rate = 1.0;
-            utterance.pitch = 1.0;
-
-            // Cari suara wanita Indonesia jika ada
-            const voices = window.speechSynthesis.getVoices();
-            const idVoice = voices.find(v => v.lang.includes('id') && v.name.toLowerCase().includes('female')) 
-                         || voices.find(v => v.lang.includes('id'));
-            if (idVoice) utterance.voice = idVoice;
-
-            utterance.onstart = () => {
-                isSpeaking = true;
-                isPaused = false;
-                showSpeechControls(true);
-                updateAvatar();
-            };
-
-            utterance.onend = () => {
-                isSpeaking = false;
-                isPaused = false;
-                showSpeechControls(false);
-                updateAvatar();
-            };
-
-            utterance.onerror = (e) => {
-                console.error("TTS Error:", e);
-                this.stopSpeech();
-            };
-
-            window.speechSynthesis.speak(utterance);
+            window.speakText(text);
         },
 
         // Helper TTS
@@ -613,6 +600,11 @@
         },
 
         stopSpeech() {
+            if (currentAdminAudio) {
+                currentAdminAudio.pause();
+                currentAdminAudio.currentTime = 0;
+                currentAdminAudio = null;
+            }
             window.speechSynthesis?.cancel();
             isSpeaking = false; 
             isPaused = false;

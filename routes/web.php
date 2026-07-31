@@ -10,6 +10,11 @@ use App\Http\Controllers\Admin\VisitorFacePhotoController;
 use App\Http\Controllers\Admin\AdminChatController;
 use App\Http\Controllers\Guest\EpassController;
 use App\Http\Controllers\AppointmentApprovalController;
+use App\Http\Controllers\TtsController;
+
+// ── Edge TTS Audio Generation (id-ID-GadisNeural) ──
+Route::match(['get', 'post'], '/api/tts', [TtsController::class, 'generate'])->name('api.tts');
+
 
 Route::get('/', function () {
     return response()->view('welcome')
