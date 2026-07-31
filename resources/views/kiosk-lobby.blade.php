@@ -613,6 +613,7 @@
             border-radius: 1.5rem;
             padding: 2rem;
             width: min(92vw, 480px);
+            margin: auto; /* Memastikan modal tetap di tengah secara vertikal */
             position: relative;
             box-shadow: 0 20px 50px rgba(0, 0, 0, 0.1);
             animation: fadeUp 0.3s ease both;

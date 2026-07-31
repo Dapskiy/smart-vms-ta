@@ -149,9 +149,18 @@ class ManageSummaries extends ManageRecords
                             parse_str(parse_url($referer, PHP_URL_QUERY) ?? '', $urlParams);
                             $type = $urlParams['type'] ?? 'range';
 
-                            $query->whereHas('appointments', function (Builder $q) {
-                                $q->whereIn('status', ['completed', 'checkout', 'inactive']);
-                            });
+                            $currentUser = auth()->user();
+                            if ($currentUser && !$currentUser->hasRole('super_admin') && $currentUser->pic) {
+                                $picId = $currentUser->pic->id;
+                                $query->whereHas('appointments', function (Builder $q) use ($picId) {
+                                    $q->whereIn('status', ['completed', 'checkout', 'inactive'])
+                                      ->where('pic_id', $picId);
+                                });
+                            } else {
+                                $query->whereHas('appointments', function (Builder $q) {
+                                    $q->whereIn('status', ['completed', 'checkout', 'inactive']);
+                                });
+                            }
 
                             if ($type === 'range') {
                                 if (!empty($urlParams['start_date']) && !empty($urlParams['end_date'])) {
