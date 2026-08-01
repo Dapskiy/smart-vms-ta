@@ -21,7 +21,8 @@ async def main():
     with open(text_file, 'r', encoding='utf-8') as f:
         text = f.read()
 
-    communicate = edge_tts.Communicate(text, voice)
+    # Added rate='+15%' to make it speak faster as requested
+    communicate = edge_tts.Communicate(text, voice, rate="+15%")
     await communicate.save(output_path)
 
 if __name__ == '__main__':

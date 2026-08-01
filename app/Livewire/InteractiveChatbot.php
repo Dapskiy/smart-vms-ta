@@ -189,16 +189,17 @@ class InteractiveChatbot extends Component
         $prompt .= "### ALUR B — JANJI TEMU HARI LAIN (appointment)\n";
         $prompt .= "Jika pengunjung menjawab **BESOK / LAIN HARI / JADWAL NANTI**:\n\n";
         $prompt .= "#### ATURAN PENGUMPULAN DATA (CONVERSATIONAL & SLOT-FILLING GUIDELINES):\n";
-        $prompt .= "1. **BULK DATA COLLECTION (HEMAT API)**:\n";
-        $prompt .= "   - **WAJIB** menanyakan SELURUH informasi yang belum terisi SEKALIGUS dalam satu balasan (boleh dalam bentuk nomor/bullet list) untuk menghemat jumlah interaksi.\n";
-        $prompt .= "   - Sebutkan dengan jelas apa saja data yang masih kurang (misal: 'Untuk melengkapi pendaftaran, mohon berikan data berikut: 1. Nama Lengkap, 2. Instansi, 3. Nomor Telepon').\n";
-        $prompt .= "   - Jagalah jawaban agar tetap sopan dan ramah meskipun menanyakan banyak data sekaligus.\n\n";
+        $prompt .= "1. **BULK DATA COLLECTION (SANGAT WAJIB - JANGAN BERTANYA SATU-SATU)**:\n";
+        $prompt .= "   - **DILARANG KERAS** menanyakan kelengkapan data secara dicicil atau satu per satu.\n";
+        $prompt .= "   - Kamu **WAJIB MUTLAK** meminta **SEMUA** sisa informasi yang masih kosong SEKALIGUS dalam SATU balasan pesan.\n";
+        $prompt .= "   - Contoh Respons yang BENAR: *\"Baik, untuk menjadwalkan pertemuan dengan [Nama PIC] pada [Waktu], mohon lengkapi data berikut sekaligus dalam satu balasan: 1. Nama Lengkap, 2. Instansi/Perusahaan, 3. Nomor WA, 4. Jumlah Rombongan, dan 5. Keperluan.\"*\n";
+        $prompt .= "   - Jagalah jawaban agar tetap sopan dan ramah.\n\n";
         $prompt .= "2. **SMART SLOT-FILLING**:\n";
         $prompt .= "   - Ekstrak secara otomatis setiap detail informasi yang sudah diberikan oleh pengunjung dari pesan-pesannya.\n";
         $prompt .= "   - Jika pengunjung memberikan beberapa informasi sekaligus (contoh: \"Saya Budi dari PT ABC mau ketemu Pak Daffa besok jam 10\"), langsung ekstrak: Nama (Budi), Perusahaan (PT ABC), PIC (Pak Daffa), Tanggal (besok -> YYYY-MM-DD), Waktu (10:00).\n";
         $prompt .= "   - HANYA tanyakan slot data yang MASIH KOSONG dari 7 slot berikut:\n";
-        $prompt .= "     [1. Nama Lengkap] [2. Nama Perusahaan/Instansi] [3. No Telepon/WA] [4. Nama PIC] [5. Tanggal Kunjungan] [6. Jam Kunjungan] [7. Keperluan/Tujuan]\n";
-        $prompt .= "   - **SANGAT PENTING**: Jangan pernah menghilangkan/melewatkan permintaan [Tanggal Kunjungan]. Walaupun kamu sebelumnya berkata 'untuk besok', kamu TETAP WAJIB menanyakan 'Untuk tanggal berapa?' atau memasukkan 'Tanggal Kunjungan' ke dalam list pertanyaanmu agar data akurat.\n\n";
+        $prompt .= "     [1. Nama Lengkap] [2. Nama Perusahaan/Instansi] [3. No Telepon/WA] [4. Nama PIC] [5. Tanggal Kunjungan] [6. Jam Kunjungan] [7. Keperluan/Tujuan] [8. Jumlah Rombongan]\n";
+        $prompt .= "   - **SANGAT PENTING**: Jika pengunjung hanya berkata 'besok jam 8', kamu tetap WAJIB mengekstrak informasi tersebut lalu langsung menyebutkan ke-5 data sisa lainnya secara bersamaan.\n\n";
         $prompt .= "3. **VALIDASI & FORMATTING**:\n";
         $prompt .= "   - Bimbing pengunjung jika informasi ambigu (konversi kata relatif seperti 'besok' atau 'lusa' menjadi YYYY-MM-DD presisi relatif terhadap tanggal saat ini).\n";
         $prompt .= "   - Pastikan format nomor telepon valid (diawali 08 atau +62).\n";
@@ -729,18 +730,29 @@ class InteractiveChatbot extends Component
             return;
         }
 
-        // Global face duplicate check
+        // Global face duplicate check (Auto-Merge)
         $allOthers = Visitor::whereNotNull('face_features')->where('id', '!=', $visitor->id)->get();
+        $merged = false;
         foreach ($allOthers as $other) {
             $otherStored = $other->face_features ?? [];
             if (!is_array($otherStored)) continue;
             if (isset($otherStored[0]) && !is_array($otherStored[0])) $otherStored = [$otherStored];
             foreach ($otherStored as $otherDesc) {
                 if ($this->euclideanDistance($otherDesc, $descriptor) <= 0.45) {
-                    $this->messages[] = ['role' => 'assistant', 'content' => "⚠️ Wajah sudah terdaftar atas nama **{$other->name}**. Gunakan opsi 'Sudah Pernah Berkunjung'."];
-                    $this->dispatch('chatbot-scrolled');
-                    $this->dispatch('chatbot-face-error');
-                    return;
+                    // Wajah ini sudah ada di visitor lain ($other)!
+                    // Pengunjung mungkin mengganti nomor HP-nya saat ngobrol dengan AI.
+                    // Alih-alih error, kita gabungkan (merge) ke profil lama.
+                    if ($visitor->wasRecentlyCreated) {
+                        $visitor->delete();
+                    }
+                    $visitor = $other;
+                    $visitor->update([
+                        'name'    => $this->regData['name'],
+                        'company' => $this->regData['company'],
+                        'phone'   => $this->regData['phone'],
+                    ]);
+                    $merged = true;
+                    break 2; // Keluar dari kedua loop
                 }
             }
         }

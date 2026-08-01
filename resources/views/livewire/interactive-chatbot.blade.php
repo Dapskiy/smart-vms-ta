@@ -428,9 +428,8 @@
                 const audio = new Audio(ttsUrl);
                 currentAudio = audio;
 
-                audio.onplay = () => {
-                    fireTtsEvent('tts-started');
-                };
+                // Fire event immediately so buttons appear and avatar starts moving
+                fireTtsEvent('tts-started');
 
                 audio.onended = () => {
                     currentAudio = null;

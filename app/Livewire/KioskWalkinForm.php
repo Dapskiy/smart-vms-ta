@@ -435,11 +435,11 @@ class KioskWalkinForm extends Component
             return;
         }
 
-        // 2. Global Face Duplicate Check (Anti-Spoofing / Anti-Duplicate)
-        // Memastikan wajah pengunjung baru ini tidak pernah didaftarkan atas nama orang lain
+        // 2. Global Face Duplicate Check (Auto-Merge / Seamless Returning Visitor)
+        // Jika pengunjung baru mendaftar dengan wajah yang sudah ada (tapi mungkin salah masuk nomor HP)
         if (!$this->duplicateOverride) {
             $allOtherVisitors = Visitor::whereNotNull('face_features')->where('id', '!=', $visitor->id)->get();
-            $globalThreshold = 0.35; // Diperketat dari 0.45 agar saudara/mirip tidak false-positive
+            $globalThreshold = 0.40; // Sama seperti threshold wajar
 
             foreach ($allOtherVisitors as $otherVisitor) {
                 $otherStored = $otherVisitor->face_features ?? [];
@@ -448,10 +448,20 @@ class KioskWalkinForm extends Component
 
                 foreach ($otherStored as $otherDescriptor) {
                     if ($this->euclideanDistance($otherDescriptor, $descriptor) <= $globalThreshold) {
-                        // Simpan nama duplikat & dispatch event ke UI untuk konfirmasi
-                        $this->duplicateWarningName = $otherVisitor->name;
-                        $this->dispatch('walkin-duplicate-warning', name: $otherVisitor->name);
-                        return;
+                        // Wajah dikenali sebagai visitor lama!
+                        // Daripada menampilkan pesan error "Wajah sudah terdaftar",
+                        // kita otomatis hubungkan (merge) ke profil lamanya agar lebih cerdas.
+                        if ($visitor->wasRecentlyCreated) {
+                            $visitor->delete();
+                        }
+                        $visitor = $otherVisitor;
+                        // Perbarui data jika pengunjung mengetik data baru di form
+                        $visitor->update([
+                            'name' => $this->name ?: $visitor->name,
+                            'company' => $this->company ?: $visitor->company,
+                            'phone' => $this->phone ?: $visitor->phone,
+                        ]);
+                        break 2; // Keluar dari kedua loop dan lanjut ke pembuatan janji
                     }
                 }
             }

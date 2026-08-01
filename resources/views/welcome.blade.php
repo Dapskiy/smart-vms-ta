@@ -1445,7 +1445,7 @@
         // Event listener for Walk-in success
         document.addEventListener('walkin-success', function (e) {
             closeWalkinForm();
-            const data = e.detail.appt;
+            const data = (e.detail[0] !== undefined) ? (e.detail[0].appt || e.detail[0]) : (e.detail.appt || e.detail);
             document.querySelector('#modal-success .success-heading').textContent = 'Registrasi Berhasil! 🎉';
             document.querySelector('#modal-success .success-sub').innerHTML = 'Silakan masuk dan segera menuju ruangan Bapak/Ibu <strong>' + (data.picName || 'PIC') + '</strong>.';
             document.getElementById('si-name').textContent = data.visitorName || '-';
@@ -1480,7 +1480,7 @@
         document.addEventListener('walkin-pending-approval', function (e) {
             closeWalkinForm();
             
-            const data = e.detail;
+            const data = (e.detail[0] !== undefined) ? e.detail[0] : e.detail;
             const token = data.token;
             const visitorName = data.visitorName;
             const picName = data.picName;
@@ -1621,7 +1621,7 @@
         // Event listener for Appointment scheduling success
         document.addEventListener('appointment-success', function (e) {
             closeWalkinForm();
-            const data = e.detail.appt;
+            const data = (e.detail[0] !== undefined) ? e.detail[0].appt : e.detail.appt;
             document.querySelector('#modal-success .success-heading').textContent = 'Janji Temu Dibuat 📅';
             document.querySelector('#modal-success .success-sub').textContent = 'Menunggu konfirmasi dari karyawan. Token/Tiket akan dikirimkan ke Whatsapp Anda.';
             document.getElementById('si-name').textContent = data.visitorName || '-';
