@@ -178,58 +178,59 @@ class InteractiveChatbot extends Component
         $prompt .= "    • \"Boleh diinformasikan, apakah Anda akan berkunjung sekarang/hari ini, atau untuk tanggal tertentu di lain hari?\"\n";
         $prompt .= "    • \"Baik, untuk pertemuannya apakah ditujukan untuk hari ini atau ingin membuat janji di lain waktu?\"\n\n";
 
-        // ── ALUR HARI INI (WALK-IN) ──
-        $prompt .= "### ALUR A — KUNJUNGAN HARI INI (walk-in)\n";
-        $prompt .= "Jika pengunjung menyampaikan bahwa kunjungannya adalah untuk **HARI INI / SEKARANG**:\n";
-        $prompt .= "- Berikan respon ramah dan luwes mengarahkan tamu ke pendaftaran walk-in (misal: \"Baik, silakan lakukan pendaftaran walk-in melalui form yang akan tampil berikut ini.\").\n";
-        $prompt .= "- WAJIB sertakan marker tindakan ini di akhir pesanmu: <!--ACTION:walkin-->\n";
-        $prompt .= "Marker tersebut akan otomatis memunculkan pop-up form Kiosk agar tamu bisa menscan wajahnya sendiri.\n\n";
+        // ── ALUR PENDAFTARAN (WALK-IN & APPOINTMENT) ──
+        $prompt .= "### ALUR PENDAFTARAN (WALK-IN & APPOINTMENT)\n";
+        $prompt .= "Kamu HARUS mendaftarkan pengunjung langsung melalui percakapan ini (JANGAN menyuruh mereka mengisi form manual atau menggunakan tombol).\n\n";
+        $prompt .= "#### ATURAN PENGUMPULAN DATA (CONVERSATIONAL & SLOT-FILLING):\n";
+        
+        $prompt .= "1. **TANYAKAN HARI INI ATAU NANTI**:\n";
+        $prompt .= "   - Jika pengunjung hanya bilang \"Saya mau ketemu Pak Daffa\", kamu WAJIB bertanya: *\"Apakah untuk hari ini (sekarang) atau membuat janji temu untuk hari lain?\"*\n\n";
 
-        // ── ALUR BESOK/LAIN HARI (APPOINTMENT AUTO-ACC) ──
-        $prompt .= "### ALUR B — JANJI TEMU HARI LAIN (appointment)\n";
-        $prompt .= "Jika pengunjung menjawab **BESOK / LAIN HARI / JADWAL NANTI**:\n\n";
-        $prompt .= "#### ATURAN PENGUMPULAN DATA (CONVERSATIONAL & SLOT-FILLING GUIDELINES):\n";
-        $prompt .= "1. **BULK DATA COLLECTION (SANGAT WAJIB - JANGAN BERTANYA SATU-SATU)**:\n";
+        $prompt .= "2. **VALIDASI NAMA LENGKAP PIC (SANGAT KRITIS)**:\n";
+        $prompt .= "   - Jika pengunjung menyebutkan nama panggilan (misal: \"Pak Daffa\" atau \"Pak Daffa IT\"), kamu **WAJIB** mencocokkan dengan daftar PIC di bawah dan mengonfirmasi NAMA LENGKAPNYA.\n";
+        $prompt .= "   - Contoh: *\"Apakah maksud Anda Bapak Daffa Faris Ramadhan?\"*\n";
+        $prompt .= "   - Data yang disimpan di akhir NANTI haruslah **NAMA LENGKAP PIC** yang persis sama dengan database.\n\n";
+
+        $prompt .= "3. **PENANGANAN WAKTU OTOMATIS (WALK-IN)**:\n";
+        $prompt .= "   - Jika pengunjung memilih **HARI INI / SEKARANG (Walk-in)**, kamu **DILARANG** menanyakan jam kunjungan.\n";
+        $prompt .= "   - Anggap Tanggal = {$todayDate} dan Waktu = {$currentTime} (otomatis). Langsung tanyakan sisa data lainnya.\n\n";
+
+        $prompt .= "4. **BULK DATA COLLECTION (SANGAT WAJIB - JANGAN BERTANYA SATU-SATU)**:\n";
         $prompt .= "   - **DILARANG KERAS** menanyakan kelengkapan data secara dicicil atau satu per satu.\n";
-        $prompt .= "   - Kamu **WAJIB MUTLAK** meminta **SEMUA** sisa informasi yang masih kosong SEKALIGUS dalam SATU balasan pesan.\n";
-        $prompt .= "   - Contoh Respons yang BENAR: *\"Baik, untuk menjadwalkan pertemuan dengan [Nama PIC] pada [Waktu], mohon lengkapi data berikut sekaligus dalam satu balasan: 1. Nama Lengkap, 2. Instansi/Perusahaan, 3. Nomor WA, 4. Jumlah Rombongan, dan 5. Keperluan.\"*\n";
-        $prompt .= "   - Jagalah jawaban agar tetap sopan dan ramah.\n\n";
-        $prompt .= "2. **SMART SLOT-FILLING**:\n";
-        $prompt .= "   - Ekstrak secara otomatis setiap detail informasi yang sudah diberikan oleh pengunjung dari pesan-pesannya.\n";
-        $prompt .= "   - Jika pengunjung memberikan beberapa informasi sekaligus (contoh: \"Saya Budi dari PT ABC mau ketemu Pak Daffa besok jam 10\"), langsung ekstrak: Nama (Budi), Perusahaan (PT ABC), PIC (Pak Daffa), Tanggal (besok -> YYYY-MM-DD), Waktu (10:00).\n";
         $prompt .= "   - HANYA tanyakan slot data yang MASIH KOSONG dari 7 slot berikut:\n";
-        $prompt .= "     [1. Nama Lengkap] [2. Nama Perusahaan/Instansi] [3. No Telepon/WA] [4. Nama PIC] [5. Tanggal Kunjungan] [6. Jam Kunjungan] [7. Keperluan/Tujuan] [8. Jumlah Rombongan]\n";
-        $prompt .= "   - **SANGAT PENTING**: Jika pengunjung hanya berkata 'besok jam 8', kamu tetap WAJIB mengekstrak informasi tersebut lalu langsung menyebutkan ke-5 data sisa lainnya secara bersamaan.\n\n";
-        $prompt .= "3. **VALIDASI & FORMATTING**:\n";
-        $prompt .= "   - Bimbing pengunjung jika informasi ambigu (konversi kata relatif seperti 'besok' atau 'lusa' menjadi YYYY-MM-DD presisi relatif terhadap tanggal saat ini).\n";
-        $prompt .= "   - Pastikan format nomor telepon valid (diawali 08 atau +62).\n";
-        $prompt .= "   - Nama PIC harus merujuk ke data PIC terdaftar di bawah.\n\n";
-        $prompt .= "4. **FINAL CONFIRMATION (KONFIRMASI AKHIR & FORMAT ALIGNMENT)**:\n";
+        $prompt .= "     [1. Nama Lengkap] [2. Nama Perusahaan/Instansi] [3. No Telepon/WA] [4. Nama PIC (Harus Lengkap)] [5. Tanggal Kunjungan] [6. Jam Kunjungan] [7. Keperluan/Tujuan] [8. Jumlah Rombongan]\n";
+        $prompt .= "   - *Ingat: Untuk Walk-In (hari ini), slot Tanggal dan Jam otomatis terisi dengan {$todayDate} dan {$currentTime}, JANGAN DITANYAKAN LAGI.*\n";
+        $prompt .= "   - Kamu **WAJIB MUTLAK** meminta **SEMUA** sisa informasi yang masih kosong SEKALIGUS dalam SATU balasan pesan.\n";
+        $prompt .= "   - Contoh Respons Walk-in: *\"Baik, untuk bertemu dengan Bapak Daffa Faris Ramadhan hari ini, mohon lengkapi data berikut sekaligus dalam satu balasan: 1. Nama Lengkap Anda, 2. Instansi/Perusahaan, 3. Nomor WA, 4. Jumlah Rombongan, dan 5. Keperluan.\"*\n\n";
+
+        $prompt .= "5. **FINAL CONFIRMATION (KONFIRMASI AKHIR & FORMAT ALIGNMENT)**:\n";
         $prompt .= "   - Setelah SELURUH 7 slot terisi lengkap, tampilkan ringkasan data secara rapi dan SEJAJAR rata kiri.\n";
         $prompt .= "   - **FORMAT ALIGNMENT (SANGAT KRITIS)**:\n";
-        $prompt .= "     - DILARANG memberikan spasi/indentasi di awal baris pada teks judul (contoh: 'Data Diri:') maupun pada baris pertanyaan penutup (contoh: 'Apakah data di atas sudah benar?'). Semua teks non-bullet HARUS rapat di batas paling kiri (tanpa spasi awal).\n";
+        $prompt .= "     - DILARANG memberikan spasi/indentasi di awal baris pada teks judul maupun pertanyaan penutup.\n";
+        $prompt .= "     - Untuk Walk-in, pastikan Tanggal tertulis {$todayDate} dan Waktu tertulis {$currentTime} berupa angka pasti, JANGAN menggunakan kata 'Sekarang' atau 'Hari Ini'.\n";
         $prompt .= "     - Gunakan format list standar berikut:\n";
         $prompt .= "```\n";
         $prompt .= "Data Diri Kunjungan:\n";
         $prompt .= "• Nama: Budi\n";
         $prompt .= "• Perusahaan: PT ABC\n";
         $prompt .= "• Telepon: 08123456789\n";
-        $prompt .= "• Menemui: Pak Daffa\n";
-        $prompt .= "• Tanggal: 2026-07-24\n";
-        $prompt .= "• Waktu: 10:00\n";
+        $prompt .= "• Menemui: Daffa Faris Ramadhan\n";
+        $prompt .= "• Tanggal: {$todayDate}\n";
+        $prompt .= "• Waktu: {$currentTime}\n";
         $prompt .= "• Keperluan: Meeting Proyek\n\n";
         $prompt .= "Apakah data di atas sudah benar?\n";
         $prompt .= "```\n";
         $prompt .= "   - Setelah pengunjung mengonfirmasi YA / benar, BARU sertakan marker <!--REGISTER:...--> di AKHIR respons.\n\n";
-
+        
         // ── MARKER PENDAFTARAN ──
         $prompt .= "### MARKER PENDAFTARAN\n";
         $prompt .= "SETELAH semua data lengkap dan dikonfirmasi pengunjung, sertakan marker ini di AKHIR respons:\n";
         $prompt .= "<!--REGISTER:{\"name\":\"...\",\"company\":\"...\",\"phone\":\"...\",\"purpose\":\"...\",\"pic_name\":\"...\",\"pax\":1,\"type\":\"appointment\",\"visit_date\":\"YYYY-MM-DD\",\"visit_time\":\"HH:mm\"}-->\n\n";
         $prompt .= "ATURAN MARKER:\n";
         $prompt .= "- JANGAN sertakan <!--REGISTER:...--> sampai pengunjung mengonfirmasi data sudah benar\n";
-        $prompt .= "- pic_name harus PERSIS sama dengan nama di data PIC di bawah\n";
+        $prompt .= "- pic_name harus PERSIS sama dengan **NAMA LENGKAP** di data PIC di bawah\n";
         $prompt .= "- type harus \"appointment\" untuk jadwal hari lain, \"walk-in\" untuk hari ini\n";
+        $prompt .= "- Untuk \"walk-in\", isi visit_date dengan tanggal hari ini (YYYY-MM-DD) dan visit_time dengan {$currentTime}.\n";
         $prompt .= "- pax default 1 kecuali pengunjung menyebut jumlah lain\n\n";
 
         // ── Konteks Data PIC Real-Time dari Database (Hanya jika Onsite) ────────
@@ -730,6 +731,25 @@ class InteractiveChatbot extends Component
             return;
         }
 
+        // PIC Check: Prevent PICs from registering as visitors
+        $allPics = \App\Models\Pic::whereNotNull('face_features')->get();
+        foreach ($allPics as $pic) {
+            $picStored = $pic->face_features ?? [];
+            if (!is_array($picStored)) continue;
+            if (isset($picStored[0]) && !is_array($picStored[0])) $picStored = [$picStored];
+            foreach ($picStored as $picDesc) {
+                if ($this->euclideanDistance($picDesc, $descriptor) <= 0.45) {
+                    if ($visitor->wasRecentlyCreated) {
+                        $visitor->delete();
+                    }
+                    $this->messages[] = ['role' => 'assistant', 'content' => "⚠️ Akses Ditolak: Wajah Anda terdeteksi sebagai Karyawan/PIC ({$pic->name}). Karyawan tidak perlu mendaftar tamu, silakan gunakan fitur Absensi."];
+                    $this->dispatch('chatbot-scrolled');
+                    $this->dispatch('chatbot-face-error');
+                    return;
+                }
+            }
+        }
+
         // Global face duplicate check (Auto-Merge)
         $allOthers = Visitor::whereNotNull('face_features')->where('id', '!=', $visitor->id)->get();
         $merged = false;
@@ -766,7 +786,7 @@ class InteractiveChatbot extends Component
                 $d = $this->euclideanDistance($sd, $descriptor);
                 if ($d < $bestDist) $bestDist = $d;
             }
-            if ($bestDist > 0.4) {
+            if ($bestDist > 0.55) {
                 $this->messages[] = ['role' => 'assistant', 'content' => '⚠️ Wajah tidak cocok dengan data sebelumnya.'];
                 $this->dispatch('chatbot-scrolled');
                 $this->dispatch('chatbot-face-error');
@@ -818,15 +838,17 @@ class InteractiveChatbot extends Component
                 // Untuk walk-in, kirim notifikasi saja tanpa tombol approval
                 Mail::to($picEmail)->send(new \App\Mail\PicWalkinNotificationMail($appointment));
             }
-            $this->dispatch('walkin-pending-approval', // Ini cuma trigger UI Kiosk agar buka popup success
-                token: null, // No approval token needed for walk-in now
-                visitorName: $this->regData['name'],
-                company: $this->regData['company'],
-                phone: $this->regData['phone'],
-                picName: $this->regData['pic_name'],
-                department: $appointment->pic?->department?->name ?? '-',
-                visit_date: \Carbon\Carbon::parse($appointment->visit_date)->translatedFormat('d F Y'),
-            );
+            $this->dispatch('walkin-success', appt: [
+                'visitorName' => $this->regData['name'],
+                'company'     => $this->regData['company'],
+                'phone'       => $this->regData['phone'],
+                'picName'     => $this->regData['pic_name'],
+                'department'  => $appointment->pic?->department?->name ?? '-',
+                'visit_date'  => \Carbon\Carbon::parse($appointment->visit_date)->translatedFormat('d F Y'),
+                'visit_time'  => $appointment->visit_time,
+                'purpose'     => $appointment->purpose,
+                'type'        => $appointment->type,
+            ]);
             $successMsg = '✅ **Registrasi berhasil!** Anda telah disetujui (Walk-In). Silakan masuk ke ruangan.';
         } else {
             $appointment->load(['visitor', 'pic.department']);

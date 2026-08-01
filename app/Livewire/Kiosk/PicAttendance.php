@@ -35,7 +35,7 @@ class PicAttendance extends Component
         $pics = Pic::whereNotNull('face_features')->get();
         $bestMatch = null;
         $bestDistance = 1.0;
-        $threshold = 0.45; // Strict threshold for attendance
+        $threshold = 0.55; // Relaxed threshold for robustness (lighting, angle, etc.)
 
         foreach ($pics as $pic) {
             $stored = $pic->face_features ?? [];

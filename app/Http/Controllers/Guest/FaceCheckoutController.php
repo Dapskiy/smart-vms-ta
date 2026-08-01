@@ -22,7 +22,7 @@ class FaceCheckoutController extends Controller
 
         $incoming  = $request->input('descriptor');
         $visitors  = Visitor::whereNotNull('face_features')->get();
-        $threshold = 0.5;
+        $threshold = 0.55;
 
         $bestMatch    = null;
         $bestDistance = PHP_FLOAT_MAX;

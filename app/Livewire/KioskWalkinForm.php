@@ -435,11 +435,29 @@ class KioskWalkinForm extends Component
             return;
         }
 
+        // PIC Check: Prevent PICs from registering as visitors
+        $allPics = \App\Models\Pic::whereNotNull('face_features')->get();
+        foreach ($allPics as $pic) {
+            $picStored = $pic->face_features ?? [];
+            if (!is_array($picStored)) continue;
+            if (isset($picStored[0]) && !is_array($picStored[0])) $picStored = [$picStored];
+            foreach ($picStored as $picDesc) {
+                if ($this->euclideanDistance($picDesc, $descriptor) <= 0.45) {
+                    if ($visitor->wasRecentlyCreated) {
+                        $visitor->delete();
+                    }
+                    $this->addError('general', "Akses Ditolak: Wajah Anda terdeteksi sebagai Karyawan/PIC ({$pic->name}). Silakan gunakan menu Absensi.");
+                    $this->dispatch('walkin-error');
+                    return;
+                }
+            }
+        }
+
         // 2. Global Face Duplicate Check (Auto-Merge / Seamless Returning Visitor)
         // Jika pengunjung baru mendaftar dengan wajah yang sudah ada (tapi mungkin salah masuk nomor HP)
         if (!$this->duplicateOverride) {
             $allOtherVisitors = Visitor::whereNotNull('face_features')->where('id', '!=', $visitor->id)->get();
-            $globalThreshold = 0.40; // Sama seperti threshold wajar
+            $globalThreshold = 0.55; // Relaxed threshold for robustness
 
             foreach ($allOtherVisitors as $otherVisitor) {
                 $otherStored = $otherVisitor->face_features ?? [];

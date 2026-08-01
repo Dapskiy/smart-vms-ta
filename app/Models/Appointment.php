@@ -48,9 +48,8 @@ class Appointment extends Model
             // Standarisasi type 'walk-in'
             if (in_array($appointment->type, ['walkin', 'walk_in', 'walk-in'])) {
                 $appointment->type = 'walk-in';
-                // Walk-in tetap 'pending' — menunggu persetujuan PIC via email
-                $appointment->status = 'pending';
-            } elseif (empty($appointment->status)) {
+            }
+            if (empty($appointment->status)) {
                 $appointment->status = 'pending';
             }
 

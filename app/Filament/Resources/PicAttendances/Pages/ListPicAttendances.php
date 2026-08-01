@@ -48,7 +48,7 @@ class ListPicAttendances extends ListRecords
 
             $matched = false;
             foreach ($stored as $storedDescriptor) {
-                if ($this->euclideanDistance($storedDescriptor, $descriptor) <= 0.45) {
+                if ($this->euclideanDistance($storedDescriptor, $descriptor) <= 0.55) {
                     $matched = true;
                     break;
                 }
@@ -63,7 +63,7 @@ class ListPicAttendances extends ListRecords
             $pics = Pic::whereNotNull('face_features')->get();
             $bestMatch = null;
             $bestDistance = 1.0;
-            $threshold = 0.45;
+            $threshold = 0.55;
 
             foreach ($pics as $pic) {
                 $stored = $pic->face_features;

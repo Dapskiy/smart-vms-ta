@@ -58,27 +58,38 @@ class TtsController extends Controller
         $scriptPath = app_path('Scripts/generate_tts.py');
 
         try {
-            $result = Process::env($_ENV + $_SERVER + getenv())->timeout(30)->run([
-                'python',
-                $scriptPath,
-                $tempTxtFile,
-                $voice,
-                $outputPath,
+            return response()->stream(function () use ($scriptPath, $tempTxtFile, $voice, $outputPath) {
+                // Build command to execute python script (streams to stdout)
+                $command = escapeshellcmd("python") . " " . escapeshellarg($scriptPath) . " " . escapeshellarg($tempTxtFile) . " " . escapeshellarg($voice);
+                
+                $handle = popen($command, 'rb');
+                $cacheFile = fopen($outputPath, 'wb');
+                
+                if (is_resource($handle)) {
+                    while (!feof($handle)) {
+                        $chunk = fread($handle, 8192);
+                        if ($chunk !== false && $chunk !== '') {
+                            echo $chunk;
+                            if (is_resource($cacheFile)) {
+                                fwrite($cacheFile, $chunk);
+                            }
+                            ob_flush();
+                            flush(); // Force output to the browser immediately
+                        }
+                    }
+                    pclose($handle);
+                }
+                
+                if (is_resource($cacheFile)) {
+                    fclose($cacheFile);
+                }
+                
+                @unlink($tempTxtFile);
+            }, 200, [
+                'Content-Type' => 'audio/mpeg',
+                'Cache-Control' => 'no-cache, no-store, must-revalidate',
+                'X-Accel-Buffering' => 'no', // Disable buffering for instant playback
             ]);
-
-            @unlink($tempTxtFile);
-
-            if ($result->successful() && file_exists($outputPath) && filesize($outputPath) > 0) {
-                return response()->file($outputPath, [
-                    'Content-Type' => 'audio/mpeg',
-                    'Cache-Control' => 'public, max-age=86400',
-                ]);
-            }
-
-            return response()->json([
-                'error' => 'Failed to generate audio',
-                'details' => $result->errorOutput()
-            ], 500);
 
         } catch (\Throwable $e) {
             @unlink($tempTxtFile);

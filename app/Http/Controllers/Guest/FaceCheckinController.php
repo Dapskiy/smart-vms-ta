@@ -29,7 +29,7 @@ class FaceCheckinController extends Controller
 
         $bestMatch     = null;
         $bestDistance  = PHP_FLOAT_MAX;
-        $threshold     = 0.5; // Euclidean distance threshold
+        $threshold     = 0.55; // Euclidean distance threshold
 
         foreach ($visitors as $visitor) {
             $stored = $visitor->face_features ?? [];
@@ -279,7 +279,7 @@ class FaceCheckinController extends Controller
                 }
             }
 
-            $threshold = 0.5;
+            $threshold = 0.55;
             if ($bestDistance > $threshold) {
                 // FAILOVER MECHANISM: Jika verifikasi wajah gagal (misal foto HP pendaftar low-res/buram),
                 // namun QR Code Token VALID dan foto HD Kiosk dikirim → lakukan Auto Biometric Re-Enrollment!

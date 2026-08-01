@@ -431,12 +431,16 @@
                 // Fire event immediately so buttons appear and avatar starts moving
                 fireTtsEvent('tts-started');
 
+                let fallbackTriggered = false;
+
                 audio.onended = () => {
                     currentAudio = null;
                     fireTtsEvent('tts-ended');
                 };
 
                 audio.onerror = (e) => {
+                    if (fallbackTriggered) return;
+                    fallbackTriggered = true;
                     console.warn("Edge TTS failed, falling back to Web Speech API", e);
                     currentAudio = null;
                     fallbackSpeak(plain);
@@ -445,6 +449,8 @@
                 const playPromise = audio.play();
                 if (playPromise !== undefined) {
                     playPromise.catch(err => {
+                        if (fallbackTriggered) return;
+                        fallbackTriggered = true;
                         console.warn("Edge TTS play failed (e.g. autoplay restriction), falling back", err);
                         currentAudio = null;
                         fallbackSpeak(plain);
@@ -452,11 +458,16 @@
                 }
             };
 
+            let currentUttId = 0;
+
             function fallbackSpeak(plain) {
                 if (!('speechSynthesis' in window)) {
                     fireTtsEvent('tts-ended');
                     return;
                 }
+                currentUttId++;
+                const thisUttId = currentUttId;
+                
                 window.speechSynthesis.cancel();
                 const utt = new SpeechSynthesisUtterance(plain);
                 utt.lang = 'id-ID';
@@ -464,13 +475,15 @@
                 utt.pitch = 1.0;
                 if (fallbackIndoVoice) utt.voice = fallbackIndoVoice;
 
-                utt.onend = () => fireTtsEvent('tts-ended');
-                utt.onerror = () => fireTtsEvent('tts-ended');
+                utt.onend = () => { if (currentUttId === thisUttId) fireTtsEvent('tts-ended'); };
+                utt.onerror = () => { if (currentUttId === thisUttId) fireTtsEvent('tts-ended'); };
+                
                 fireTtsEvent('tts-started');
                 window.speechSynthesis.speak(utt);
             }
 
             window.stopAiSpeech = () => {
+                currentUttId++; // Invalidate any ongoing fallback TTS events
                 if (currentAudio) {
                     currentAudio.pause();
                     currentAudio.currentTime = 0;
