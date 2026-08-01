@@ -47,6 +47,25 @@ class AppServiceProvider extends ServiceProvider
         );
     }
 
+    // Auto-Checkout pengunjung aktif dari hari sebelumnya (tanpa perlu CRON)
+    if (
+        Schema::hasTable('appointments') &&
+        cache()->get('auto_checkout_date') !== today()->toDateString()
+    ) {
+        \App\Models\Appointment::where('status', 'active')
+            ->whereDate('visit_date', '<', today())
+            ->update([
+                'status' => 'completed',
+                'checkout_time' => '23:59:00',
+                'checkout_method' => 'system'
+            ]);
+
+        cache()->forever(
+            'auto_checkout_date',
+            today()->toDateString()
+        );
+    }
+
         \Filament\Support\Facades\FilamentView::registerRenderHook(
             'panels::body.end',
             fn () => new \Illuminate\Support\HtmlString("
