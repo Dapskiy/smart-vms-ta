@@ -51,6 +51,11 @@ Route::post('/admin/ai-chat', [AdminChatController::class, 'ask'])
     ->middleware(['auth'])
     ->name('admin.ai.chat');
 
+// ── Admin AI Chat Recommendations (To-Do List per Role) ──────────────────
+Route::get('/admin/ai-chat/recommendations', [AdminChatController::class, 'recommendations'])
+    ->middleware(['auth'])
+    ->name('admin.ai.recommendations');
+
 // Route untuk face check-in dari kiosk publik (no auth)
 Route::post('/kiosk/face-checkin', [FaceCheckinController::class, 'checkin'])
     ->name('kiosk.face.checkin');

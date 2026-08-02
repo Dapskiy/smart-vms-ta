@@ -17,7 +17,7 @@ class AdminChatController extends Controller
 
     /**
      * Terima pertanyaan dari admin dan kembalikan respons dari Gemini AI
-     * yang sudah diperkaya dengan data real-time sistem.
+     * yang sudah diperkaya dengan data real-time sistem + RBAC context.
      */
     public function ask(Request $request): JsonResponse
     {
@@ -30,34 +30,37 @@ class AdminChatController extends Controller
             'message' => 'required|string|max:1000',
         ]);
 
+        $user = auth()->user();
         $userMessage = trim($request->input('message'));
-        $adminName   = auth()->user()->name ?? 'Admin';
+        $adminName   = $user->name ?? 'Admin';
 
-        // Bangun system prompt dua lapis:
-        // 1. buildContext()   → snapshot statistik real-time (selalu ada)
-        // 2. getDataForAI()   → data spesifik sesuai intent query admin
-        $currentPic = \App\Models\Pic::where('user_id', auth()->id())->first();
-        $globalContext  = $this->aiService->buildContext();
-        $specificData   = $this->aiService->getDataForAI($userMessage, $currentPic);
+        // Bangun system prompt tiga lapis:
+        // 1. buildContext()       → snapshot statistik real-time (selalu ada)
+        // 2. buildRbacContext()   → RBAC role & permissions (per-user)
+        // 3. getPermittedActions()→ daftar aksi yang diizinkan
+        // 4. getDataForAI()       → data spesifik sesuai intent query admin
+        $currentPic = \App\Models\Pic::where('user_id', $user->id)->first();
+        $globalContext    = $this->aiService->buildContext();
+        $rbacContext      = $this->aiService->buildRbacContext($user);
+        $permittedActions = $this->aiService->getPermittedActions($user);
+        $specificData     = $this->aiService->getDataForAI($userMessage, $currentPic, $user);
+
+        // Kumpulkan info role untuk greeting personalization
+        $roles = $user->getRoleNames()->implode(', ') ?: 'User';
 
         $systemPrompt  = "Kamu adalah VISITA AI Assistant, asisten cerdas untuk panel admin sistem manajemen kunjungan tamu VISITA Enterprise. "
             . "Kamu memiliki akses ke data real-time sistem yang disediakan di bawah ini.\n\n"
             . "Jawab pertanyaan admin secara akurat, ringkas, dan profesional menggunakan Bahasa Indonesia. "
             . "Jika data tidak tersedia, katakan dengan jujur. "
             . "PENTING: Jika status ketersediaan PIC tertulis 'Tidak Tersedia' atau 'Tidak tersedia', artinya PIC tersebut sedang sibuk/istirahat/tidak di tempat dan TIDAK bisa ditemui oleh tamu saat ini. "
-            . "Admin yang bertanya saat ini adalah: {$adminName}.\n\n"
-            . "## SISTEM EKSEKUSI TINDAKAN (ACTION DISPATCHER)\n"
-            . "Kamu memiliki kemampuan khusus untuk melakukan perubahan database secara otomatis jika admin meminta tindakan tersebut. "
-            . "Sertakan marker JSON di akhir baris jawaban Anda jika dipicu oleh permintaan admin:\n"
-            . "- Menyetujui janji temu pending: <!--EXEC_ACTION:{\"action\":\"approve_appointment\",\"appointment_id\":ID}-->\n"
-            . "- Menolak janji temu pending: <!--EXEC_ACTION:{\"action\":\"reject_appointment\",\"appointment_id\":ID}-->\n"
-            . "- Mem-blacklist visitor: <!--EXEC_ACTION:{\"action\":\"blacklist_visitor\",\"visitor_id\":ID,\"reason\":\"ALASAN\"}-->\n"
-            . "- Mengubah status ketersediaan kamu sendiri: <!--EXEC_ACTION:{\"action\":\"update_availability\",\"is_available\":true/false}-->\n"
-            . "- Mengubah lokasi saat ini kamu sendiri: <!--EXEC_ACTION:{\"action\":\"update_location\",\"location\":\"LOKASI\"}-->\n\n"
+            . "Admin yang bertanya saat ini adalah: {$adminName} (Role: {$roles}).\n\n"
+            . $rbacContext . "\n\n"
+            . $permittedActions . "\n\n"
             . "Penting:\n"
             . "1. Selalu cari ID yang relevan dari data spesifik yang dilampirkan.\n"
             . "2. JANGAN membuat ID fiktif. Jika data ID tidak ditemukan atau nama tidak cocok, sampaikan dengan sopan.\n"
-            . "3. Jangan mencantumkan marker jika admin hanya bertanya biasa tanpa ada maksud menyuruh melakukan aksi.\n\n"
+            . "3. Jangan mencantumkan marker jika admin hanya bertanya biasa tanpa ada maksud menyuruh melakukan aksi.\n"
+            . "4. PATUHI batasan RBAC — jangan berikan data atau eksekusi aksi di luar scope permission user.\n\n"
             . $globalContext
             . "\n\n---\nDATA SPESIFIK UNTUK PERTANYAAN INI:\n"
             . $specificData;
@@ -87,7 +90,7 @@ class AdminChatController extends Controller
 
             if ($response->successful()) {
                 $reply = $response->json('choices.0.message.content', '...');
-                Log::info("[ADMIN-AI] Admin={$adminName} | Q={$userMessage}");
+                Log::info("[ADMIN-AI] Admin={$adminName} (Role={$roles}) | Q={$userMessage}");
 
                 // ── Deteksi dan Eksekusi Perintah Aksi (Action Execution) ──
                 if (preg_match('/<!--EXEC_ACTION:(.*?)-->/s', $reply, $matches)) {
@@ -95,6 +98,16 @@ class AdminChatController extends Controller
                     $execResult = '';
 
                     if ($actionData && isset($actionData['action'])) {
+                        // ── RBAC GUARD: Validasi permission sebelum eksekusi ──
+                        $permissionCheck = $this->checkActionPermission($user, $actionData['action']);
+
+                        if ($permissionCheck !== true) {
+                            // User tidak punya izin — tolak aksi
+                            $reply = preg_replace('/<!--EXEC_ACTION:.*?-->/s', '', $reply);
+                            $reply .= "\n\n*(Sistem: ⚠️ {$permissionCheck})*";
+                            return response()->json(['reply' => trim($reply)]);
+                        }
+
                         try {
                             switch ($actionData['action']) {
                                 case 'approve_appointment':
@@ -107,7 +120,7 @@ class AdminChatController extends Controller
                                                 'checkin_time' => now()->format('H:i'),
                                                 'approved_at'  => now(),
                                             ]);
-                                            $execResult = "\n\n*(Sistem: Janji temu ID #{$aptId} atas nama " . ($apt->visitor?->name ?? 'N/A') . " berhasil disetujui)*";
+                                            $execResult = "\n\n*(Sistem: ✅ Janji temu ID #{$aptId} atas nama " . ($apt->visitor?->name ?? 'N/A') . " berhasil disetujui)*";
                                         }
                                     }
                                     break;
@@ -121,7 +134,22 @@ class AdminChatController extends Controller
                                                 'status'      => 'rejected',
                                                 'rejected_at' => now(),
                                             ]);
-                                            $execResult = "\n\n*(Sistem: Janji temu ID #{$aptId} atas nama " . ($apt->visitor?->name ?? 'N/A') . " berhasil ditolak)*";
+                                            $execResult = "\n\n*(Sistem: ✅ Janji temu ID #{$aptId} atas nama " . ($apt->visitor?->name ?? 'N/A') . " berhasil ditolak)*";
+                                        }
+                                    }
+                                    break;
+
+                                case 'checkout_appointment':
+                                    $aptId = $actionData['appointment_id'] ?? null;
+                                    if ($aptId) {
+                                        $apt = \App\Models\Appointment::find($aptId);
+                                        if ($apt && $apt->status === 'active') {
+                                            $apt->update([
+                                                'status'          => 'completed',
+                                                'checkout_time'   => now()->format('H:i:s'),
+                                                'checkout_method' => 'ai-chat',
+                                            ]);
+                                            $execResult = "\n\n*(Sistem: ✅ Tamu " . ($apt->visitor?->name ?? 'N/A') . " berhasil di-checkout via AI Chat)*";
                                         }
                                     }
                                     break;
@@ -136,33 +164,33 @@ class AdminChatController extends Controller
                                                 'is_blacklisted' => true,
                                                 'blacklist_reason' => $reason,
                                             ]);
-                                            $execResult = "\n\n*(Sistem: Visitor ID #{$visitorId} ({$visitor->name}) telah dimasukkan ke daftar blacklist)*";
+                                            $execResult = "\n\n*(Sistem: ✅ Visitor ID #{$visitorId} ({$visitor->name}) telah dimasukkan ke daftar blacklist)*";
                                         }
                                     }
                                     break;
 
                                 case 'update_availability':
-                                    $currentPic = \App\Models\Pic::where('user_id', auth()->id())->first();
+                                    $currentPic = \App\Models\Pic::where('user_id', $user->id)->first();
                                     if ($currentPic && isset($actionData['is_available'])) {
                                         $isAvailable = (bool) $actionData['is_available'];
                                         $currentPic->update(['is_available' => $isAvailable]);
                                         $statusStr = $isAvailable ? 'Tersedia' : 'Tidak Tersedia';
-                                        $execResult = "\n\n*(Sistem: Status ketersediaan Anda berhasil diubah menjadi {$statusStr})*";
+                                        $execResult = "\n\n*(Sistem: ✅ Status ketersediaan Anda berhasil diubah menjadi {$statusStr})*";
                                     }
                                     break;
 
                                 case 'update_location':
-                                    $currentPic = \App\Models\Pic::where('user_id', auth()->id())->first();
+                                    $currentPic = \App\Models\Pic::where('user_id', $user->id)->first();
                                     $location = $actionData['location'] ?? null;
                                     if ($currentPic && $location) {
                                         $currentPic->update(['current_location' => $location]);
-                                        $execResult = "\n\n*(Sistem: Lokasi Anda berhasil diperbarui ke \"{$location}\")*";
+                                        $execResult = "\n\n*(Sistem: ✅ Lokasi Anda berhasil diperbarui ke \"{$location}\")*";
                                     }
                                     break;
                             }
                         } catch (\Throwable $e) {
                             Log::error("[ADMIN-AI-ACTION] Gagal mengeksekusi aksi: " . $e->getMessage());
-                            $execResult = "\n\n*(Sistem: Gagal mengeksekusi tindakan otomatis: {$e->getMessage()})*";
+                            $execResult = "\n\n*(Sistem: ❌ Gagal mengeksekusi tindakan otomatis: {$e->getMessage()})*";
                         }
                     }
 
@@ -185,5 +213,46 @@ class AdminChatController extends Controller
             Log::error('[ADMIN-AI] Exception: ' . $e->getMessage());
             return response()->json(['error' => 'Koneksi ke AI gagal: ' . $e->getMessage()], 500);
         }
+    }
+
+    /**
+     * Endpoint untuk mendapatkan rekomendasi/to-do list berdasarkan role user.
+     */
+    public function recommendations(): JsonResponse
+    {
+        if (!auth()->check()) {
+            return response()->json(['error' => 'Unauthorized.'], 401);
+        }
+
+        $user = auth()->user();
+        $recommendations = $this->aiService->buildRecommendations($user);
+
+        return response()->json(['recommendations' => $recommendations]);
+    }
+
+    /**
+     * RBAC Guard: Cek apakah user memiliki permission untuk menjalankan aksi tertentu.
+     * Return true jika diizinkan, atau string pesan error jika tidak.
+     */
+    private function checkActionPermission($user, string $action): bool|string
+    {
+        return match($action) {
+            'approve_appointment', 'reject_appointment', 'checkout_appointment'
+                => ($user->can('update_appointment') || $user->can('action:Appointment'))
+                    ? true
+                    : 'Anda tidak memiliki izin untuk mengelola janji temu. Hubungi administrator.',
+
+            'blacklist_visitor'
+                => ($user->can('update_visitor') || $user->can('action:Visitor'))
+                    ? true
+                    : 'Anda tidak memiliki izin untuk mem-blacklist visitor. Hubungi administrator.',
+
+            'update_availability', 'update_location'
+                => \App\Models\Pic::where('user_id', $user->id)->exists()
+                    ? true
+                    : 'Anda tidak terdaftar sebagai PIC. Hanya PIC yang bisa mengubah status ketersediaan/lokasi.',
+
+            default => 'Aksi tidak dikenali.'
+        };
     }
 }
