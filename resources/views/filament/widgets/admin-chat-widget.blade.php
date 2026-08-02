@@ -1,3 +1,4 @@
+@auth
 @php
     $adminUser = auth()->user();
     $adminName = $adminUser?->name ?? 'Admin';
@@ -799,3 +800,4 @@
 </script>
 
 </div>
+@endauth
