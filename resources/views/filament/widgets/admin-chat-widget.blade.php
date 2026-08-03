@@ -1,6 +1,11 @@
+@auth
 @php
-    $adminName = auth()->user()?->name ?? 'Admin';
+    $adminUser = auth()->user();
+    $adminName = $adminUser?->name ?? 'Admin';
+    $adminRoles = $adminUser ? $adminUser->getRoleNames()->implode(', ') : 'User';
+    $currentPic = $adminUser ? \App\Models\Pic::where('user_id', $adminUser->id)->first() : null;
     $chatUrl   = route('admin.ai.chat');
+    $recsUrl   = route('admin.ai.recommendations');
     $hour = now()->setTimezone('Asia/Jakarta')->format('H');
     $greeting = 'Selamat Pagi';
     if ($hour >= 11 && $hour < 15) {
@@ -10,11 +15,40 @@
     } elseif ($hour >= 18) {
         $greeting = 'Selamat Malam';
     }
+
+    // Build RBAC-aware suggestion chips
+    $isAdmin = $adminUser && ($adminUser->hasRole('super_admin') || $adminUser->hasRole('admin') || $adminUser->can('view_appointment'));
+    $isPic = $currentPic !== null;
+
+    $chips = [];
+    if ($isAdmin) {
+        $chips = [
+            'Statistik hari ini',
+            'Siapa yang sedang check-in?',
+            'Berapa tamu aktif?',
+            'Siapa yang sudah checkout?',
+            'Daftar appointment pending',
+        ];
+    }
+    if ($isPic) {
+        $chips = array_merge($chips, [
+            'Tamu saya hari ini',
+            'Appointment pending saya',
+            'Ubah status saya menjadi tersedia',
+            'Update lokasi saya',
+        ]);
+    }
+    if (empty($chips)) {
+        $chips = ['Statistik hari ini', 'Bantuan'];
+    }
+    // Deduplicate
+    $chips = array_unique($chips);
 @endphp
 
 {{-- ══════════════════════════════════════════════════════════
-     VISITA Admin AI Assistant — Floating Chat Widget
-     Styling: Tailwind CSS (bundled with Filament v3)
+     VISITA Admin AI Assistant — Kiosk-Style Premium Chat Widget
+     Redesigned to mirror the kiosk lobby chatbot experience
+     with split-panel avatar, RBAC-aware features, and to-do list
      ══════════════════════════════════════════════════════════ --}}
 <div
     id="aai-root"
@@ -25,126 +59,131 @@
     {{-- ── Chat Panel ───────────────────────────────────────────── --}}
     <div
         id="aai-panel"
-        class="hidden w-[92vw] md:w-[45vw] max-w-[600px] h-[85vh] max-h-[850px] bg-white dark:bg-gray-900 rounded-2xl shadow-2xl border border-gray-200 dark:border-gray-700 flex flex-col overflow-hidden"
-        style="animation:aaiSlideIn .22s cubic-bezier(.4,0,.2,1)"
+        class="hidden w-[94vw] md:w-[45vw] lg:w-[40vw] max-w-[500px] h-[85vh] max-h-[800px] bg-white dark:bg-gray-900 rounded-2xl shadow-2xl border border-gray-200 dark:border-gray-700 flex flex-col overflow-hidden origin-bottom-right"
+        style="animation:aaiSlideIn .25s cubic-bezier(.4,0,.2,1) forwards"
         role="dialog"
         aria-label="VISITA AI Assistant"
     >
-        {{-- Header — Premium Glassmorphism Design --}}
-        <div class="relative flex-shrink-0 overflow-hidden">
-            {{-- Layered gradient background --}}
+        {{-- Premium Header --}}
+        <div class="relative flex-shrink-0 overflow-hidden pt-6 pb-4">
             <div class="absolute inset-0 bg-gradient-to-br from-slate-900 via-indigo-950 to-violet-950"></div>
-            <div class="absolute inset-0 bg-[radial-gradient(ellipse_at_top_left,rgba(129,140,248,0.2),transparent_60%)]"></div>
-            <div class="absolute inset-0 bg-[radial-gradient(ellipse_at_bottom_right,rgba(167,139,250,0.15),transparent_60%)]"></div>
-
-            {{-- Action buttons (absolute top-right) --}}
+            <div class="absolute inset-0 bg-[radial-gradient(ellipse_at_top,rgba(167,139,250,0.25),transparent_60%)]"></div>
+            
+            {{-- Header Actions (Top Right) --}}
             <div class="absolute top-2.5 right-2.5 z-10 flex items-center gap-1">
-                {{-- Speech Controls --}}
-                <div id="aai-speech-controls" class="hidden items-center gap-1">
-                    <button onclick="aaiUI.stopSpeech()" class="w-7 h-7 rounded-lg bg-white/10 backdrop-blur-sm hover:bg-white/20 flex items-center justify-center text-sm text-white/80 hover:text-white transition-all duration-200" title="Hentikan suara">🛑</button>
-                    <button id="aai-pause-btn" onclick="aaiUI.pauseResumeSpeech()" class="w-7 h-7 rounded-lg bg-white/10 backdrop-blur-sm hover:bg-white/20 flex items-center justify-center text-sm text-white/80 hover:text-white transition-all duration-200" title="Jeda suara">⏸️</button>
-                </div>
-                {{-- TTS Toggle --}}
-                <button id="aai-tts-btn" onclick="aaiUI.toggleTts()" title="Matikan/nyalakan suara" class="w-7 h-7 rounded-lg bg-white/10 backdrop-blur-sm hover:bg-white/20 flex items-center justify-center text-sm text-white/80 hover:text-white transition-all duration-200">🔊</button>
-                {{-- Clear --}}
-                <button onclick="aaiUI.clearHistory()" title="Hapus riwayat" class="w-7 h-7 rounded-lg bg-white/10 backdrop-blur-sm hover:bg-white/20 flex items-center justify-center text-sm text-white/80 hover:text-white transition-all duration-200">🗑️</button>
-                {{-- Close --}}
+                <button onclick="aaiUI.clearHistory()" title="Hapus riwayat" class="w-7 h-7 rounded-lg bg-white/10 backdrop-blur-sm hover:bg-white/20 flex items-center justify-center text-xs text-white/80 hover:text-white transition-all duration-200">🗑️</button>
                 <button onclick="aaiUI.toggle()" title="Tutup" class="w-7 h-7 rounded-lg bg-white/10 backdrop-blur-sm hover:bg-red-500/40 flex items-center justify-center text-xs font-bold text-white/80 hover:text-white transition-all duration-200">✕</button>
             </div>
 
-            {{-- Content --}}
-            <div class="relative z-[1] flex items-center gap-4 px-5 py-4 pt-5">
-                {{-- Avatar with glow ring --}}
-                <div class="relative flex-shrink-0">
-                    <div class="absolute -inset-1 rounded-2xl bg-gradient-to-br from-indigo-400/40 to-violet-500/40 blur-md"></div>
-                    <div class="relative w-[80px] h-[80px] rounded-2xl bg-gradient-to-br from-white/15 to-white/5 backdrop-blur-sm border border-white/20 flex items-center justify-center p-1 shadow-xl">
-                        <img id="aai-header-avatar" src="{{ asset('assets/images/chatbot/avatar-greeting-1.png') }}" alt="AI" class="w-full h-full object-contain drop-shadow-lg">
+            {{-- Sound Controls (Top Left) --}}
+            <div id="aai-snd-ctrl" class="hidden absolute top-2.5 left-2.5 z-10 items-center gap-1">
+                <button onclick="aaiUI.toggleTts()" id="aai-tts-toggle" class="w-7 h-7 rounded-md bg-white/10 backdrop-blur-sm hover:bg-white/20 flex items-center justify-center text-white/80 hover:text-white transition-all text-[11px]" title="Mute/Unmute">🔊</button>
+                <button onclick="aaiUI.pauseResumeSpeech()" id="aai-pause-btn" class="w-7 h-7 rounded-md bg-white/10 backdrop-blur-sm hover:bg-white/20 flex items-center justify-center text-white/80 hover:text-white transition-all text-[11px]" title="Pause/Resume">⏸️</button>
+                <button onclick="aaiUI.stopSpeech()" id="aai-stop-btn" class="w-7 h-7 rounded-md bg-white/10 backdrop-blur-sm hover:bg-red-500/40 flex items-center justify-center text-white/80 hover:text-white transition-all text-[11px]" title="Stop">⏹️</button>
+            </div>
+
+            {{-- Centered Content (Avatar + Text) --}}
+            <div class="relative z-[1] flex flex-col items-center justify-center gap-2 px-4">
+                
+                {{-- AI Avatar Container (Profile Picture) --}}
+                <div id="aai-header-avatar-container" class="relative w-[90px] h-[90px] md:w-[100px] md:h-[100px] pointer-events-none">
+                    {{-- Avatar Speech Ring --}}
+                    <div id="aai-speech-ring" class="absolute inset-0 rounded-full border-2 border-transparent z-[1] transition-all duration-400 scale-[0.85] md:scale-95"></div>
+                    
+                    {{-- 3-Frame Speaking Animation --}}
+                    <div id="aai-avatar-container" class="absolute inset-0">
+                        <img id="aai-avatar-1" src="{{ asset('assets/images/chatbot/avatar-speaking-1.png') }}" alt="AI Avatar" class="absolute inset-0 w-full h-full object-contain transition-opacity duration-300 drop-shadow-2xl" style="opacity:1">
+                        <img id="aai-avatar-2" src="{{ asset('assets/images/chatbot/avatar-speaking-2.png') }}" alt="AI Avatar" class="absolute inset-0 w-full h-full object-contain transition-opacity duration-300 drop-shadow-2xl" style="opacity:0">
+                        <img id="aai-avatar-3" src="{{ asset('assets/images/chatbot/avatar-speaking-3.png') }}" alt="AI Avatar" class="absolute inset-0 w-full h-full object-contain transition-opacity duration-300 drop-shadow-2xl" style="opacity:0">
                     </div>
                 </div>
 
-                {{-- Text --}}
-                <div class="flex flex-col gap-0.5 min-w-0">
+                {{-- Text Content --}}
+                <div class="flex flex-col items-center text-center gap-0.5 w-full">
                     <h3 class="text-white font-bold text-[16px] leading-tight tracking-tight">VISITA AI Assistant</h3>
-                    <p class="text-indigo-300/80 text-[11px] leading-tight font-medium">Data real-time · Powered by Gemini</p>
-                    <div class="flex items-center gap-1.5 mt-1.5">
-                        <span class="relative flex h-2 w-2">
+                    <p class="text-indigo-300/80 text-[11px] leading-tight font-medium max-w-[80%] truncate">{{ $adminName }} · {{ $adminRoles }}</p>
+                    <div class="flex items-center gap-1.5 mt-1 bg-white/5 rounded-full px-2.5 py-0.5 border border-white/10">
+                        <span class="relative flex h-1.5 w-1.5">
                             <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
-                            <span class="relative inline-flex rounded-full h-2 w-2 bg-emerald-400"></span>
+                            <span class="relative inline-flex rounded-full h-1.5 w-1.5 bg-emerald-400"></span>
                         </span>
-                        <span class="text-emerald-300/90 text-[10px] font-semibold uppercase tracking-wider">Online</span>
+                        <span class="text-emerald-300/90 text-[9px] font-semibold uppercase tracking-wider">Online</span>
+                        <span class="text-gray-400/50 text-[10px] mx-0.5">•</span>
+                        <span class="text-indigo-200/60 text-[9px] font-semibold uppercase tracking-wider">RBAC</span>
+                        <span class="text-gray-400/50 text-[10px] mx-0.5">•</span>
+                        <span id="aai-status-text" class="text-indigo-200/90 text-[9px] font-bold uppercase tracking-wider">Idle</span>
                     </div>
                 </div>
-            </div>
 
-            {{-- Bottom accent line --}}
-            <div class="h-[1px] bg-gradient-to-r from-transparent via-indigo-400/50 to-transparent"></div>
+            </div>
+            
+            {{-- Bottom Border Line --}}
+            <div class="absolute bottom-0 left-0 w-full h-[1px] bg-gradient-to-r from-transparent via-indigo-400/50 to-transparent"></div>
         </div>
 
-        {{-- Messages Area --}}
-        <div
-            id="aai-messages"
-            class="flex-1 overflow-y-auto px-3.5 py-3 flex flex-col gap-2.5 scroll-smooth"
-            style="min-height:200px"
-        >
-            {{-- Welcome state --}}
-            <div id="aai-welcome" class="flex flex-col items-center text-center text-gray-500 dark:text-gray-400 py-4 gap-2">
-                <span class="text-4xl">👋</span>
-                <p class="text-[13px] leading-snug">
-                    {{ $greeting }}, <strong class="text-gray-700 dark:text-gray-200">{{ $adminName }}</strong>!<br>
-                    Tanya saya tentang kondisi kunjungan hari ini.
-                </p>
-                {{-- Suggestion chips --}}
-                <div class="flex flex-wrap gap-1.5 justify-center mt-1">
-                    <button onclick="aaiUI.suggest(this)" class="aai-chip">Siapa yang sedang check-in?</button>
-                    <button onclick="aaiUI.suggest(this)" class="aai-chip">Statistik hari ini</button>
-                    <button onclick="aaiUI.suggest(this)" class="aai-chip">Berapa tamu aktif?</button>
-                    <button onclick="aaiUI.suggest(this)" class="aai-chip">Siapa yang sudah checkout?</button>
+                {{-- Messages Area --}}
+                <div
+                    id="aai-messages"
+                    class="flex-1 overflow-y-auto px-3.5 py-3 flex flex-col gap-2.5 scroll-smooth"
+                    style="min-height:120px"
+                >
+                    {{-- Welcome State + To-Do Recommendations --}}
+                    <div id="aai-welcome" class="flex flex-col text-gray-500 dark:text-gray-400 py-2 gap-3">
+                        {{-- Greeting --}}
+                        <div class="text-center">
+                            <span class="text-3xl">👋</span>
+                            <p class="text-[13px] leading-snug mt-1">
+                                {{ $greeting }}, <strong class="text-gray-700 dark:text-gray-200">{{ $adminName }}</strong>!
+                            </p>
+                            <p class="text-[11px] text-gray-400 dark:text-gray-500 mt-0.5">{{ $adminRoles }} · Tanya saya tentang data sistem</p>
+                        </div>
+
+                        {{-- To-Do Recommendations Panel (loaded via JS) --}}
+                        <div id="aai-todo-panel" class="bg-gradient-to-br from-indigo-50 via-white to-violet-50 dark:from-gray-800 dark:via-gray-800/80 dark:to-indigo-900/20 rounded-xl border border-indigo-100 dark:border-indigo-800/50 p-3 mx-1">
+                            <div class="flex items-center gap-2 mb-2">
+                                <span class="text-sm">📋</span>
+                                <span class="text-[12px] font-bold text-indigo-700 dark:text-indigo-300 uppercase tracking-wider">Rekomendasi Hari Ini</span>
+                            </div>
+                            <div id="aai-todo-list" class="flex flex-col gap-1.5">
+                                <div class="flex items-center gap-2 text-[11px] text-gray-400 dark:text-gray-500">
+                                    <span class="inline-block w-3 h-3 rounded-full bg-gray-200 dark:bg-gray-700 animate-pulse"></span>
+                                    Memuat rekomendasi...
+                                </div>
+                            </div>
+                        </div>
+
+                        {{-- RBAC-Aware Suggestion Chips --}}
+                        <div class="flex flex-wrap gap-1.5 justify-center px-1">
+                            @foreach($chips as $chip)
+                                <button onclick="aaiUI.suggest(this)" class="aai-chip">{{ $chip }}</button>
+                            @endforeach
+                        </div>
+                    </div>
                 </div>
-            </div>
-        </div>
 
-        {{-- Speech Controls: muncul saat AI berbicara --}}
-        <div
-            id="aai-speech-controls"
-            class="hidden items-center justify-center gap-2 px-3.5 py-1.5 border-t border-gray-100 dark:border-gray-700 bg-indigo-50 dark:bg-indigo-900/20 flex-shrink-0"
-        >
-            <button
-                onclick="aaiUI.stopSpeech()"
-                title="Hentikan suara"
-                class="px-2.5 py-1 rounded-lg bg-red-100 dark:bg-red-900/40 text-red-600 dark:text-red-300 text-[11px] font-semibold hover:bg-red-200 dark:hover:bg-red-800/50 transition-colors"
-            >🛑 Stop</button>
-            <button
-                id="aai-pause-btn"
-                onclick="aaiUI.pauseResume()"
-                title="Jeda / Lanjutkan"
-                class="px-2.5 py-1 rounded-lg bg-indigo-100 dark:bg-indigo-900/40 text-indigo-600 dark:text-indigo-300 text-[11px] font-semibold hover:bg-indigo-200 dark:hover:bg-indigo-800/50 transition-colors"
-            >⏸️ Jeda</button>
-            <span class="text-[10px] text-gray-400 dark:text-gray-500 ml-1">AI sedang berbicara…</span>
-        </div>
-
-        {{-- Input Area --}}
-        <div class="flex items-end gap-2 px-3.5 py-3 border-t border-gray-100 dark:border-gray-700 bg-gray-50 dark:bg-gray-800/60 flex-shrink-0">
-            <textarea
-                id="aai-input"
-                rows="1"
-                placeholder="Tanya tentang data sistem..."
-                class="flex-1 resize-none rounded-xl border border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-900 text-gray-800 dark:text-gray-100 text-[13.5px] px-3 py-2 outline-none focus:border-violet-500 dark:focus:border-violet-400 transition-colors max-h-24 overflow-y-auto leading-snug placeholder-gray-400"
-                oninput="this.style.height='auto';this.style.height=this.scrollHeight+'px'"
-                onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();aaiUI.send();}"
-            ></textarea>
-            <button
-                id="aai-mic-btn"
-                onclick="aaiUI.startDictation()"
-                title="Input Suara"
-                class="w-9 h-9 flex-shrink-0 rounded-full bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-300 flex items-center justify-center text-base transition-all disabled:opacity-40"
-            >🎙️</button>
-            <button
-                id="aai-send-btn"
-                onclick="aaiUI.send()"
-                title="Kirim"
-                class="w-9 h-9 flex-shrink-0 rounded-full bg-gradient-to-br from-indigo-600 to-violet-600 hover:from-indigo-500 hover:to-violet-500 disabled:opacity-40 disabled:cursor-not-allowed text-white flex items-center justify-center text-base transition-all hover:scale-105 active:scale-95 shadow-md"
-            >➤</button>
-        </div>
+                {{-- Input Area --}}
+                <div class="flex items-end gap-2 px-3.5 py-3 border-t border-gray-100 dark:border-gray-700 bg-gray-50 dark:bg-gray-800/60 flex-shrink-0">
+                    <textarea
+                        id="aai-input"
+                        rows="1"
+                        placeholder="Tanya tentang data sistem..."
+                        class="flex-1 resize-none rounded-xl border border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-900 text-gray-800 dark:text-gray-100 text-[13px] px-3 py-2 outline-none focus:border-violet-500 dark:focus:border-violet-400 transition-colors max-h-24 overflow-y-auto leading-snug placeholder-gray-400"
+                        oninput="this.style.height='auto';this.style.height=this.scrollHeight+'px'"
+                        onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();aaiUI.send();}"
+                    ></textarea>
+                    <button
+                        id="aai-mic-btn"
+                        onclick="aaiUI.startDictation()"
+                        title="Input Suara"
+                        class="w-9 h-9 flex-shrink-0 rounded-full bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-300 flex items-center justify-center text-base transition-all disabled:opacity-40"
+                    >🎙️</button>
+                    <button
+                        id="aai-send-btn"
+                        onclick="aaiUI.send()"
+                        title="Kirim"
+                        class="w-9 h-9 flex-shrink-0 rounded-full bg-gradient-to-br from-indigo-600 to-violet-600 hover:from-indigo-500 hover:to-violet-500 disabled:opacity-40 disabled:cursor-not-allowed text-white flex items-center justify-center text-base transition-all hover:scale-105 active:scale-95 shadow-md"
+                    >➤</button>
+                </div>
     </div>
 
     {{-- ── Floating Action Button ───────────────────────────────── --}}
@@ -156,15 +195,20 @@
         class="w-14 h-14 rounded-full bg-white dark:bg-gray-800 hover:bg-gray-50 dark:hover:bg-gray-700 text-white dark:text-gray-200 shadow-xl hover:shadow-2xl flex items-center justify-center overflow-hidden transition-all hover:scale-110 active:scale-95 border-2 border-indigo-500/30 dark:border-indigo-500/50"
         style="animation:aaiPulse 2.8s infinite"
     >
-        <span id="aai-fab-icon" class="w-full h-full flex items-center justify-center text-3xl">🤖</span>
+        <span id="aai-fab-icon" class="w-full h-full flex items-center justify-center">
+            <img src="{{ asset('assets/images/chatbot/avatar-greeting-1.png') }}" alt="AI" class="w-10 h-10 object-contain">
+        </span>
     </button>
+
+{{-- ── Notification Badge (on FAB) ── --}}
+<span id="aai-fab-badge" class="hidden absolute -top-1 -right-1 w-5 h-5 rounded-full bg-red-500 text-white text-[10px] font-bold flex items-center justify-center shadow-lg animate-bounce">!</span>
 
 
 <style>
 .aai-chip {
     @apply bg-indigo-50 dark:bg-indigo-900/40 text-indigo-700 dark:text-indigo-300
            border border-indigo-200 dark:border-indigo-700 rounded-full
-           px-3 py-1 text-[11.5px] cursor-pointer
+           px-3 py-1 text-[11px] cursor-pointer
            hover:bg-indigo-100 dark:hover:bg-indigo-800/50
            transition-colors select-none;
     font-family: inherit;
@@ -173,30 +217,97 @@
     from { opacity:0; transform:translateY(14px) scale(.97); }
     to   { opacity:1; transform:translateY(0) scale(1); }
 }
+@keyframes aaiSlideOut {
+    from { opacity:1; transform:translateY(0) scale(1); }
+    to   { opacity:0; transform:translateY(14px) scale(.97); }
+}
 @keyframes aaiPulse {
     0%,100% { box-shadow: 0 4px 24px rgba(79,70,229,.5), 0 0 0 0 rgba(79,70,229,.35); }
     55%     { box-shadow: 0 4px 24px rgba(79,70,229,.5), 0 0 0 9px rgba(79,70,229,0); }
 }
 #aai-messages::-webkit-scrollbar      { width: 3px; }
 #aai-messages::-webkit-scrollbar-thumb { background: #d1d5db; border-radius: 4px; }
+
+/* Avatar Speaking Animation (3-frame, matching kiosk) */
+@keyframes aai-speak-1 {
+    0%, 27.78%    { opacity: 1; }
+    30%, 97.77%   { opacity: 0; }
+    100%          { opacity: 1; }
+}
+@keyframes aai-speak-2 {
+    0%, 31.1%     { opacity: 0; }
+    33.33%, 61.11%{ opacity: 1; }
+    63.33%, 100%  { opacity: 0; }
+}
+@keyframes aai-speak-3 {
+    0%, 64.43%    { opacity: 0; }
+    66.67%, 94.44%{ opacity: 1; }
+    96.67%, 100%  { opacity: 0; }
+}
+#aai-avatar-container.speaking #aai-avatar-1 { animation: aai-speak-1 18s infinite linear; }
+#aai-avatar-container.speaking #aai-avatar-2 { animation: aai-speak-2 18s infinite linear; }
+#aai-avatar-container.speaking #aai-avatar-3 { animation: aai-speak-3 18s infinite linear; }
+
+/* Speech ring pulse when speaking */
+#aai-speech-ring.speaking {
+    border-color: rgba(37, 99, 235, 0.25);
+    box-shadow: 0 0 30px rgba(37, 99, 235, 0.18);
+    animation: aai-ring-pulse 2s infinite ease-in-out;
+}
+#aai-speech-ring.listening {
+    border-color: rgba(244, 63, 94, 0.25);
+    box-shadow: 0 0 30px rgba(244, 63, 94, 0.18);
+    animation: aai-ring-pulse 1.5s infinite ease-in-out;
+}
+@keyframes aai-ring-pulse {
+    0%, 100% { transform: scale(1); opacity: 0.5; }
+    50% { transform: scale(1.06); opacity: 1; }
+}
+
+/* Status dot animations */
+#aai-status-dot.speaking { background: #2563EB; animation: aai-dot-pulse 1.4s infinite; }
+#aai-status-dot.listening { background: #f43f5e; animation: aai-dot-pulse 1.4s infinite; }
+#aai-status-dot.thinking { background: #60A5FA; animation: aai-dot-pulse 1.4s infinite; }
+@keyframes aai-dot-pulse {
+    0%, 100% { transform: scale(1); opacity: 1; }
+    50% { transform: scale(1.5); opacity: 0.4; }
+}
+
+/* To-Do item styles */
+.aai-todo-item {
+    @apply flex items-center gap-2 px-2.5 py-1.5 rounded-lg text-[11.5px] font-medium cursor-pointer transition-all;
+}
+.aai-todo-item:hover {
+    @apply bg-white/80 dark:bg-gray-700/50 shadow-sm transform -translate-y-px;
+}
+.aai-todo-item.warning { @apply text-amber-700 dark:text-amber-300; }
+.aai-todo-item.info { @apply text-blue-700 dark:text-blue-300; }
+.aai-todo-item.suggestion { @apply text-violet-700 dark:text-violet-300; }
 </style>
+
+{{-- ── marked.js for Markdown rendering ── --}}
+<script src="/js/marked.min.js"></script>
 
 {{-- ── JavaScript ───────────────────────────────────────────── --}}
 <script>
 (function () {
     /* ── Config ─────────────────────────────────────────────── */
-    const ENDPOINT   = '{{ $chatUrl }}';
+    const ENDPOINT     = '{{ $chatUrl }}';
+    const RECS_URL     = '{{ $recsUrl }}';
 
     let isOpen    = false;
     let isLoading = false;
     let ttsOn     = true;
+    let isSpeaking = false;
+    let isPaused   = false;
+    let currentAdminAudio = null;
+    let speakAnimFrame = null;
 
     /* ── Helpers ─────────────────────────────────────────────── */
     const $  = (id) => document.getElementById(id);
     const esc = (t) => t.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/\n/g,'<br>');
 
     function renderMd(text) {
-        // Gunakan marked.js jika tersedia (dimuat di kiosk blade), fallback ke mini-render
         if (window.marked) {
             try { return marked.parse(text); } catch (_) {}
         }
@@ -213,20 +324,84 @@
         if (el) setTimeout(() => { el.scrollTop = el.scrollHeight; }, 25);
     }
 
+    /* ── Avatar Animation Control ───────────────────────────── */
+    function setAvatarSpeaking(speaking) {
+        const container = $('aai-avatar-container');
+        const ring = $('aai-speech-ring');
+        if (!container) return;
+
+        if (speaking && !isPaused) {
+            container.classList.add('speaking');
+            ring?.classList.add('speaking');
+            ring?.classList.remove('listening');
+        } else {
+            container.classList.remove('speaking');
+            ring?.classList.remove('speaking');
+        }
+    }
+
+    function setAvatarListening(listening) {
+        const ring = $('aai-speech-ring');
+        if (listening) {
+            ring?.classList.add('listening');
+            ring?.classList.remove('speaking');
+        } else {
+            ring?.classList.remove('listening');
+        }
+    }
+
+    function updateStatus(status) {
+        const text = $('aai-status-text');
+        if (!text) return;
+
+        switch(status) {
+            case 'speaking':
+                text.textContent = 'Speaking';
+                break;
+            case 'listening':
+                text.textContent = 'Listening';
+                break;
+            case 'thinking':
+                text.textContent = 'Thinking';
+                break;
+            default:
+                text.textContent = 'Idle';
+        }
+    }
+
+    function showSoundControls(show) {
+        const ctrl = $('aai-snd-ctrl');
+        const pauseBtn = $('aai-pause-btn');
+        const stopBtn = $('aai-stop-btn');
+        if (!ctrl) return;
+        if (show) {
+            ctrl.classList.remove('hidden');
+            ctrl.classList.add('flex');
+            pauseBtn?.classList.remove('hidden');
+            stopBtn?.classList.remove('hidden');
+        } else {
+            ctrl.classList.add('hidden');
+            ctrl.classList.remove('flex');
+            pauseBtn?.classList.add('hidden');
+            stopBtn?.classList.add('hidden');
+        }
+    }
+
     /* ── Bubble Factories ────────────────────────────────────── */
     function bubbleUser(text) {
         const row = document.createElement('div');
         row.className = 'flex justify-end items-end gap-2';
         row.innerHTML = `
-            <div class="max-w-[85%] bg-gradient-to-br from-indigo-600 to-violet-600 text-white rounded-2xl rounded-br-sm px-3.5 py-2.5 text-[13px] leading-snug break-words">${esc(text)}</div>`;
+            <div class="max-w-[85%] bg-gradient-to-br from-indigo-600 to-violet-600 text-white rounded-2xl rounded-br-sm px-3.5 py-2.5 text-[13px] leading-snug break-words shadow-sm">${esc(text)}</div>`;
         return row;
     }
 
     function bubbleAssistant(text) {
         const row = document.createElement('div');
-        row.className = 'flex justify-start items-end gap-2';
+        row.className = 'flex justify-start items-start gap-2 group';
         row.innerHTML = `
-            <div class="max-w-[88%] bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-gray-100 rounded-2xl rounded-bl-sm px-3.5 py-2.5 text-[13px] leading-snug break-words prose-sm dark:prose-invert">${renderMd(text)}</div>`;
+            <div class="max-w-[88%] bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-gray-100 rounded-2xl rounded-bl-sm px-3.5 py-2.5 text-[13px] leading-snug break-words prose-sm dark:prose-invert shadow-sm">${renderMd(text)}</div>
+            <button onclick="aaiUI.speakThis('${text.replace(/'/g, "\\'").replace(/\n/g, '\\n')}')" class="flex-shrink-0 w-7 h-7 rounded-full bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-600 flex items-center justify-center text-[11px] opacity-0 group-hover:opacity-100 transition-opacity hover:bg-indigo-50 dark:hover:bg-indigo-900/30 hover:text-indigo-600" title="Bacakan">🔊</button>`;
         return row;
     }
 
@@ -235,10 +410,10 @@
         row.className = 'flex justify-start items-end gap-2';
         row.id = 'aai-typing';
         row.innerHTML = `
-            <div class="bg-gray-100 dark:bg-gray-700 rounded-2xl rounded-bl-sm px-4 py-3 flex gap-1.5 items-center">
-                <span class="w-1.5 h-1.5 rounded-full bg-gray-400 animate-bounce" style="animation-delay:0s"></span>
-                <span class="w-1.5 h-1.5 rounded-full bg-gray-400 animate-bounce" style="animation-delay:.18s"></span>
-                <span class="w-1.5 h-1.5 rounded-full bg-gray-400 animate-bounce" style="animation-delay:.36s"></span>
+            <div class="bg-gray-100 dark:bg-gray-700 rounded-2xl rounded-bl-sm px-4 py-3 flex gap-1.5 items-center shadow-sm">
+                <span class="w-1.5 h-1.5 rounded-full bg-indigo-400 animate-bounce" style="animation-delay:0s"></span>
+                <span class="w-1.5 h-1.5 rounded-full bg-indigo-400 animate-bounce" style="animation-delay:.18s"></span>
+                <span class="w-1.5 h-1.5 rounded-full bg-indigo-400 animate-bounce" style="animation-delay:.36s"></span>
             </div>`;
         return row;
     }
@@ -250,50 +425,40 @@
         return el;
     }
 
-    /* ── TTS ───────────────────────────────────────────────────── */
-    let isSpeaking = false;
-    let isPaused   = false;
+    /* ── TTS Engine (Edge TTS + Web Speech fallback) ───────── */
+    let fallbackIndoVoice = null;
 
-    function showSpeechControls(show) {
-        const bar = $('aai-speech-controls');
-        if (!bar) return;
-        if (show) { bar.classList.remove('hidden'); bar.classList.add('flex'); }
-        else      { bar.classList.add('hidden');    bar.classList.remove('flex'); }
+    function loadFallbackVoices() {
+        const voices = window.speechSynthesis?.getVoices() ?? [];
+        fallbackIndoVoice = voices.find(v => v.name.includes('Gadis') || v.lang === 'id-ID' || v.name.includes('Indonesia')) ?? null;
     }
-
-    function updatePauseBtn() {
-        const btn = $('aai-pause-btn');
-        if (!btn) return;
-        btn.innerHTML = isPaused ? '▶️ Lanjut' : '⏸️ Jeda';
-        btn.title     = isPaused ? 'Lanjutkan suara' : 'Jeda suara';
+    if ('speechSynthesis' in window) {
+        window.speechSynthesis.getVoices();
+        window.speechSynthesis.addEventListener('voiceschanged', loadFallbackVoices);
+        loadFallbackVoices();
     }
-
-    function updateAvatar() {
-        const avatar = $('aai-header-avatar');
-        if (!avatar) return;
-        avatar.src = (isSpeaking && !isPaused) 
-            ? "{{ asset('assets/images/chatbot/avatar-speaking-1.png') }}" 
-            : "{{ asset('assets/images/chatbot/avatar-greeting-1.png') }}";
-    }
-
-    let currentAdminAudio = null;
 
     function speakText(text) {
-        if (!text) return;
+        if (!text || !ttsOn) return;
         aaiUI.stopSpeech();
-        const plain = text.replace(/[*_`#>~|\-]+/g,' ').replace(/\n+/g,'. ').replace(/\s{2,}/g,' ').trim();
+        const plain = text.replace(/<!--.*?-->/gs, '').replace(/[*_`#>~|\-]+/g,' ').replace(/\n+/g,'. ').replace(/\s{2,}/g,' ').trim();
         if (!plain) return;
 
         const ttsUrl = '/api/tts?text=' + encodeURIComponent(plain);
         const audio = new Audio(ttsUrl);
         currentAdminAudio = audio;
 
-        audio.onplay = () => {
-            isSpeaking = true; isPaused = false; showSpeechControls(true); updateAvatar();
-        };
+        isSpeaking = true; isPaused = false;
+        setAvatarSpeaking(true);
+        updateStatus('speaking');
+        showSoundControls(true);
+
         audio.onended = () => {
             currentAdminAudio = null;
-            isSpeaking = false; isPaused = false; showSpeechControls(false); updateAvatar();
+            isSpeaking = false; isPaused = false;
+            setAvatarSpeaking(false);
+            updateStatus('idle');
+            showSoundControls(false);
         };
         audio.onerror = (e) => {
             console.warn("Admin Edge TTS failed, using fallback", e);
@@ -308,32 +473,73 @@
     }
 
     function fallbackAdminSpeak(plain) {
-        if (!('speechSynthesis' in window)) return;
+        if (!('speechSynthesis' in window)) {
+            isSpeaking = false; setAvatarSpeaking(false); updateStatus('idle'); showSoundControls(false);
+            return;
+        }
         window.speechSynthesis.cancel();
         const utt = new SpeechSynthesisUtterance(plain);
-        utt.lang = 'id-ID';
-        utt.rate = 1.0;
-        utt.pitch = 1.0;
-        const voices = window.speechSynthesis.getVoices();
-        const voice = voices.find(v => v.name.includes('Gadis') || v.lang === 'id-ID' || v.name.includes('Indonesia'));
-        if (voice) utt.voice = voice;
+        utt.lang = 'id-ID'; utt.rate = 1.0; utt.pitch = 1.0;
+        if (fallbackIndoVoice) utt.voice = fallbackIndoVoice;
 
-        utt.onstart = () => { isSpeaking = true; isPaused = false; showSpeechControls(true); updateAvatar(); };
-        utt.onend = () => { isSpeaking = false; isPaused = false; showSpeechControls(false); updateAvatar(); };
-        utt.onerror = () => { isSpeaking = false; isPaused = false; showSpeechControls(false); updateAvatar(); };
+        utt.onstart = () => { isSpeaking = true; isPaused = false; setAvatarSpeaking(true); updateStatus('speaking'); showSoundControls(true); };
+        utt.onend = () => { isSpeaking = false; isPaused = false; setAvatarSpeaking(false); updateStatus('idle'); showSoundControls(false); };
+        utt.onerror = () => { isSpeaking = false; isPaused = false; setAvatarSpeaking(false); updateStatus('idle'); showSoundControls(false); };
 
         window.speechSynthesis.speak(utt);
     }
 
-    if ('speechSynthesis' in window) {
-        window.speechSynthesis.getVoices();
-        window.speechSynthesis.onvoiceschanged = () => window.speechSynthesis.getVoices();
+    /* ── Load Recommendations (To-Do List) ──────────────────── */
+    async function loadRecommendations() {
+        try {
+            const activeCsrfToken = document.querySelector('meta[name="csrf-token"]')?.content || '';
+            const res = await fetch(RECS_URL, {
+                method: 'GET',
+                headers: {
+                    'Accept': 'application/json',
+                    'X-CSRF-TOKEN': activeCsrfToken,
+                },
+            });
+            if (!res.ok) throw new Error('HTTP ' + res.status);
+            const data = await res.json();
+            renderRecommendations(data.recommendations || []);
+        } catch (err) {
+            console.warn('[AI-Recs] Failed to load:', err);
+            const list = $('aai-todo-list');
+            if (list) list.innerHTML = '<div class="text-[11px] text-gray-400">Gagal memuat rekomendasi</div>';
+        }
+    }
+
+    function renderRecommendations(recs) {
+        const list = $('aai-todo-list');
+        if (!list) return;
+
+        if (recs.length === 0) {
+            list.innerHTML = '<div class="aai-todo-item info"><span>✨</span> Semua beres!</div>';
+            return;
+        }
+
+        list.innerHTML = recs.map(r => `
+            <div class="aai-todo-item ${r.type}" onclick="aaiUI.suggest(this)" data-text="${r.action}">
+                <span class="text-sm flex-shrink-0">${r.icon}</span>
+                <span class="flex-1">${r.text}</span>
+                <svg class="w-3 h-3 opacity-40 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path d="M9 5l7 7-7 7"/></svg>
+            </div>
+        `).join('');
+
+        // Show badge on FAB if there are warning items
+        const warnings = recs.filter(r => r.type === 'warning');
+        const badge = $('aai-fab-badge');
+        if (badge && warnings.length > 0 && !isOpen) {
+            badge.textContent = warnings.length;
+            badge.classList.remove('hidden');
+        }
     }
 
     /* ── Main UI Object ──────────────────────────────────────── */
     const aaiUI = {
         isListening: false,
-        
+
         startDictation() {
             if (this.isListening) return;
             const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
@@ -341,44 +547,51 @@
                 alert('Browser Anda tidak mendukung fitur Input Suara.');
                 return;
             }
-            
+
             const recognition = new SpeechRecognition();
             recognition.lang = 'id-ID';
             recognition.interimResults = false;
             recognition.maxAlternatives = 1;
-            
+
             const micBtn = $('aai-mic-btn');
-            
+
             recognition.onstart = () => {
                 this.isListening = true;
-                if(micBtn) {
+                setAvatarListening(true);
+                updateStatus('listening');
+                if (micBtn) {
                     micBtn.classList.add('bg-red-100', 'dark:bg-red-900/40', 'text-red-600', 'dark:text-red-400', 'animate-pulse');
                     micBtn.classList.remove('bg-gray-200', 'dark:bg-gray-700', 'text-gray-700', 'dark:text-gray-300');
                 }
             };
-            
+
             recognition.onresult = (event) => {
                 const transcript = event.results[0][0].transcript;
                 const input = $('aai-input');
-                const currentText = input.value;
-                input.value = currentText ? currentText + ' ' + transcript : transcript;
+                input.value = transcript;
                 input.style.height = 'auto';
                 input.style.height = input.scrollHeight + 'px';
+                // Auto-send after speech recognition
+                this.send();
             };
-            
+
             recognition.onerror = (e) => {
                 console.error('Mic error:', e);
                 this.isListening = false;
+                setAvatarListening(false);
+                updateStatus('idle');
             };
-            
+
             recognition.onend = () => {
                 this.isListening = false;
-                if(micBtn) {
+                setAvatarListening(false);
+                updateStatus('idle');
+                if (micBtn) {
                     micBtn.classList.remove('bg-red-100', 'dark:bg-red-900/40', 'text-red-600', 'dark:text-red-400', 'animate-pulse');
                     micBtn.classList.add('bg-gray-200', 'dark:bg-gray-700', 'text-gray-700', 'dark:text-gray-300');
                 }
             };
-            
+
             recognition.start();
         },
 
@@ -387,27 +600,36 @@
             const panel = $('aai-panel');
             const icon  = $('aai-fab-icon');
             const fab   = $('aai-fab');
+            const badge = $('aai-fab-badge');
 
             if (isOpen) {
                 panel.classList.remove('hidden');
-                panel.classList.add('flex', 'flex-col');
+                panel.style.display = 'flex';
+                panel.style.animation = 'aaiSlideIn .25s cubic-bezier(.4,0,.2,1) forwards';
                 icon.innerHTML = '<span class="text-2xl">✕</span>';
                 fab.style.animation = 'none';
+                badge?.classList.add('hidden');
                 setTimeout(() => $('aai-input')?.focus(), 160);
                 scrollBottom();
+                // Load recommendations on first open
+                loadRecommendations();
             } else {
-                panel.classList.add('hidden');
-                panel.classList.remove('flex', 'flex-col');
-                icon.innerHTML = '🤖';
+                panel.style.animation = 'aaiSlideOut .2s cubic-bezier(.4,0,.2,1) forwards';
+                setTimeout(() => {
+                    panel.classList.add('hidden');
+                    panel.style.display = 'none';
+                    panel.style.animation = ''; // Reset animation
+                }, 200);
+                icon.innerHTML = `<img src="{{ asset('assets/images/chatbot/avatar-greeting-1.png') }}" alt="AI" class="w-10 h-10 object-contain">`;
                 fab.style.animation = 'aaiPulse 2.8s infinite';
-                window.speechSynthesis?.cancel();
-                isSpeaking = false; isPaused = false;
-                showSpeechControls(false);
+                this.stopSpeech();
             }
         },
 
         suggest(btn) {
-            $('aai-input').value = btn.textContent.trim();
+            const text = btn.dataset?.text || btn.textContent?.trim();
+            if (!text) return;
+            $('aai-input').value = text;
             this.send();
         },
 
@@ -418,7 +640,6 @@
             const message = input.value.trim();
             if (!message) return;
 
-            // Clear input
             input.value = '';
             input.style.height = 'auto';
             input.disabled  = true;
@@ -434,10 +655,10 @@
             msgArea.appendChild(typing);
             scrollBottom();
 
+            updateStatus('thinking');
+
             try {
-                // Ambil CSRF token terupdate dari DOM agar tidak stale setelah session change/login-logout
-                const activeCsrfToken = document.querySelector('meta[name="csrf-token"]')?.content
-                                     || '{{ csrf_token() }}';
+                const activeCsrfToken = document.querySelector('meta[name="csrf-token"]')?.content || '{{ csrf_token() }}';
 
                 const res = await fetch(ENDPOINT, {
                     method: 'POST',
@@ -447,155 +668,110 @@
                         'X-CSRF-TOKEN' : activeCsrfToken,
                     },
                     body: JSON.stringify({ message }),
-                    body: JSON.stringify({ message: text })
                 });
 
-                if (!response.ok) throw new Error('Network error');
-                
-                const data = await response.json();
-                this.removeTypingIndicator();
-                
-                if (data.status === 'success') {
-                    this.addMessage(data.reply, 'bot');
+                typing.remove();
+
+                if (!res.ok) {
+                    const errData = await res.json().catch(() => ({}));
+                    throw new Error(errData.error || 'HTTP ' + res.status);
+                }
+
+                const data = await res.json();
+
+                if (data.error) {
+                    msgArea.appendChild(bubbleError(data.error));
                 } else {
-                    this.addMessage('Maaf, terjadi kesalahan: ' + data.message, 'bot');
+                    const reply = data.reply || '...';
+                    msgArea.appendChild(bubbleAssistant(reply));
+                    // Auto-speak response
+                    if (ttsOn) speakText(reply);
                 }
             } catch (err) {
-                this.removeTypingIndicator();
-                this.addMessage('Ups! Gagal terhubung ke AI server.', 'bot');
-                console.error(err);
+                typing.remove();
+                msgArea.appendChild(bubbleError(err.message || 'Gagal terhubung ke AI server.'));
+                console.error('[AI-Chat]', err);
             } finally {
-                isProcessing = false;
+                isLoading = false;
+                input.disabled = false;
+                sendBtn.disabled = false;
+                updateStatus('idle');
                 input.focus();
+                scrollBottom();
             }
         },
 
-        suggest(btn) {
-            input.value = btn.innerText;
-            this.sendMessage();
-        },
-
-        addMessage(text, sender) {
-            const wrap = document.createElement('div');
-            wrap.className = `flex ${sender === 'user' ? 'justify-end' : 'justify-start'} w-full`;
-            
-            const bubble = document.createElement('div');
-            // Parse Markdown sederhana (bold, list) jika dari bot
-            let parsedText = text;
-            if (sender === 'bot') {
-                parsedText = parsedText
-                    .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
-                    .replace(/\n- (.*?)/g, '<br>• $1')
-                    .replace(/\n/g, '<br>');
-            }
-
-            bubble.innerHTML = parsedText;
-            
-            if (sender === 'user') {
-                bubble.className = `max-w-[85%] px-4 py-2.5 rounded-2xl rounded-tr-sm text-sm text-white font-medium shadow-sm leading-relaxed
-                                    bg-gradient-to-br from-indigo-500 to-indigo-600`;
-            } else {
-                bubble.className = `relative max-w-[85%] px-4 py-3 rounded-2xl rounded-tl-sm text-sm shadow-sm leading-relaxed
-                                    bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-200 border border-gray-100 dark:border-gray-700
-                                    group`;
-                
-                // Tambahkan tombol Play/Speaker untuk pesan AI
-                const playBtn = document.createElement('button');
-                playBtn.innerHTML = `
-                    <svg class="w-4 h-4 text-gray-400 hover:text-indigo-500 transition-colors" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.536 8.464a5 5 0 010 7.072m2.828-9.9a9 9 0 010 12.728M5 12h4l4-8v16l-4-8H5z" />
-                    </svg>
-                `;
-                playBtn.className = "absolute -right-8 bottom-1 p-1.5 opacity-0 group-hover:opacity-100 transition-opacity bg-white dark:bg-gray-800 rounded-full shadow-sm border border-gray-100 dark:border-gray-700";
-                playBtn.title = "Bacakan teks ini";
-                playBtn.onclick = () => this.speakText(text); // Gunakan text asli (bukan HTML parsed)
-                
-                wrap.appendChild(bubble);
-                wrap.appendChild(playBtn);
-                wrap.className += " relative items-end pr-8"; // Beri ruang untuk tombol play
-            }
-            
-            if (sender === 'user') {
-                wrap.appendChild(bubble);
-            }
-
-            // Hapus welcome dummy jika ada pesan baru
-            const welcome = msgs.querySelector('.text-center.text-gray-500');
-            if(welcome && sender === 'user') welcome.remove();
-
-            msgs.appendChild(wrap);
-            msgs.scrollTop = msgs.scrollHeight;
-        },
-
-        showTypingIndicator() {
-            const id = 'aai-typing';
-            if ($(id)) return;
-
-            const wrap = document.createElement('div');
-            wrap.id = id;
-            wrap.className = 'flex justify-start w-full';
-            wrap.innerHTML = `
-                <div class="px-4 py-3 rounded-2xl rounded-tl-sm bg-gray-50 dark:bg-gray-800 border border-gray-100 dark:border-gray-700 flex gap-1.5 items-center h-[42px]">
-                    <div class="w-2 h-2 bg-indigo-400 rounded-full animate-bounce" style="animation-delay: 0ms"></div>
-                    <div class="w-2 h-2 bg-indigo-400 rounded-full animate-bounce" style="animation-delay: 150ms"></div>
-                    <div class="w-2 h-2 bg-indigo-400 rounded-full animate-bounce" style="animation-delay: 300ms"></div>
+        clearHistory() {
+            const msgArea = $('aai-messages');
+            if (!msgArea) return;
+            this.stopSpeech();
+            // Rebuild welcome state
+            msgArea.innerHTML = '';
+            const welcome = document.createElement('div');
+            welcome.id = 'aai-welcome';
+            welcome.className = 'flex flex-col text-gray-500 dark:text-gray-400 py-2 gap-3';
+            welcome.innerHTML = `
+                <div class="text-center">
+                    <span class="text-3xl">👋</span>
+                    <p class="text-[13px] leading-snug mt-1">{{ $greeting }}, <strong class="text-gray-700 dark:text-gray-200">{{ $adminName }}</strong>!</p>
+                    <p class="text-[11px] text-gray-400 dark:text-gray-500 mt-0.5">{{ $adminRoles }} · Tanya saya tentang data sistem</p>
+                </div>
+                <div id="aai-todo-panel" class="bg-gradient-to-br from-indigo-50 via-white to-violet-50 dark:from-gray-800 dark:via-gray-800/80 dark:to-indigo-900/20 rounded-xl border border-indigo-100 dark:border-indigo-800/50 p-3 mx-1">
+                    <div class="flex items-center gap-2 mb-2">
+                        <span class="text-sm">📋</span>
+                        <span class="text-[12px] font-bold text-indigo-700 dark:text-indigo-300 uppercase tracking-wider">Rekomendasi Hari Ini</span>
+                    </div>
+                    <div id="aai-todo-list" class="flex flex-col gap-1.5">
+                        <div class="flex items-center gap-2 text-[11px] text-gray-400">
+                            <span class="inline-block w-3 h-3 rounded-full bg-gray-200 dark:bg-gray-700 animate-pulse"></span>
+                            Memuat...
+                        </div>
+                    </div>
+                </div>
+                <div class="flex flex-wrap gap-1.5 justify-center px-1">
+                    @foreach($chips as $chip)
+                        <button onclick="aaiUI.suggest(this)" class="aai-chip">{{ $chip }}</button>
+                    @endforeach
                 </div>
             `;
-            msgs.appendChild(wrap);
-            msgs.scrollTop = msgs.scrollHeight;
+            msgArea.appendChild(welcome);
+            loadRecommendations();
         },
 
-        removeTypingIndicator() {
-            const typing = $('aai-typing');
-            if (typing) typing.remove();
+        toggleTts() {
+            ttsOn = !ttsOn;
+            const btn = $('aai-tts-toggle');
+            if (btn) btn.textContent = ttsOn ? '🔊' : '🔇';
+            if (!ttsOn) this.stopSpeech();
         },
 
-        // ── Voice Input (STT) ──
-        toggleMic() {
-            if (!recognition) {
-                alert("Browser Anda tidak mendukung fitur Suara.");
-                return;
-            }
-            if (isListening) {
-                recognition.stop();
-            } else {
-                try {
-                    recognition.start();
-                } catch(e) {
-                    console.error("Gagal memulai mic", e);
+        speakThis(text) {
+            speakText(text);
+        },
+
+        pauseResumeSpeech() {
+            if (isPaused) {
+                if (currentAdminAudio) {
+                    currentAdminAudio.play().catch(() => {});
+                } else if (window.speechSynthesis) {
+                    window.speechSynthesis.resume();
                 }
-            }
-        },
-
-        stopListening() {
-            isListening = false;
-            micBtn.classList.remove('text-rose-500', 'animate-pulse');
-            input.placeholder = "Tanya sesuatu atau ketik '/'...";
-        },
-
-        // ── Text to Speech (TTS) ──
-        speakText(text) {
-            window.speakText(text);
-        },
-
-        // Helper TTS
-        updateAvatar() {
-            // Efek gelombang saat bicara
-            const waves = $('aai-spk-waves');
-            if (isSpeaking && !isPaused) {
-                waves.classList.remove('hidden');
-                spkName.textContent = "AI sedang berbicara...";
+                isPaused = false;
+                setAvatarSpeaking(true);
+                updateStatus('speaking');
+                const btn = $('aai-pause-btn');
+                if (btn) btn.textContent = '⏸️';
             } else {
-                waves.classList.add('hidden');
-                spkName.textContent = "VISITA AI";
-            }
-        },
-
-        showSpeechControls(show) {
-            if (show) {
-                spkCtrl.classList.remove('hidden');
-            } else {
-                spkCtrl.classList.add('hidden');
+                if (currentAdminAudio) {
+                    currentAdminAudio.pause();
+                } else if (window.speechSynthesis) {
+                    window.speechSynthesis.pause();
+                }
+                isPaused = true;
+                setAvatarSpeaking(false);
+                updateStatus('idle');
+                const btn = $('aai-pause-btn');
+                if (btn) btn.textContent = '▶️';
             }
         },
 
@@ -605,44 +781,23 @@
                 currentAdminAudio.currentTime = 0;
                 currentAdminAudio = null;
             }
-            window.speechSynthesis?.cancel();
-            isSpeaking = false; 
+            if (window.speechSynthesis) {
+                window.speechSynthesis.cancel();
+            }
+            isSpeaking = false;
             isPaused = false;
-            this.showSpeechControls(false);
-            this.updateAvatar();
+            setAvatarSpeaking(false);
+            updateStatus('idle');
+            showSoundControls(false);
         },
     };
 
     window.aaiUI = aaiUI;
-    
-    // Define helper functions in outer scope to be used internally
-    function updateAvatar() {
-        aaiUI.updateAvatar();
-    }
-    
-    function showSpeechControls(show) {
-        aaiUI.showSpeechControls(show);
-    }
-    
-    function updatePauseBtn() {
-        const pauseBtn = spkCtrl.querySelector('button');
-        if (isPaused) {
-            pauseBtn.innerHTML = `
-                <svg class="w-4 h-4 text-gray-600 dark:text-gray-300" fill="currentColor" viewBox="0 0 20 20">
-                    <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM9.555 7.168A1 1 0 008 8v4a1 1 0 001.555.832l3-2a1 1 0 000-1.664l-3-2z" clip-rule="evenodd"/>
-                </svg>
-            `;
-            pauseBtn.title = "Lanjutkan";
-        } else {
-            pauseBtn.innerHTML = `
-                <svg class="w-4 h-4 text-gray-600 dark:text-gray-300" fill="currentColor" viewBox="0 0 20 20">
-                    <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zM7 8a1 1 0 012 0v4a1 1 0 11-2 0V8zm5-1a1 1 0 00-1 1v4a1 1 0 102 0V8a1 1 0 00-1-1z" clip-rule="evenodd"/>
-                </svg>
-            `;
-            pauseBtn.title = "Jeda";
-        }
-    }
+
+    // Auto-load recommendations for FAB badge
+    setTimeout(loadRecommendations, 1500);
 })();
 </script>
 
 </div>
+@endauth
