@@ -1038,7 +1038,7 @@
                 <div>
                     <div class="logo-text">VISITA<span class="logo-dot">.</span></div>
                     @if(\App\Helpers\KioskHelper::isKioskLocal())
-                        <div class="logo-tagline"><span data-lang-id="Enterprise Visitor Management" data-lang-en="Enterprise Visitor Management">Enterprise Visitor Management</span> • <span id="kiosk-location-display" style="font-weight: 700; color: var(--accent-primary);">SA</span></div>
+                        <div class="logo-tagline"><span data-lang-id="Enterprise Visitor Management" data-lang-en="Enterprise Visitor Management">Enterprise Visitor Management</span> • <span id="kiosk-location-display" style="font-weight: 700; color: var(--accent-primary);">Belum Diatur</span></div>
                     @else
                         <div class="logo-tagline"><span data-lang-id="Enterprise Visitor Management" data-lang-en="Enterprise Visitor Management">Enterprise Visitor Management</span> • <span style="font-weight: 700; color: #ef4444; background: rgba(239, 68, 68, 0.1); padding: 0.15rem 0.4rem; border-radius: 0.25rem; font-size: 0.75rem;" data-lang-id="Offsite (Terbatas)" data-lang-en="Offsite (Limited)">Offsite (Terbatas)</span></div>
                     @endif
@@ -1117,28 +1117,18 @@
                 <div class="modal-title" style="margin-bottom: 0.5rem;">Konfigurasi Kiosk</div>
                 <p class="modal-sub" style="margin-bottom: 1.5rem;">Pilih lokasi pemasangan fisik perangkat Kiosk ini.</p>
                 
-                <div style="display:flex; flex-direction:column; gap:0.75rem; margin-bottom:1.5rem;">
-                    <button class="theme-option kiosk-loc-option" id="loc-sa" onclick="setKioskLocation('SA')" style="justify-content:space-between; border:1px solid var(--border-subtle); border-radius:0.75rem;">
-                        <div style="display:flex; align-items:center; gap:0.75rem;">
-                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:1.2rem; height:1.2rem;"><path d="M3 21h18M3 10h18M5 6h14a2 2 0 0 1 2 2v13H3V8a2 2 0 0 1 2-2zm2 9h2v3H7v-3zm6 0h2v3h-2v-3zm-6-4h2v2H7v-2zm6 0h2v2h-2v-2z"/></svg>
-                            <span style="font-weight:600;">Gedung SA</span>
-                        </div>
-                        <div class="theme-check" id="check-sa" style="display:none; width:1.2rem; height:1.2rem; border-radius:50%; background:var(--accent-primary); color:#fff; align-items:center; justify-content:center; font-size:0.65rem; font-weight:700;">✓</div>
-                    </button>
-                    <button class="theme-option kiosk-loc-option" id="loc-sb" onclick="setKioskLocation('SB')" style="justify-content:space-between; border:1px solid var(--border-subtle); border-radius:0.75rem;">
-                        <div style="display:flex; align-items:center; gap:0.75rem;">
-                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:1.2rem; height:1.2rem;"><path d="M3 21h18M3 10h18M5 6h14a2 2 0 0 1 2 2v13H3V8a2 2 0 0 1 2-2zm2 9h2v3H7v-3zm6 0h2v3h-2v-3zm-6-4h2v2H7v-2zm6 0h2v2h-2v-2z"/></svg>
-                            <span style="font-weight:600;">Gedung SB</span>
-                        </div>
-                        <div class="theme-check" id="check-sb" style="display:none; width:1.2rem; height:1.2rem; border-radius:50%; background:var(--accent-primary); color:#fff; align-items:center; justify-content:center; font-size:0.65rem; font-weight:700;">✓</div>
-                    </button>
-                    <button class="theme-option kiosk-loc-option" id="loc-gkt" onclick="setKioskLocation('GKT')" style="justify-content:space-between; border:1px solid var(--border-subtle); border-radius:0.75rem;">
-                        <div style="display:flex; align-items:center; gap:0.75rem;">
-                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:1.2rem; height:1.2rem;"><path d="M3 21h18M3 10h18M5 6h14a2 2 0 0 1 2 2v13H3V8a2 2 0 0 1 2-2zm2 9h2v3H7v-3zm6 0h2v3h-2v-3zm-6-4h2v2H7v-2zm6 0h2v2h-2v-2z"/></svg>
-                            <span style="font-weight:600;">Gedung GKT</span>
-                        </div>
-                        <div class="theme-check" id="check-gkt" style="display:none; width:1.2rem; height:1.2rem; border-radius:50%; background:var(--accent-primary); color:#fff; align-items:center; justify-content:center; font-size:0.65rem; font-weight:700;">✓</div>
-                    </button>
+                <div style="display:flex; flex-direction:column; gap:0.75rem; margin-bottom:1.5rem;" id="kiosk-location-list">
+                    @forelse($locations as $loc)
+                        <button class="theme-option kiosk-loc-option" id="loc-{{ $loc->id }}" onclick="setKioskLocation('{{ $loc->id }}', '{{ addslashes($loc->name) }}')" style="justify-content:space-between; border:1px solid var(--border-subtle); border-radius:0.75rem;">
+                            <div style="display:flex; align-items:center; gap:0.75rem;">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:1.2rem; height:1.2rem;"><path d="M3 21h18M3 10h18M5 6h14a2 2 0 0 1 2 2v13H3V8a2 2 0 0 1 2-2zm2 9h2v3H7v-3zm6 0h2v3h-2v-3zm-6-4h2v2H7v-2zm6 0h2v2h-2v-2z"/></svg>
+                                <span style="font-weight:600;">{{ $loc->name }}</span>
+                            </div>
+                            <div class="theme-check" id="check-{{ $loc->id }}" style="display:none; width:1.2rem; height:1.2rem; border-radius:50%; background:var(--accent-primary); color:#fff; align-items:center; justify-content:center; font-size:0.65rem; font-weight:700;">✓</div>
+                        </button>
+                    @empty
+                        <p style="color: var(--text-muted); font-size: 0.9rem;">Belum ada gedung terdaftar.</p>
+                    @endforelse
                 </div>
 
                 <button class="btn-cancel-waiting" onclick="closeSecureModal()" style="width: 100%; margin-top: 0.5rem;">Tutup</button>
@@ -1346,23 +1336,24 @@
             document.getElementById('secure-setup-modal').style.display = 'none';
         }
 
-        function setKioskLocation(loc) {
-            localStorage.setItem('kiosk-location', loc);
-            updateKioskLocationChecks(loc);
+        function setKioskLocation(id, name) {
+            localStorage.setItem('kiosk-location-id', id);
+            localStorage.setItem('kiosk-location-name', name);
+            updateKioskLocationChecks(id);
             const displayEl = document.getElementById('kiosk-location-display');
             if (displayEl) {
-                displayEl.textContent = loc;
+                displayEl.textContent = name;
             }
             closeSecureModal();
         }
 
-        function updateKioskLocationChecks(loc) {
+        function updateKioskLocationChecks(id) {
             document.querySelectorAll('.kiosk-loc-option').forEach(btn => {
                 btn.classList.remove('active');
                 const check = btn.querySelector('.theme-check');
                 if (check) check.style.display = 'none';
             });
-            const activeBtn = document.getElementById(`loc-${loc.toLowerCase()}`);
+            const activeBtn = document.getElementById(`loc-${id}`);
             if (activeBtn) {
                 activeBtn.classList.add('active');
                 const check = activeBtn.querySelector('.theme-check');
@@ -1372,8 +1363,11 @@
 
         // Restore saved location on load
         (function() {
-            const savedLoc = localStorage.getItem('kiosk-location') || 'SA';
-            setKioskLocation(savedLoc);
+            const savedId = localStorage.getItem('kiosk-location-id');
+            const savedName = localStorage.getItem('kiosk-location-name') || 'Belum Diatur';
+            if (savedId) {
+                setKioskLocation(savedId, savedName);
+            }
         })();
 
         /* -------------------------------------------------------

@@ -17,7 +17,8 @@ Route::match(['get', 'post'], '/api/tts', [TtsController::class, 'generate'])->n
 
 
 Route::get('/', function () {
-    return response()->view('welcome')
+    $locations = \App\Models\KioskLocation::where('is_active', true)->get();
+    return response()->view('welcome', compact('locations'))
         ->header('Cache-Control', 'no-cache, no-store, must-revalidate')
         ->header('Pragma', 'no-cache')
         ->header('Expires', '0');
