@@ -63,9 +63,21 @@ class AppointmentApprovalController extends Controller
         }
 
         $appointment->update([
+            'status'      => 'approved',
             'approved_at' => now(),
-            // Catatan: Status tetap 'pending' sampai tamu check-in di Kiosk.
         ]);
+
+        if (!empty($appointment->visitor->phone)) {
+            $msg = "Halo *{$appointment->visitor->name}*,\n\n";
+            $msg .= "Kunjungan Anda telah *DISETUJUI* ✅ dengan detail berikut:\n";
+            $msg .= "🏢 Menemui: {$appointment->pic->name}\n";
+            $msg .= "📅 Tanggal: " . \Carbon\Carbon::parse($appointment->visit_date)->translatedFormat('d F Y') . "\n";
+            $msg .= "⏰ Waktu: " . \Carbon\Carbon::parse($appointment->visit_time)->format('H:i') . " WIB\n";
+            $msg .= "📝 Keperluan: {$appointment->purpose}\n\n";
+            $msg .= "Silakan gunakan layar Kiosk (Menu Check-in) di Lobby saat Anda tiba.\n\n";
+            $msg .= "Salam hangat,\nResepsionis VISITA";
+            \App\Helpers\FonnteHelper::sendMessage($appointment->visitor->phone, $msg, 9);
+        }
 
         return view('appointments.approval-response', [
             'status'      => 'approved',
@@ -124,6 +136,18 @@ class AppointmentApprovalController extends Controller
             'status'      => 'rejected',
             'rejected_at' => now(),
         ]);
+
+        if (!empty($appointment->visitor->phone)) {
+            $msg = "Halo *{$appointment->visitor->name}*,\n\n";
+            $msg .= "Mohon maaf, permintaan kunjungan Anda terpaksa *DITOLAK* ❌ dengan detail:\n";
+            $msg .= "🏢 Menemui: {$appointment->pic->name}\n";
+            $msg .= "📅 Tanggal: " . \Carbon\Carbon::parse($appointment->visit_date)->translatedFormat('d F Y') . "\n";
+            $msg .= "⏰ Waktu: " . \Carbon\Carbon::parse($appointment->visit_time)->format('H:i') . " WIB\n";
+            $msg .= "📝 Keperluan: {$appointment->purpose}\n\n";
+            $msg .= "Alasan: PIC saat ini sedang tidak dapat ditemui. Mohon berkenan untuk menghubungi PIC Anda secara langsung guna mengatur ulang jadwal pertemuan (reschedule) di waktu yang lebih tepat.\n\n";
+            $msg .= "Salam hangat,\nResepsionis VISITA";
+            \App\Helpers\FonnteHelper::sendMessage($appointment->visitor->phone, $msg, 9);
+        }
 
         return view('appointments.approval-response', [
             'status'      => 'rejected',

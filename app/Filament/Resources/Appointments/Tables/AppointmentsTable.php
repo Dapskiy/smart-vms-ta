@@ -56,6 +56,16 @@ class AppointmentsTable
                 TextColumn::make('token')
                     ->searchable(),
                 TextColumn::make('status')
+                    ->badge()
+                    ->color(fn (string $state): string => match ($state) {
+                        'pending'   => 'warning',
+                        'approved'  => 'info',
+                        'active'    => 'success',
+                        'completed' => 'gray',
+                        'cancelled' => 'danger',
+                        'rejected'  => 'danger',
+                        default     => 'primary',
+                    })
                     ->searchable(),
                 TextColumn::make('created_at')
                     ->dateTime()
@@ -81,7 +91,7 @@ class AppointmentsTable
                     ->icon('heroicon-o-camera')
                     ->color('warning')
                     ->visible(fn(?Appointment $record): bool =>
-                        $record?->status === 'pending' &&
+                        in_array($record?->status, ['pending', 'approved']) &&
                         empty($record?->visitor?->face_features)
                     )
                     ->modalHeading('Daftarkan Wajah & Check-in')
@@ -165,6 +175,80 @@ class AppointmentsTable
                     }),
 
                 // ─────────────────────────────────────────────────────────────
+                // Tombol "Approve" (PIC menyetujui janji temu)
+                // ─────────────────────────────────────────────────────────────
+                Action::make('approve_appointment')
+                    ->label('Approve')
+                    ->icon('heroicon-o-check-circle')
+                    ->color('info')
+                    ->visible(fn(?Appointment $record): bool =>
+                        $record?->status === 'pending'
+                    )
+                    ->requiresConfirmation()
+                    ->modalHeading('Setujui Janji Temu')
+                    ->modalDescription('Apakah Anda yakin ingin menyetujui janji temu ini? Pengunjung akan otomatis menerima notifikasi WhatsApp.')
+                    ->action(function (Appointment $record) {
+                        $record->update([
+                            'status'      => 'approved',
+                            'approved_at' => now(),
+                        ]);
+
+                        if (!empty($record->visitor->phone)) {
+                            $msg = "Halo *{$record->visitor->name}*,\n\n";
+                            $msg .= "Kunjungan Anda telah *DISETUJUI* ✅ dengan detail berikut:\n";
+                            $msg .= "🏢 Menemui: {$record->pic->name}\n";
+                            $msg .= "📅 Tanggal: " . \Carbon\Carbon::parse($record->visit_date)->translatedFormat('d F Y') . "\n";
+                            $msg .= "⏰ Waktu: " . \Carbon\Carbon::parse($record->visit_time)->format('H:i') . " WIB\n";
+                            $msg .= "📝 Keperluan: {$record->purpose}\n\n";
+                            $msg .= "Silakan gunakan layar Kiosk (Menu Check-in) di Lobby saat Anda tiba.\n\n";
+                            $msg .= "Salam hangat,\nResepsionis VISITA";
+                            \App\Helpers\FonnteHelper::sendMessage($record->visitor->phone, $msg, 9);
+                        }
+
+                        Notification::make()
+                            ->title('Janji Temu Disetujui')
+                            ->body("Notifikasi WhatsApp persetujuan telah dikirimkan ke tamu.")
+                            ->success()->send();
+                    }),
+
+                // ─────────────────────────────────────────────────────────────
+                // Tombol "Reject" (PIC menolak janji temu)
+                // ─────────────────────────────────────────────────────────────
+                Action::make('reject_appointment')
+                    ->label('Reject')
+                    ->icon('heroicon-o-x-circle')
+                    ->color('danger')
+                    ->visible(fn(?Appointment $record): bool =>
+                        $record?->status === 'pending'
+                    )
+                    ->requiresConfirmation()
+                    ->modalHeading('Tolak Janji Temu')
+                    ->modalDescription('Apakah Anda yakin ingin menolak janji temu ini? Pengunjung akan menerima notifikasi penolakan via WhatsApp.')
+                    ->action(function (Appointment $record) {
+                        $record->update([
+                            'status'      => 'rejected',
+                            'rejected_at' => now(),
+                        ]);
+
+                        if (!empty($record->visitor->phone)) {
+                            $msg = "Halo *{$record->visitor->name}*,\n\n";
+                            $msg .= "Mohon maaf, permintaan kunjungan Anda terpaksa *DITOLAK* ❌ dengan detail:\n";
+                            $msg .= "🏢 Menemui: {$record->pic->name}\n";
+                            $msg .= "📅 Tanggal: " . \Carbon\Carbon::parse($record->visit_date)->translatedFormat('d F Y') . "\n";
+                            $msg .= "⏰ Waktu: " . \Carbon\Carbon::parse($record->visit_time)->format('H:i') . " WIB\n";
+                            $msg .= "📝 Keperluan: {$record->purpose}\n\n";
+                            $msg .= "Alasan: PIC saat ini sedang tidak dapat ditemui. Mohon berkenan untuk menghubungi PIC Anda secara langsung guna mengatur ulang jadwal pertemuan (reschedule) di waktu yang lebih tepat.\n\n";
+                            $msg .= "Salam hangat,\nResepsionis VISITA";
+                            \App\Helpers\FonnteHelper::sendMessage($record->visitor->phone, $msg, 9);
+                        }
+
+                        Notification::make()
+                            ->title('Janji Temu Ditolak')
+                            ->body("Data telah dipindahkan ke tabel Summary dan WhatsApp notifikasi dikirimkan.")
+                            ->success()->send();
+                    }),
+
+                // ─────────────────────────────────────────────────────────────
                 // 1b. Tombol "Check In" (tanpa face scan)
                 //     Muncul HANYA jika visitor sudah punya face_features.
                 //     Admin langsung klik — tidak perlu rekognisi wajah.
@@ -174,7 +258,7 @@ class AppointmentsTable
                     ->icon('heroicon-o-arrow-right-end-on-rectangle')
                     ->color('success')
                     ->visible(fn(?Appointment $record): bool =>
-                        $record?->status === 'pending' &&
+                        in_array($record?->status, ['pending', 'approved']) &&
                         !empty($record?->visitor?->face_features)
                     )
                     ->requiresConfirmation()

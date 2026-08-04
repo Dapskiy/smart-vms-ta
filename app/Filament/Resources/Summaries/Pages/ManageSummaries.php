@@ -153,12 +153,12 @@ class ManageSummaries extends ManageRecords
                             if ($currentUser && !$currentUser->hasRole('super_admin') && $currentUser->pic) {
                                 $picId = $currentUser->pic->id;
                                 $query->whereHas('appointments', function (Builder $q) use ($picId) {
-                                    $q->whereIn('status', ['completed', 'checkout', 'inactive'])
+                                    $q->whereIn('status', ['completed', 'checkout', 'inactive', 'rejected'])
                                       ->where('pic_id', $picId);
                                 });
                             } else {
                                 $query->whereHas('appointments', function (Builder $q) {
-                                    $q->whereIn('status', ['completed', 'checkout', 'inactive']);
+                                    $q->whereIn('status', ['completed', 'checkout', 'inactive', 'rejected']);
                                 });
                             }
 
@@ -168,19 +168,19 @@ class ManageSummaries extends ManageRecords
                                     $to = \Carbon\Carbon::parse($urlParams['end_date'])->endOfDay();
                                     
                                     $query->whereHas('appointments', function ($q) use ($from, $to) {
-                                        $q->whereIn('status', ['completed', 'checkout', 'inactive'])
+                                        $q->whereIn('status', ['completed', 'checkout', 'inactive', 'rejected'])
                                           ->whereBetween('updated_at', [$from, $to]);
                                     });
                                 } elseif (!empty($urlParams['start_date'])) {
                                     $from = \Carbon\Carbon::parse($urlParams['start_date'])->startOfDay();
                                     $query->whereHas('appointments', function ($q) use ($from) {
-                                        $q->whereIn('status', ['completed', 'checkout', 'inactive'])
+                                        $q->whereIn('status', ['completed', 'checkout', 'inactive', 'rejected'])
                                           ->where('updated_at', '>=', $from);
                                     });
                                 } elseif (!empty($urlParams['end_date'])) {
                                     $to = \Carbon\Carbon::parse($urlParams['end_date'])->endOfDay();
                                     $query->whereHas('appointments', function ($q) use ($to) {
-                                        $q->whereIn('status', ['completed', 'checkout', 'inactive'])
+                                        $q->whereIn('status', ['completed', 'checkout', 'inactive', 'rejected'])
                                           ->where('updated_at', '<=', $to);
                                     });
                                 }
@@ -189,7 +189,7 @@ class ManageSummaries extends ManageRecords
                                 $year = $urlParams['year'];
                                 
                                 $query->whereHas('appointments', function ($q) use ($month, $year) {
-                                    $q->whereIn('status', ['completed', 'checkout', 'inactive'])
+                                    $q->whereIn('status', ['completed', 'checkout', 'inactive', 'rejected'])
                                       ->whereMonth('updated_at', $month)
                                       ->whereYear('updated_at', $year);
                                 });
@@ -197,7 +197,7 @@ class ManageSummaries extends ManageRecords
                                 $year = $urlParams['year'];
                                 
                                 $query->whereHas('appointments', function ($q) use ($year) {
-                                    $q->whereIn('status', ['completed', 'checkout', 'inactive'])
+                                    $q->whereIn('status', ['completed', 'checkout', 'inactive', 'rejected'])
                                       ->whereYear('updated_at', $year);
                                 });
                             }
@@ -216,15 +216,15 @@ class ManageSummaries extends ManageRecords
                                     return \App\Helpers\PhoneMaskHelper::mask($record->phone);
                                 }),
                             \pxlrbt\FilamentExcel\Columns\Column::make('visit_date')->heading('Tanggal Berkunjung')->getStateUsing(function ($record) {
-                                $lastAppointment = $record->appointments()->whereIn('status', ['completed', 'checkout', 'inactive'])->latest('visit_date')->first();
+                                $lastAppointment = $record->appointments()->whereIn('status', ['completed', 'checkout', 'inactive', 'rejected'])->latest('visit_date')->first();
                                 return $lastAppointment && $lastAppointment->visit_date ? \Carbon\Carbon::parse($lastAppointment->visit_date)->format('d M Y') : '-';
                             }),
                             \pxlrbt\FilamentExcel\Columns\Column::make('visit_time')->heading('Checkin')->getStateUsing(function ($record) {
-                                $lastAppointment = $record->appointments()->whereIn('status', ['completed', 'checkout', 'inactive'])->latest('visit_date')->first();
+                                $lastAppointment = $record->appointments()->whereIn('status', ['completed', 'checkout', 'inactive', 'rejected'])->latest('visit_date')->first();
                                 return $lastAppointment && $lastAppointment->visit_time ? \Carbon\Carbon::parse($lastAppointment->visit_time)->format('H:i') : '-';
                             }),
                             \pxlrbt\FilamentExcel\Columns\Column::make('checkout_time')->heading('Checkout')->getStateUsing(function ($record) {
-                                $lastAppointment = $record->appointments()->whereIn('status', ['completed', 'checkout', 'inactive'])->latest('visit_date')->first();
+                                $lastAppointment = $record->appointments()->whereIn('status', ['completed', 'checkout', 'inactive', 'rejected'])->latest('visit_date')->first();
                                 if (!$lastAppointment) return '-';
                                 if ($lastAppointment->checkout_time) {
                                     return \Carbon\Carbon::parse($lastAppointment->checkout_time)->format('H:i');
@@ -232,11 +232,11 @@ class ManageSummaries extends ManageRecords
                                 return \Carbon\Carbon::parse($lastAppointment->updated_at)->format('H:i');
                             }),
                             \pxlrbt\FilamentExcel\Columns\Column::make('pic')->heading('PIC')->getStateUsing(function ($record) {
-                                $lastAppointment = $record->appointments()->whereIn('status', ['completed', 'checkout', 'inactive'])->latest('visit_date')->first();
+                                $lastAppointment = $record->appointments()->whereIn('status', ['completed', 'checkout', 'inactive', 'rejected'])->latest('visit_date')->first();
                                 return $lastAppointment && $lastAppointment->pic ? $lastAppointment->pic->name : '-';
                             }),
                             \pxlrbt\FilamentExcel\Columns\Column::make('purpose')->heading('Keperluan')->getStateUsing(function ($record) {
-                                $lastAppointment = $record->appointments()->whereIn('status', ['completed', 'checkout', 'inactive'])->latest('visit_date')->first();
+                                $lastAppointment = $record->appointments()->whereIn('status', ['completed', 'checkout', 'inactive', 'rejected'])->latest('visit_date')->first();
                                 return $lastAppointment ? $lastAppointment->purpose : '-';
                             }),
                         ]),

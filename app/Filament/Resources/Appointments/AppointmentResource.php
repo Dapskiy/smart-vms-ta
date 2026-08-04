@@ -62,7 +62,7 @@ class AppointmentResource extends Resource
     {
         $query = parent::getEloquentQuery()
             ->with(['visitor', 'pic', 'room'])
-            ->where('status', '!=', 'completed');
+            ->whereNotIn('status', ['completed', 'rejected', 'cancelled']);
 
         $currentUser = auth()->user();
         if ($currentUser && !$currentUser->hasRole('super_admin') && $currentUser->pic) {

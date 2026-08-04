@@ -131,7 +131,7 @@ class SummaryResource extends Resource
                     ->modalContent(function (Visitor $record) {
                         // Tampilkan appointment terbaru yang completed / checkout
                         $appointment = $record->appointments()
-                            ->whereIn('status', ['completed', 'checkout', 'inactive'])
+                            ->whereIn('status', ['completed', 'checkout', 'inactive', 'rejected'])
                             ->latest('visit_date')
                             ->first();
                         return view('filament.appointments.detail-modal', ['record' => $appointment ?? $record->appointments()->first()]);
@@ -192,27 +192,27 @@ class SummaryResource extends Resource
             $picId = $currentUser->pic->id;
             
             $query->with(['appointments' => function ($q) use ($picId) {
-                $q->whereIn('status', ['completed', 'checkout', 'inactive'])
+                $q->whereIn('status', ['completed', 'checkout', 'inactive', 'rejected'])
                   ->where('pic_id', $picId)
                   ->with('pic')
                   ->latest('visit_date')
                   ->limit(1);
             }])
             ->whereHas('appointments', function (Builder $q) use ($picId) {
-                $q->whereIn('status', ['completed', 'checkout', 'inactive'])
+                $q->whereIn('status', ['completed', 'checkout', 'inactive', 'rejected'])
                   ->where('pic_id', $picId);
             });
         } else {
             // Eager load: appointment terbaru (completed/checkout/inactive) beserta relasi PIC
             // Ini mencegah N+1 query yang sebelumnya terjadi 6x per baris di tabel
             $query->with(['appointments' => function ($q) {
-                $q->whereIn('status', ['completed', 'checkout', 'inactive'])
+                $q->whereIn('status', ['completed', 'checkout', 'inactive', 'rejected'])
                   ->with('pic')
                   ->latest('visit_date')
                   ->limit(1);
             }])
             ->whereHas('appointments', function (Builder $q) {
-                $q->whereIn('status', ['completed', 'checkout', 'inactive']);
+                $q->whereIn('status', ['completed', 'checkout', 'inactive', 'rejected']);
             });
         }
 
@@ -224,19 +224,19 @@ class SummaryResource extends Resource
                 $to = \Carbon\Carbon::parse(request('end_date'))->endOfDay();
                 
                 $query->whereHas('appointments', function ($q) use ($from, $to) {
-                    $q->whereIn('status', ['completed', 'checkout', 'inactive'])
+                    $q->whereIn('status', ['completed', 'checkout', 'inactive', 'rejected'])
                       ->whereBetween('updated_at', [$from, $to]);
                 });
             } elseif (request()->filled('start_date')) {
                 $from = \Carbon\Carbon::parse(request('start_date'))->startOfDay();
                 $query->whereHas('appointments', function ($q) use ($from) {
-                    $q->whereIn('status', ['completed', 'checkout', 'inactive'])
+                    $q->whereIn('status', ['completed', 'checkout', 'inactive', 'rejected'])
                       ->where('updated_at', '>=', $from);
                 });
             } elseif (request()->filled('end_date')) {
                 $to = \Carbon\Carbon::parse(request('end_date'))->endOfDay();
                 $query->whereHas('appointments', function ($q) use ($to) {
-                    $q->whereIn('status', ['completed', 'checkout', 'inactive'])
+                    $q->whereIn('status', ['completed', 'checkout', 'inactive', 'rejected'])
                       ->where('updated_at', '<=', $to);
                 });
             }
@@ -245,7 +245,7 @@ class SummaryResource extends Resource
             $year = request('year');
             
             $query->whereHas('appointments', function ($q) use ($month, $year) {
-                $q->whereIn('status', ['completed', 'checkout', 'inactive'])
+                $q->whereIn('status', ['completed', 'checkout', 'inactive', 'rejected'])
                   ->whereMonth('updated_at', $month)
                   ->whereYear('updated_at', $year);
             });
@@ -253,7 +253,7 @@ class SummaryResource extends Resource
             $year = request('year');
             
             $query->whereHas('appointments', function ($q) use ($year) {
-                $q->whereIn('status', ['completed', 'checkout', 'inactive'])
+                $q->whereIn('status', ['completed', 'checkout', 'inactive', 'rejected'])
                   ->whereYear('updated_at', $year);
             });
         }

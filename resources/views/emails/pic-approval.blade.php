@@ -87,7 +87,13 @@
                                             <tr>
                                                 <td width="100%" valign="top">
                                                     <p style="margin:0 0 4px; color:#64748b; font-size:12px; text-transform:uppercase; font-weight:600; letter-spacing:0.5px;">Waktu Permintaan</p>
-                                                    <p style="margin:0; color:#0f172a; font-size:15px; font-weight:600;">{{ now()->translatedFormat('d F Y • H:i') }} WIB</p>
+                                                    <p style="margin:0; color:#0f172a; font-size:15px; font-weight:600;">
+                                                        @if($appointment->type === 'walk-in' || $appointment->type === 'walkin')
+                                                            {{ \Carbon\Carbon::parse($appointment->created_at)->translatedFormat('d F Y • H:i') }} WIB
+                                                        @else
+                                                            {{ \Carbon\Carbon::parse($appointment->visit_date)->translatedFormat('d F Y') }} • {{ \Carbon\Carbon::parse($appointment->visit_time)->format('H:i') }} WIB
+                                                        @endif
+                                                    </p>
                                                 </td>
                                             </tr>
                                         </table>

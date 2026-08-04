@@ -87,7 +87,7 @@
                                             <tr>
                                                 <td width="100%" valign="top">
                                                     <p style="margin:0 0 4px; color:#64748b; font-size:12px; text-transform:uppercase; font-weight:600; letter-spacing:0.5px;">Waktu Check-In</p>
-                                                    <p style="margin:0; color:#0f172a; font-size:15px; font-weight:600;">{{ now()->translatedFormat('d F Y • H:i') }} WIB</p>
+                                                    <p style="margin:0; color:#0f172a; font-size:15px; font-weight:600;">{{ \Carbon\Carbon::parse($appointment->created_at)->translatedFormat('d F Y • H:i') }} WIB</p>
                                                 </td>
                                             </tr>
                                         </table>
