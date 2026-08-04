@@ -22,17 +22,8 @@ class ListPics extends ListRecords
     {
         $pic = \App\Models\Pic::find($picId);
         if ($pic) {
-            $existingPhotos = is_array($pic->face_photo) ? $pic->face_photo : [];
-            $existingFeatures = is_array($pic->face_features) ? $pic->face_features : [];
-            
-            if (count($existingPhotos) < 10) {
-                $existingPhotos[] = $photoBase64;
-                $pic->face_photo = $existingPhotos;
-            }
-            if (count($existingFeatures) < 10) {
-                $existingFeatures[] = $descriptor;
-                $pic->face_features = $existingFeatures;
-            }
+            $pic->face_photo = [$photoBase64];
+            $pic->face_features = [$descriptor];
             $pic->save();
             
             \Filament\Notifications\Notification::make()->title('Wajah Berhasil Disimpan')->success()->send();
