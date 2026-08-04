@@ -1169,7 +1169,7 @@
                     @if(\App\Helpers\KioskHelper::isKioskLocal())
                         <div class="logo-tagline"><span data-lang-id="Enterprise Visitor Management" data-lang-en="Enterprise Visitor Management">Enterprise Visitor Management</span> • <span id="kiosk-location-display" style="font-weight: 700; color: var(--accent-primary);">Belum Diatur</span></div>
                     @else
-                        <div class="logo-tagline"><span data-lang-id="Enterprise Visitor Management" data-lang-en="Enterprise Visitor Management">Enterprise Visitor Management</span> • <span style="font-weight: 700; color: #ef4444; background: rgba(239, 68, 68, 0.1); padding: 0.15rem 0.4rem; border-radius: 0.25rem; font-size: 0.75rem;" data-lang-id="Offsite (Terbatas)" data-lang-en="Offsite (Limited)">Offsite (Terbatas)</span></div>
+                        <div class="logo-tagline"><span data-lang-id="Enterprise Visitor Management" data-lang-en="Enterprise Visitor Management">Enterprise Visitor Management</span> • <span style="font-weight: 700; color: #ef4444; background: rgba(239, 68, 68, 0.1); padding: 0.15rem 0.4rem; border-radius: 0.25rem; font-size: 0.75rem;">Offsite (Terbatas - IP: {{ \App\Helpers\KioskHelper::getClientIp() }})</span></div>
                     @endif
                 </div>
             </div>

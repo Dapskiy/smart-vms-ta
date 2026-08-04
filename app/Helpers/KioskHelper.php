@@ -71,6 +71,7 @@ class KioskHelper
 
         list($subnet, $mask) = explode('/', $cidr);
         
+        // IPv4 Matching
         if (filter_var($ip, FILTER_VALIDATE_IP, FILTER_FLAG_IPV4) && filter_var($subnet, FILTER_VALIDATE_IP, FILTER_FLAG_IPV4)) {
             $ipLong = ip2long($ip);
             $subnetLong = ip2long($subnet);
@@ -79,6 +80,31 @@ class KioskHelper
             }
             $maskDec = ~((1 << (32 - (int)$mask)) - 1);
             return ($ipLong & $maskDec) == ($subnetLong & $maskDec);
+        }
+
+        // IPv6 Matching
+        if (filter_var($ip, FILTER_VALIDATE_IP, FILTER_FLAG_IPV6) && filter_var($subnet, FILTER_VALIDATE_IP, FILTER_FLAG_IPV6)) {
+            $ipBin = inet_pton($ip);
+            $subnetBin = inet_pton($subnet);
+            if ($ipBin === false || $subnetBin === false) {
+                return false;
+            }
+            $maskBits = (int)$mask;
+            $bytes = (int)floor($maskBits / 8);
+            $bits = $maskBits % 8;
+            
+            if ($bytes > 0 && substr($ipBin, 0, $bytes) !== substr($subnetBin, 0, $bytes)) {
+                return false;
+            }
+            if ($bits > 0) {
+                $ipByte = ord($ipBin[$bytes]);
+                $subnetByte = ord($subnetBin[$bytes]);
+                $maskByte = ~(255 >> $bits) & 255;
+                if (($ipByte & $maskByte) !== ($subnetByte & $maskByte)) {
+                    return false;
+                }
+            }
+            return true;
         }
 
         return false;
