@@ -1033,8 +1033,10 @@
 
             .kiosk-header {
                 height: auto !important;
-                flex-wrap: wrap !important;
-                gap: 0.5rem !important;
+                flex-wrap: nowrap !important;
+                align-items: center !important;
+                justify-content: space-between !important;
+                gap: 0.25rem !important;
                 padding: 0.5rem 0.25rem !important;
             }
 
