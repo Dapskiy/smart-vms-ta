@@ -97,6 +97,7 @@ class AdminPanelProvider extends PanelProvider
                 SubstituteBindings::class,
                 DisableBladeIconComponents::class,
                 DispatchServingFilamentEvent::class,
+                \App\Http\Middleware\RestrictKioskIpMiddleware::class,
             ])
             ->plugins([
                 // FilamentShieldPlugin::make() - disabled, using custom role resource instead
