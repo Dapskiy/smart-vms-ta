@@ -18,7 +18,7 @@ class SuperAdminSeeder extends Seeder
         ]);
 
         // 2. Buat / ambil user (biar gak duplicate)
-        $user = User::firstOrCreate(
+        $user = User::updateOrCreate(
             ['email' => 'superadmin@gmail.com'],
             [
                 'name' => 'Super Admin',
