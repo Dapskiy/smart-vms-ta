@@ -549,6 +549,152 @@
         }
 
         /* ============================================================
+           MOBILE RESPONSIVE STYLES (Screen Width <= 768px)
+           Improves mobile layout without affecting PC/Desktop view
+        ============================================================ */
+        @media (max-width: 768px) {
+            html, body {
+                height: auto !important;
+                min-height: 100vh;
+                overflow-y: auto !important;
+            }
+
+            .kiosk-shell {
+                height: auto !important;
+                min-height: 100vh;
+                padding: 0.75rem 0.75rem 1.5rem !important;
+                overflow: visible !important;
+            }
+
+            .kiosk-header {
+                height: auto !important;
+                flex-wrap: wrap !important;
+                gap: 0.5rem !important;
+                padding: 0.5rem 0.25rem !important;
+            }
+
+            .logo-icon {
+                width: 2.2rem !important;
+                height: 2.2rem !important;
+                border-radius: 0.5rem !important;
+            }
+
+            .logo-icon svg {
+                width: 1.1rem !important;
+                height: 1.1rem !important;
+            }
+
+            .logo-text {
+                font-size: 1.25rem !important;
+            }
+
+            .logo-tagline {
+                font-size: 0.55rem !important;
+                letter-spacing: 0.08em !important;
+            }
+
+            .header-right {
+                gap: 0.6rem !important;
+            }
+
+            .header-clock {
+                text-align: right;
+            }
+
+            .clock-time {
+                font-size: 1.3rem !important;
+            }
+
+            .clock-date {
+                font-size: 0.65rem !important;
+            }
+
+            .header-controls {
+                gap: 0.4rem !important;
+                padding-left: 0.4rem !important;
+            }
+
+            .lang-switch {
+                padding: 0.15rem 0.4rem !important;
+                font-size: 0.7rem !important;
+            }
+
+            .settings-btn {
+                width: 28px !important;
+                height: 28px !important;
+            }
+
+            .settings-btn svg {
+                width: 14px !important;
+                height: 14px !important;
+            }
+
+            .kiosk-main {
+                flex: none !important;
+                height: auto !important;
+                min-height: 0 !important;
+                overflow: visible !important;
+                padding: 0.5rem 0 !important;
+            }
+
+            .cards-row {
+                flex-direction: column !important;
+                gap: 0.6rem !important;
+                padding: 0.6rem !important;
+                border-radius: 16px !important;
+                margin-top: 1rem !important;
+            }
+
+            .checkin-card {
+                width: 100% !important;
+                height: auto !important;
+                padding: 0.75rem !important;
+                flex-direction: row !important;
+                justify-content: flex-start !important;
+                text-align: left !important;
+                gap: 0.75rem !important;
+                border-radius: 12px !important;
+            }
+
+            .checkin-card .card-body {
+                align-items: flex-start !important;
+                text-align: left !important;
+            }
+
+            .kiosk-footer {
+                flex-direction: column !important;
+                gap: 0.4rem !important;
+                text-align: center !important;
+                padding: 1rem 0 0.5rem !important;
+            }
+
+            .footer-copy {
+                font-size: 0.65rem !important;
+            }
+
+            .status-bar {
+                justify-content: center !important;
+                font-size: 0.6rem !important;
+            }
+
+            .modal-box,
+            .face-modal-box,
+            .success-box,
+            .waiting-box,
+            .rejected-box {
+                width: 94vw !important;
+                max-width: 100% !important;
+                padding: 1.25rem 1rem !important;
+                border-radius: 1.25rem !important;
+                margin: auto !important;
+            }
+
+            .info-grid {
+                grid-template-columns: 1fr !important;
+            }
+        }
+
+        /* ============================================================
            ENTRY ANIMATIONS
         ============================================================ */
         @keyframes fadeUp {
