@@ -471,7 +471,7 @@
                 window.speechSynthesis.cancel();
                 const utt = new SpeechSynthesisUtterance(plain);
                 utt.lang = 'id-ID';
-                utt.rate = 1.0;
+                utt.rate = 1.3;
                 utt.pitch = 1.0;
                 if (fallbackIndoVoice) utt.voice = fallbackIndoVoice;
 
