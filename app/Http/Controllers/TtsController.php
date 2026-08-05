@@ -59,8 +59,9 @@ class TtsController extends Controller
 
         try {
             return response()->stream(function () use ($scriptPath, $tempTxtFile, $voice, $outputPath) {
-                // Build command to execute python script (streams to stdout)
-                $command = escapeshellcmd("python") . " " . escapeshellarg($scriptPath) . " " . escapeshellarg($tempTxtFile) . " " . escapeshellarg($voice);
+                // Gunakan python3 untuk Ubuntu/Linux, python untuk Windows
+                $pythonCmd = (PHP_OS_FAMILY === 'Windows') ? 'python' : 'python3';
+                $command = escapeshellcmd($pythonCmd) . " -u " . escapeshellarg($scriptPath) . " " . escapeshellarg($tempTxtFile) . " " . escapeshellarg($voice);
                 
                 $handle = popen($command, 'rb');
                 $cacheFile = fopen($outputPath, 'wb');
