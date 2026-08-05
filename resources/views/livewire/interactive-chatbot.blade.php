@@ -270,14 +270,12 @@
                         @foreach($messages as $msg)
                             <div class="chat-bubble-row {{ $msg['role'] === 'user' ? 'user-row' : 'assistant-row' }}">
                                 @if($msg['role'] === 'assistant')
-                                    <div class="chat-bubble assistant-bubble" style="display: flex; align-items: flex-start; justify-content: space-between; gap: 8px;">
+                                    <div class="chat-bubble assistant-bubble">
                                         <span
                                             wire:key="msg-{{ md5($msg['content']) }}"
                                             x-data="{ md: @js($msg['content']) }"
                                             x-html="window.marked ? window.marked.parse(md) : md"
-                                            style="flex: 1;"
                                         ></span>
-                                        <button @click="window.speakText(@js($msg['content']))" style="background: transparent; border: none; cursor: pointer; opacity: 0.7; padding: 2px 4px; font-size: 14px;" title="Putar Suara">🔊</button>
                                     </div>
                                 @else
                                     <div class="chat-bubble user-bubble">
