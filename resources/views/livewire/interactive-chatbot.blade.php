@@ -155,15 +155,7 @@
                     </button>
                 </div>
                 
-                <!-- 2. Status Indicator Badge -->
-                <div class="avatar-status-badge">
-                    <span class="status-badge-dot" :class="{ 'speaking': isSpeaking && !isPaused, 'listening': isListening, 'thinking': $wire.isLoading }"></span>
-                    <span x-show="isListening" x-cloak>Listening</span>
-                    <span x-show="isSpeaking && !isPaused" x-cloak>Speaking</span>
-                    <span x-show="$wire.isLoading" x-cloak>Thinking</span>
-                    <span x-show="!isListening && !(isSpeaking && !isPaused) && !$wire.isLoading">Idle</span>
-                </div>
-                
+
                 <!-- Action Cards (Moved from Welcome) -->
                 <div class="cards-grid" @if(!$isLocal) style="grid-template-columns: 1fr;" @endif>
                     @if($isLocal)
@@ -588,37 +580,46 @@
             z-index: 10;
         }
         .snd-ctrl-btn {
-            width: 36px;
-            height: 36px;
+            width: 44px;
+            height: 44px;
             border-radius: 50%;
-            border: 1px solid #e2e8f0;
-            background: #ffffff;
-            color: #475569;
+            border: 2px solid #6366f1;
+            background: linear-gradient(135deg, #eef2ff, #e0e7ff);
+            color: #4338ca;
             display: flex;
             align-items: center;
             justify-content: center;
             cursor: pointer;
-            transition: all 0.2s ease;
-            box-shadow: 0 2px 6px rgba(0,0,0,0.04);
+            transition: all 0.25s ease;
+            box-shadow: 0 3px 12px rgba(99, 102, 241, 0.25), 0 0 0 3px rgba(99, 102, 241, 0.08);
         }
         .snd-ctrl-btn:hover {
-            background: #f1f5f9;
-            color: #0f172a;
-            transform: scale(1.1);
+            background: linear-gradient(135deg, #c7d2fe, #a5b4fc);
+            color: #312e81;
+            transform: scale(1.15);
+            box-shadow: 0 4px 18px rgba(99, 102, 241, 0.4), 0 0 0 4px rgba(99, 102, 241, 0.12);
         }
         .snd-ctrl-btn.active {
-            background: #fef2f2;
-            color: #ef4444;
-            border-color: #fecaca;
+            background: linear-gradient(135deg, #fef2f2, #fee2e2);
+            color: #dc2626;
+            border-color: #f87171;
+            box-shadow: 0 3px 12px rgba(239, 68, 68, 0.3), 0 0 0 3px rgba(239, 68, 68, 0.1);
+        }
+        .snd-ctrl-btn.snd-ctrl-stop {
+            border-color: #f87171;
+            background: linear-gradient(135deg, #fff1f2, #ffe4e6);
+            color: #dc2626;
         }
         .snd-ctrl-btn.snd-ctrl-stop:hover {
-            background: #fef2f2;
-            color: #ef4444;
-            border-color: #fecaca;
+            background: linear-gradient(135deg, #fecaca, #fca5a5);
+            color: #991b1b;
+            border-color: #ef4444;
+            box-shadow: 0 4px 18px rgba(239, 68, 68, 0.4), 0 0 0 4px rgba(239, 68, 68, 0.12);
         }
         .snd-ctrl-btn svg {
-            width: 16px;
-            height: 16px;
+            width: 20px;
+            height: 20px;
+            stroke-width: 2.5;
         }
 
         .kiosk-split-layout {
@@ -1557,14 +1558,38 @@
 
         /* Sound control buttons */
         html.dark-mode .snd-ctrl-btn {
-            background: #334155;
-            border-color: #475569;
-            color: #94A3B8;
+            background: linear-gradient(135deg, #312e81, #3730a3);
+            border-color: #818cf8;
+            color: #c7d2fe;
+            box-shadow: 0 3px 14px rgba(129, 140, 248, 0.35), 0 0 0 3px rgba(129, 140, 248, 0.12);
         }
 
         html.dark-mode .snd-ctrl-btn:hover {
-            background: #475569;
-            color: #F1F5F9;
+            background: linear-gradient(135deg, #3730a3, #4338ca);
+            color: #e0e7ff;
+            border-color: #a5b4fc;
+            box-shadow: 0 4px 20px rgba(129, 140, 248, 0.5), 0 0 0 4px rgba(129, 140, 248, 0.18);
+        }
+
+        html.dark-mode .snd-ctrl-btn.active {
+            background: linear-gradient(135deg, #7f1d1d, #991b1b);
+            border-color: #f87171;
+            color: #fecaca;
+            box-shadow: 0 3px 14px rgba(248, 113, 113, 0.35), 0 0 0 3px rgba(248, 113, 113, 0.12);
+        }
+
+        html.dark-mode .snd-ctrl-btn.snd-ctrl-stop {
+            background: linear-gradient(135deg, #7f1d1d, #991b1b);
+            border-color: #f87171;
+            color: #fecaca;
+            box-shadow: 0 3px 14px rgba(248, 113, 113, 0.35), 0 0 0 3px rgba(248, 113, 113, 0.12);
+        }
+
+        html.dark-mode .snd-ctrl-btn.snd-ctrl-stop:hover {
+            background: linear-gradient(135deg, #991b1b, #b91c1c);
+            border-color: #fca5a5;
+            color: #fee2e2;
+            box-shadow: 0 4px 20px rgba(248, 113, 113, 0.5), 0 0 0 4px rgba(248, 113, 113, 0.18);
         }
 
         /* Close button */
