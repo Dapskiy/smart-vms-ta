@@ -125,7 +125,7 @@ class FaceCheckinController extends Controller
 
         // Find a pending appointment for this visitor today
         $appointment = Appointment::where('visitor_id', $bestMatch->id)
-            ->where('status', 'pending')
+            ->whereIn('status', ['pending', 'approved'])
             ->whereDate('visit_date', today())
             ->with(['visitor', 'pic', 'room'])
             ->first();
@@ -175,8 +175,8 @@ class FaceCheckinController extends Controller
 
         $token = trim($request->input('token'));
 
-        // Cari appointment hari ini dengan status pending berdasarkan token atau visit_id
-        $appointment = Appointment::where('status', 'pending')
+        // Cari appointment hari ini dengan status pending/approved berdasarkan token atau visit_id
+        $appointment = Appointment::whereIn('status', ['pending', 'approved'])
             ->whereDate('visit_date', today())
             ->where(function($query) use ($token) {
                 $query->where('token', $token)
@@ -216,10 +216,10 @@ class FaceCheckinController extends Controller
         $appointment = Appointment::find($request->input('appointment_id'));
         $visitor = Visitor::find($request->input('visitor_id'));
 
-        if ($appointment->status !== 'pending') {
+        if (!in_array($appointment->status, ['pending', 'approved'])) {
             return response()->json([
                 'success' => false,
-                'message' => 'Janji temu sudah check-in sebelumnya.',
+                'message' => 'Janji temu sudah check-in sebelumnya atau dibatalkan.',
             ]);
         }
 
