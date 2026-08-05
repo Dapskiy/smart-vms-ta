@@ -1250,7 +1250,7 @@
         }
 
         // Event listener for Walk-in success
-        document.addEventListener('walkin-success', function (e) {
+        window.addEventListener('walkin-success', function (e) {
             closeWalkinForm();
             const data = (e.detail[0] !== undefined) ? (e.detail[0].appt || e.detail[0]) : (e.detail.appt || e.detail);
             document.querySelector('#modal-success .success-heading').textContent = 'Registrasi Berhasil! 🎉';
@@ -1282,7 +1282,7 @@
         let approvalSecondsElapsed = 0;
 
         // Event listener for Walk-in pending approval
-        document.addEventListener('walkin-pending-approval', function (e) {
+        window.addEventListener('walkin-pending-approval', function (e) {
             closeWalkinForm();
             
             const data = (e.detail[0] !== undefined) ? e.detail[0] : e.detail;

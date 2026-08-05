@@ -1742,7 +1742,7 @@
 
 
         // Event listener for Appointment scheduling success
-        document.addEventListener('appointment-success', function (e) {
+        window.addEventListener('appointment-success', function (e) {
             closeWalkinForm();
             const data = (e.detail[0] !== undefined) ? e.detail[0].appt : e.detail.appt;
             document.querySelector('#modal-success .success-heading').textContent = 'Janji Temu Dibuat 📅';

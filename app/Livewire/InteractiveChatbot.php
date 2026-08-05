@@ -648,6 +648,20 @@ class InteractiveChatbot extends Component
             'verified_visitor_id' => $existingRegData['verified_visitor_id'] ?? null,
         ];
 
+        // For returning visitors, skip the confirmation card and face scan, directly process registration
+        if (!empty($this->regData['verified_visitor_id'])) {
+            $visitor = Visitor::find($this->regData['verified_visitor_id']);
+            if ($visitor) {
+                if ($visitor->is_blacklisted) {
+                    $this->messages[] = ['role' => 'assistant', 'content' => '⚠️ Mohon maaf, Anda tidak dapat melanjutkan. Silakan hubungi Resepsionis.'];
+                    $this->dispatch('chatbot-scrolled');
+                    return;
+                }
+                $this->createChatbotAppointment($visitor);
+                return;
+            }
+        }
+
         $this->showConfirmation = true;
         $this->dispatch('chatbot-scrolled');
     }
