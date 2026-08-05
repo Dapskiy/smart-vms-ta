@@ -20,8 +20,8 @@ async def main():
     with open(text_file, 'r', encoding='utf-8') as f:
         text = f.read()
 
-    # Rate increased to +40% for faster reading as requested
-    communicate = edge_tts.Communicate(text, voice, rate="+40%")
+    # Rate increased to +20% for faster reading as requested
+    communicate = edge_tts.Communicate(text, voice, rate="+20%")
     
     # Stream audio data to stdout for instant playback (0-second delay)
     async for chunk in communicate.stream():
