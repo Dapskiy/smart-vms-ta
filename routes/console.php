@@ -5,6 +5,8 @@ use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\Schedule;
 use App\Console\Commands\AutoCheckoutVisitors;
 
+use App\Console\Commands\AutoCheckoutPics;
+
 Artisan::command('inspire', function () {
     $this->comment(Inspiring::quote());
 })->purpose('Display an inspiring quote');
@@ -24,3 +26,10 @@ Schedule::command(AutoCheckoutVisitors::class)
     ->withoutOverlapping()
     ->runInBackground()
     ->appendOutputTo(storage_path('logs/auto-checkout.log'));
+
+// Auto-checkout semua PIC yang lupa check-out — berjalan setiap hari jam 23:59
+Schedule::command(AutoCheckoutPics::class)
+    ->dailyAt('23:59')
+    ->withoutOverlapping()
+    ->runInBackground()
+    ->appendOutputTo(storage_path('logs/auto-checkout-pics.log'));
