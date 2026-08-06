@@ -525,7 +525,20 @@ class KioskWalkinForm extends Component
         try {
             $isNewRegistration = empty($visitor->face_features);
 
-            $existingPhotos = is_array($visitor->face_photo) ? $visitor->face_photo : [];
+            $rawPhoto = $visitor->getRawOriginal('face_photo');
+            $existingPhotos = [];
+            if ($rawPhoto) {
+                $jsonDecoded = json_decode($rawPhoto, true);
+                if (is_array($jsonDecoded)) {
+                    $raw = isset($jsonDecoded['data']) ? $jsonDecoded['data'] : $rawPhoto;
+                    try {
+                        $decrypted = \Illuminate\Support\Facades\Crypt::decryptString($raw);
+                        $existingPhotos = json_decode($decrypted, true) ?? [];
+                    } catch (\Throwable $e) {}
+                }
+            }
+            if (!is_array($existingPhotos)) $existingPhotos = [];
+            
             if (count($existingPhotos) < 10) {
                 $existingPhotos[] = $photoBase64;
                 $visitor->face_photo = $existingPhotos;
