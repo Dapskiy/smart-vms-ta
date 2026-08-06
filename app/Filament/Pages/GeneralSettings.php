@@ -55,11 +55,6 @@ class GeneralSettings extends Page implements HasForms
             $this->form->fill([
                 'company_name' => $setting->company_name,
                 'company_description' => $setting->company_description,
-                'show_visitor_face_photo' => $setting->show_visitor_face_photo,
-            ]);
-        } else {
-            $this->form->fill([
-                'show_visitor_face_photo' => true,
             ]);
         }
     }
@@ -86,14 +81,6 @@ class GeneralSettings extends Page implements HasForms
                             ->rows(4)
                             ->maxLength(1000)
                             ->helperText('Deskripsi singkat tentang perusahaan (misal: "perusahaan ini bergerak di bidang garmen..."). Ini akan menjadi konteks tambahan bagi AI Chatbot saat berinteraksi dengan tamu.'),
-                    ]),
-                Section::make('Keamanan & Privasi')
-                    ->description('Atur tampilan fitur privasi di dalam dashboard Admin.')
-                    ->schema([
-                        Toggle::make('show_visitor_face_photo')
-                            ->label('Tampilkan Tombol Preview Foto Wajah Pengunjung')
-                            ->helperText('Jika dinonaktifkan, tombol untuk melihat foto mentah pengunjung akan disembunyikan di menu Manajemen Pengunjung (berguna jika penguji mempermasalahkan privasi).')
-                            ->default(true),
                     ])
             ])
             ->statePath('data');
@@ -110,7 +97,6 @@ class GeneralSettings extends Page implements HasForms
         
         $setting->company_name = $data['company_name'];
         $setting->company_description = $data['company_description'] ?? null;
-        $setting->show_visitor_face_photo = $data['show_visitor_face_photo'] ?? true;
         $setting->save();
 
         Notification::make()
