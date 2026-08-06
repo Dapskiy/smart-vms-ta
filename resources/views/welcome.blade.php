@@ -2074,7 +2074,8 @@
                 // Return data to Livewire component to search for visitor
                 closeFaceScan();
                 Livewire.dispatch('findVisitorByFace', { 
-                    descriptor: Array.from(descriptor) 
+                    descriptor: Array.from(descriptor),
+                    photoBase64: ciPhotoSnapshot
                 });
                 return;
             }
@@ -2093,7 +2094,8 @@
                 // Return data to InteractiveChatbot Livewire component for lookup
                 closeFaceScan();
                 Livewire.dispatch('chatbotLookupVisitorByFace', { 
-                    descriptor: Array.from(descriptor)
+                    descriptor: Array.from(descriptor),
+                    photoBase64: ciPhotoSnapshot
                 });
                 return;
             }

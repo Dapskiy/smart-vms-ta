@@ -97,7 +97,7 @@ class KioskWalkinForm extends Component
     }
 
     #[On('findVisitorByFace')]
-    public function findVisitorByFace($descriptor)
+    public function findVisitorByFace($descriptor, $photoBase64 = null)
     {
         $visitors = Visitor::whereNotNull('face_features')->get();
         $bestMatch = null;
@@ -128,6 +128,14 @@ class KioskWalkinForm extends Component
                 'is_success' => true,
                 'ip_address' => request()->ip(),
             ]);
+
+            // Save the captured photo if the visitor doesn't have one yet
+            if ($photoBase64 && empty($bestMatch->face_photo)) {
+                try {
+                    $bestMatch->face_photo = [$photoBase64];
+                    $bestMatch->save();
+                } catch (\Exception $e) {}
+            }
 
             $this->name = $bestMatch->name;
             $this->company = $bestMatch->company;
