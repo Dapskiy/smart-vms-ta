@@ -358,15 +358,22 @@ class AppointmentsTable
                     ->modalSubmitAction(false)
                     ->modalCancelActionLabel('Tutup'),
 
-                // 4b. Tombol Lihat Foto Wajah (hanya muncul jika ada face_photo)
+                // 4b. Tombol Lihat Foto Wajah (hanya muncul jika ada face_photo dan role memiliki permission)
                 Action::make('view_face_photo')
                     ->label('')
                     ->icon('heroicon-o-face-smile')
-                    ->tooltip('Lihat Foto Wajah')
                     ->color('warning')
-                    ->visible(fn(?Appointment $record): bool => !empty($record?->visitor?->face_photo))
+                    ->tooltip('Lihat Foto Wajah')
                     ->url(fn(Appointment $record): string => route('admin.visitor.face-photo', $record->visitor_id))
-                    ->openUrlInNewTab(),
+                    ->openUrlInNewTab()
+                    ->visible(function (?Appointment $record): bool {
+                        if (empty($record?->visitor?->face_photo)) return false;
+                        $user = auth()->user();
+                        if (!$user) return false;
+                        
+                        return $user->roles->contains(fn($role) => $role->hasPermissionTo('view_visitor_face_photo')) 
+                            || $user->hasDirectPermission('view_visitor_face_photo');
+                    }),
 
                 // 5. Tombol Edit
                 EditAction::make()

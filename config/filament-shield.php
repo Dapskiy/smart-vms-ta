@@ -243,7 +243,7 @@ return [
     |
     */
 
-    'custom_permissions' => ['export_summary', 'reveal_visitor_phone', 'page_GeneralSettings'],
+    'custom_permissions' => ['export_summary', 'reveal_visitor_phone', 'page_GeneralSettings', 'view_visitor_face_photo'],
 
     /*
     |--------------------------------------------------------------------------

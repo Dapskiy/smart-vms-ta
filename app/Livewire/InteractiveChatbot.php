@@ -834,11 +834,28 @@ class InteractiveChatbot extends Component
             }
         }
 
-        // Save face data (append, max 10)
+        // Save face data & photo (append, max 10)
         try {
             if (count($existingFeatures) < 10) {
                 $existingFeatures[] = $descriptor;
                 $visitor->face_features = $existingFeatures;
+                
+                // Fetch raw existing photos, decode, and append
+                $rawPhoto = $visitor->getRawOriginal('face_photo');
+                $existingPhotos = [];
+                if ($rawPhoto) {
+                    $jsonDecoded = json_decode($rawPhoto, true);
+                    if (is_array($jsonDecoded)) {
+                        $raw = isset($jsonDecoded['data']) ? $jsonDecoded['data'] : $rawPhoto;
+                        try {
+                            $decrypted = \Illuminate\Support\Facades\Crypt::decryptString($raw);
+                            $existingPhotos = json_decode($decrypted, true) ?? [];
+                        } catch (\Throwable $e) {}
+                    }
+                }
+                if (!is_array($existingPhotos)) $existingPhotos = [];
+                $existingPhotos[] = $photoBase64;
+                $visitor->face_photo = $existingPhotos;
             }
             $visitor->save();
         } catch (\Exception $e) { /* ignore */ }

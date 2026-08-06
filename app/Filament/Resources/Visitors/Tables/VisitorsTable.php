@@ -87,7 +87,7 @@ class VisitorsTable
                     ),
             ])
             ->recordActions([
-                // Tombol lihat foto wajah — muncul hanya jika visitor punya foto
+                // Tombol lihat foto wajah — muncul hanya jika visitor punya foto dan role memiliki permission
                 Action::make('view_face_photo')
                     ->label('')
                     ->icon('heroicon-o-face-smile')
@@ -95,7 +95,14 @@ class VisitorsTable
                     ->tooltip('Lihat Foto Wajah')
                     ->url(fn ($record): string => route('admin.visitor.face-photo', $record->id))
                     ->openUrlInNewTab()
-                    ->visible(fn ($record): bool => !empty($record->face_photo)),
+                    ->visible(function ($record): bool {
+                        if (empty($record->face_photo)) return false;
+                        $user = auth()->user();
+                        if (!$user) return false;
+                        
+                        return $user->roles->contains(fn($role) => $role->hasPermissionTo('view_visitor_face_photo')) 
+                            || $user->hasDirectPermission('view_visitor_face_photo');
+                    }),
 
                 // Tombol blacklist/unblacklist dengan konfirmasi wajib ketik "BLACKLIST"
                 Action::make('toggle_blacklist')
