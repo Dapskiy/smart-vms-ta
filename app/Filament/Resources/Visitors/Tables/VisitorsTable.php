@@ -100,12 +100,21 @@ class VisitorsTable
                         $user = auth()->user();
                         if (!$user) return false;
                         
-                        try {
-                            return $user->roles->contains(fn($role) => $role->hasPermissionTo('view_visitor_face_photo')) 
-                                || $user->hasDirectPermission('view_visitor_face_photo');
-                        } catch (\Exception $e) {
-                            return false;
-                        }
+                        // Cek langsung ke database untuk menghindari Exception jika permission belum digenerate,
+                        // dan untuk bypass Gate interception pada Super Admin.
+                        $hasRolePerm = \Illuminate\Support\Facades\DB::table('role_has_permissions')
+                            ->join('permissions', 'permissions.id', '=', 'role_has_permissions.permission_id')
+                            ->where('permissions.name', 'view_visitor_face_photo')
+                            ->whereIn('role_has_permissions.role_id', $user->roles->pluck('id'))
+                            ->exists();
+
+                        $hasDirectPerm = \Illuminate\Support\Facades\DB::table('model_has_permissions')
+                            ->join('permissions', 'permissions.id', '=', 'model_has_permissions.permission_id')
+                            ->where('permissions.name', 'view_visitor_face_photo')
+                            ->where('model_has_permissions.model_id', $user->id)
+                            ->exists();
+
+                        return $hasRolePerm || $hasDirectPerm;
                     }),
 
                 // Tombol blacklist/unblacklist dengan konfirmasi wajib ketik "BLACKLIST"
