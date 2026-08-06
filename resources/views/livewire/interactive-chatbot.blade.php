@@ -215,7 +215,7 @@
                                 </svg>
                             </div>
                             <div class="card-body">
-                                <div class="card-title" data-lang-id="Absensi" data-lang-en="Attendance">{{ $lang === 'en' ? 'Attendance' : 'Absensi' }}</div>
+                                <div class="card-title" data-lang-id="Absen Masuk / Keluar" data-lang-en="Staff Check-In / Out">{{ $lang === 'en' ? 'Staff Check-In / Out' : 'Absen Masuk / Keluar' }}</div>
                                 <div class="card-sub" data-lang-id="Khusus Karyawan" data-lang-en="Staff Only">{{ $lang === 'en' ? 'Staff Only' : 'Khusus Karyawan' }}</div>
                             </div>
                         </div>

@@ -1131,12 +1131,12 @@
                     </div>
 
                     <div class="card-body">
-                        <div class="card-title">Absensi Karyawan</div>
+                        <div class="card-title">Absen Masuk / Keluar</div>
                         <div class="card-sub">Khusus karyawan (PIC) untuk<br>check-in & check-out wajah</div>
                     </div>
 
                     <div class="card-cta">
-                        ABSENSI PIC
+                        ABSEN MASUK / KELUAR
                         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
                             <path d="M5 12h14M12 5l7 7-7 7"/>
                         </svg>
