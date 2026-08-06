@@ -386,7 +386,7 @@
     <script src="/js/marked.min.js"></script>
     <script>
         document.addEventListener('livewire:initialized', () => {
-            const loc = localStorage.getItem('kiosk-location-name') || 'Belum Diatur';
+            const loc = localStorage.getItem('kiosk-location-name') || '';
             @this.set('kioskLocation', loc);
         });
 
@@ -1728,159 +1728,207 @@
                 flex-direction: column !important;
                 height: auto !important;
                 overflow: visible !important;
-                gap: 1rem !important;
+                gap: 0 !important;
             }
 
             .kiosk-left-panel {
                 flex: none !important;
                 width: 100% !important;
-                min-height: 260px !important;
+                min-height: 200px !important;
+                max-height: 320px !important;
                 height: auto !important;
-                padding: 1rem 0.75rem 3.5rem !important;
+                padding: 0.75rem 0.75rem 0.5rem !important;
                 border-right: none !important;
                 border-bottom: 1px solid rgba(226, 232, 240, 0.6) !important;
-                border-radius: 20px !important;
                 position: relative !important;
             }
 
             .chatbot-wrapper.is-chatting .kiosk-left-panel {
                 flex: none !important;
                 width: 100% !important;
-                min-height: 150px !important;
-                padding: 0.5rem 0.5rem 0.5rem !important;
+                min-height: 120px !important;
+                max-height: 200px !important;
+                padding: 0.5rem 0.5rem 0.25rem !important;
+            }
+
+            .left-panel-content {
+                position: relative !important;
             }
 
             .avatar-box {
                 position: relative !important;
-                height: 170px !important;
+                height: 150px !important;
                 width: 100% !important;
             }
 
             .chatbot-wrapper.is-chatting .avatar-box {
-                height: 100px !important;
+                height: 90px !important;
+            }
+
+            .avatar-box::after {
+                height: 15% !important;
             }
 
             .avatar-speech-ring {
-                width: 150px !important;
-                height: 150px !important;
+                width: 120px !important;
+                height: 120px !important;
+            }
+
+            .chatbot-wrapper.is-chatting .avatar-speech-ring {
+                width: 80px !important;
+                height: 80px !important;
             }
 
             .avatar-status-badge {
-                top: 0.5rem !important;
-                left: 0.5rem !important;
-                padding: 0.25rem 0.65rem !important;
-                font-size: 0.75rem !important;
+                top: 0.25rem !important;
+                left: 0.25rem !important;
+                padding: 0.2rem 0.55rem !important;
+                font-size: 0.7rem !important;
+                gap: 0.35rem !important;
             }
 
+            /* Sound controls - position below avatar area, not overlapping */
+            .avatar-sound-controls {
+                position: relative !important;
+                bottom: auto !important;
+                left: auto !important;
+                justify-content: center !important;
+                margin-top: 0.25rem !important;
+                margin-bottom: 0.25rem !important;
+            }
+
+            .snd-ctrl-btn {
+                width: 36px !important;
+                height: 36px !important;
+            }
+
+            .snd-ctrl-btn svg {
+                width: 16px !important;
+                height: 16px !important;
+            }
+
+            /* Cards grid - 2x2 on mobile */
             .cards-grid {
                 position: relative !important;
                 bottom: auto !important;
                 left: auto !important;
                 transform: none !important;
                 width: 100% !important;
-                margin-top: 0.75rem !important;
+                margin-top: 0.5rem !important;
                 grid-template-columns: repeat(2, 1fr) !important;
                 gap: 0.5rem !important;
             }
 
             .cards-grid .checkin-card {
                 height: auto !important;
-                min-height: 70px !important;
-                padding: 0.6rem 0.35rem !important;
+                min-height: 60px !important;
+                padding: 0.5rem 0.35rem !important;
                 border-radius: 12px !important;
+                gap: 0.3rem !important;
             }
 
             .cards-grid .card-icon-wrap {
-                width: 2rem !important;
-                height: 2rem !important;
+                width: 1.8rem !important;
+                height: 1.8rem !important;
                 border-radius: 8px !important;
             }
 
             .cards-grid .card-icon-wrap svg {
-                width: 1rem !important;
-                height: 1rem !important;
+                width: 0.95rem !important;
+                height: 0.95rem !important;
             }
 
             .cards-grid .card-title {
-                font-size: 0.75rem !important;
+                font-size: 0.7rem !important;
+                line-height: 1.15 !important;
             }
 
             .cards-grid .card-sub {
-                font-size: 0.62rem !important;
+                font-size: 0.6rem !important;
             }
 
+            /* Right panel */
             .kiosk-right-panel {
                 flex: none !important;
                 width: 100% !important;
                 height: auto !important;
-                padding: 0 !important;
+                padding: 0.5rem 0.5rem 0 !important;
             }
 
             .chatbot-wrapper.is-chatting .kiosk-right-panel {
-                padding: 0 !important;
+                padding: 0.5rem 0.5rem 0 !important;
+                flex: 1 !important;
             }
 
             .right-panel-greeting {
-                margin-bottom: 0.5rem !important;
-                padding: 0.5rem 0 !important;
+                margin-bottom: 0.3rem !important;
+                padding: 0.25rem 0 !important;
             }
 
             .right-panel-greeting h2 {
-                font-size: 1.8rem !important;
-                margin-bottom: 0.2rem !important;
+                font-size: 1.5rem !important;
+                margin-bottom: 0.15rem !important;
             }
 
             .right-panel-greeting p {
-                font-size: 1rem !important;
+                font-size: 0.9rem !important;
             }
 
             .right-panel-greeting .greeting-subtitle {
-                font-size: 0.82rem !important;
-                margin-top: 0.3rem !important;
+                font-size: 0.78rem !important;
+                margin-top: 0.2rem !important;
             }
 
+            /* Chat panel */
             .chat-card-panel {
-                padding: 0.85rem !important;
-                border-radius: 16px !important;
+                padding: 0.75rem !important;
+                border-radius: 14px !important;
             }
 
             .chat-history-scroll {
-                max-height: 50vh !important;
+                max-height: 45vh !important;
+                gap: 0.65rem !important;
+                margin-bottom: 0.5rem !important;
             }
 
             .chat-bubble {
-                max-width: 90% !important;
-                font-size: 0.85rem !important;
-                padding: 0.65rem 0.85rem !important;
+                max-width: 92% !important;
+                font-size: 0.82rem !important;
+                padding: 0.6rem 0.8rem !important;
             }
 
             .reg-confirm-grid {
                 grid-template-columns: 1fr !important;
-                gap: 0.4rem !important;
-            }
-
-            .chat-suggested-chips {
                 gap: 0.35rem !important;
             }
 
-            .chip-btn {
-                padding: 0.3rem 0.65rem !important;
-                font-size: 0.75rem !important;
+            /* Suggested chips */
+            .chat-suggested-chips {
+                gap: 0.3rem !important;
+                margin-bottom: 0.5rem !important;
             }
 
+            .chip-btn {
+                padding: 0.25rem 0.6rem !important;
+                font-size: 0.72rem !important;
+            }
+
+            /* Input area */
             .chat-input-row {
-                padding: 0.35rem 0.5rem !important;
-                border-radius: 14px !important;
+                padding: 0.3rem 0.5rem !important;
+                border-radius: 12px !important;
+                gap: 0.4rem !important;
             }
 
             .chat-textarea-input {
-                font-size: 0.85rem !important;
+                font-size: 0.82rem !important;
+                padding: 0.35rem !important;
             }
 
             .action-btn-mic,
             .action-btn-send {
-                width: 34px !important;
-                height: 34px !important;
+                width: 36px !important;
+                height: 36px !important;
             }
 
             .action-btn-mic svg,
@@ -1889,16 +1937,48 @@
                 height: 16px !important;
             }
 
+            /* Close button */
             .chatbot-close-btn {
-                top: 0.5rem !important;
-                right: 0.5rem !important;
-                width: 2rem !important;
-                height: 2rem !important;
+                top: 0.35rem !important;
+                right: 0.35rem !important;
+                width: 30px !important;
+                height: 30px !important;
+                border-radius: 8px !important;
             }
 
             .chatbot-close-btn svg {
-                width: 1rem !important;
-                height: 1rem !important;
+                width: 14px !important;
+                height: 14px !important;
+            }
+        }
+
+        /* ============================================================
+           EXTRA SMALL SCREENS (Screen Width <= 400px)
+        ============================================================ */
+        @media (max-width: 400px) {
+            .kiosk-left-panel {
+                min-height: 160px !important;
+                max-height: 260px !important;
+            }
+
+            .avatar-box {
+                height: 120px !important;
+            }
+
+            .chatbot-wrapper.is-chatting .avatar-box {
+                height: 70px !important;
+            }
+
+            .cards-grid .card-title {
+                font-size: 0.65rem !important;
+            }
+
+            .right-panel-greeting h2 {
+                font-size: 1.3rem !important;
+            }
+
+            .chat-history-scroll {
+                max-height: 40vh !important;
             }
         }
 

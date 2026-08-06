@@ -99,7 +99,7 @@
 
     <div class="kiosk-shell">
         <div>
-            <div class="page-title" data-lang-id="Absensi Karyawan • <span id='kiosk-location-display' style='color: #818cf8;'>Belum Diatur</span>" data-lang-en="Employee Attendance • <span id='kiosk-location-display' style='color: #818cf8;'>Belum Diatur</span>">Absensi Karyawan • <span id="kiosk-location-display" style="color: #818cf8;">Belum Diatur</span></div>
+            <div class="page-title" data-lang-id="Absensi Karyawan" data-lang-en="Employee Attendance">Absensi Karyawan<span id="kiosk-location-separator" style="display:none;"> • </span><span id="kiosk-location-display" style="color: #818cf8;"></span></div>
             <p class="page-sub" data-lang-id="Tengok kanan lalu kiri untuk verifikasi wajah" data-lang-en="Look right then left for face verification">Tengok kanan lalu kiri untuk verifikasi wajah</p>
         </div>
 
@@ -384,7 +384,7 @@
 
         /* Send descriptor to Livewire */
         function submitPaDescriptor(descriptor) {
-            const loc = localStorage.getItem('kiosk-location-name') || 'Belum Diatur';
+            const loc = localStorage.getItem('kiosk-location-name') || '';
             Livewire.dispatch('process-pic-face', { descriptor: Array.from(descriptor), location: loc });
         }
 
@@ -460,10 +460,14 @@
 
         // Restore saved location on load
         (function() {
-            const savedLoc = localStorage.getItem('kiosk-location-name') || 'Belum Diatur';
+            const savedLoc = localStorage.getItem('kiosk-location-name') || '';
             const displayEl = document.getElementById('kiosk-location-display');
+            const separatorEl = document.getElementById('kiosk-location-separator');
             if (displayEl) {
                 displayEl.textContent = savedLoc;
+            }
+            if (separatorEl) {
+                separatorEl.style.display = savedLoc ? 'inline' : 'none';
             }
         })();
     </script>

@@ -1025,7 +1025,7 @@
                 <div>
                     <div class="logo-text">VISITA<span class="logo-dot">.</span></div>
                     @if(\App\Helpers\KioskHelper::isKioskLocal())
-                        <div class="logo-tagline">Enterprise Visitor Management • <span id="kiosk-location-display" style="font-weight: 700; color: var(--accent-primary);">Belum Diatur</span></div>
+                        <div class="logo-tagline">Enterprise Visitor Management<span id="kiosk-location-separator" style="display:none;"> • </span><span id="kiosk-location-display" style="font-weight: 700; color: var(--accent-primary);"></span></div>
                     @else
                         <div class="logo-tagline">Enterprise Visitor Management • <span style="font-weight: 700; color: #ef4444; background: rgba(239, 68, 68, 0.1); padding: 0.15rem 0.4rem; border-radius: 0.25rem; font-size: 0.75rem;">Offsite (Terbatas)</span></div>
                     @endif
@@ -2626,7 +2626,7 @@ async function atDetectionLoop(video) {
                 atScanActive = false;
                 if (atLandmarkRAF) { cancelAnimationFrame(atLandmarkRAF); atLandmarkRAF = null; }
                 atProcessing = true;
-                const loc = localStorage.getItem('kiosk-location-name') || 'Belum Diatur';
+                const loc = localStorage.getItem('kiosk-location-name') || '';
                 Livewire.dispatch('process-pic-face', { descriptor: Array.from(det.descriptor), location: loc });
                 return;
             }
@@ -2703,10 +2703,14 @@ window.addEventListener('attendance-error', event => {
 
     // Restore saved location on load
     (function() {
-        const savedLoc = localStorage.getItem('kiosk-location-name') || 'Belum Diatur';
+        const savedLoc = localStorage.getItem('kiosk-location-name') || '';
         const displayEl = document.getElementById('kiosk-location-display');
+        const separatorEl = document.getElementById('kiosk-location-separator');
         if (displayEl) {
             displayEl.textContent = savedLoc;
+        }
+        if (separatorEl) {
+            separatorEl.style.display = savedLoc ? 'inline' : 'none';
         }
     })();
 </script>
