@@ -371,8 +371,12 @@ class AppointmentsTable
                         $user = auth()->user();
                         if (!$user) return false;
                         
-                        return $user->roles->contains(fn($role) => $role->hasPermissionTo('view_visitor_face_photo')) 
-                            || $user->hasDirectPermission('view_visitor_face_photo');
+                        try {
+                            return $user->roles->contains(fn($role) => $role->hasPermissionTo('view_visitor_face_photo')) 
+                                || $user->hasDirectPermission('view_visitor_face_photo');
+                        } catch (\Exception $e) {
+                            return false;
+                        }
                     }),
 
                 // 5. Tombol Edit
