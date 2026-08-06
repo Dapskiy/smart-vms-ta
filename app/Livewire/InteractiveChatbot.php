@@ -31,10 +31,23 @@ class InteractiveChatbot extends Component
     /** @var string Bahasa Kiosk (id|en) */
     public string $lang = 'id';
 
+    /** @var string Kiosk Location (SA|SB|GKT) */
+    public string $kioskLocation = '';
+
     #[On('setLang')]
     public function setLang($lang)
     {
         $this->lang = $lang;
+    }
+
+    #[On('chatbot-receive-message')]
+    public function receiveMessage($message, $location = null)
+    {
+        if ($location) {
+            $this->kioskLocation = $location;
+        }
+        $this->inputMessage = $message;
+        $this->sendMessage();
     }
 
     // ── Registration State ────────────────────────────────────────
@@ -84,6 +97,13 @@ class InteractiveChatbot extends Component
         $companyDesc = $setting->company_description ?? '';
 
         $prompt  = "Kamu adalah **VISITA Virtual Receptionist**, asisten virtual cerdas dan ramah yang bertugas di layar Kiosk pendaftaran tamu milik {$companyName}.\n\n";
+        
+        if ($this->kioskLocation && $this->kioskLocation !== 'Belum Diatur') {
+            $prompt .= "## LOKASI KIOSK SAAT INI (SANGAT PENTING)\n";
+            $prompt .= "Pengunjung yang berinteraksi denganmu saat ini SECARA FISIK berada di depan Kiosk di **Gedung {$this->kioskLocation}**.\n";
+            $prompt .= "- Jika pengunjung mencari PIC dan PIC tersebut juga berada di **Gedung {$this->kioskLocation}**, beritahu bahwa PIC tersebut ada di gedung ini (di sini).\n";
+            $prompt .= "- Jika PIC berada di gedung LAIN (misal PIC di Gedung SB, sedangkan Kiosk di Gedung SA), kamu WAJIB memberitahu pengunjung secara eksplisit bahwa PIC tersebut berada di gedung lain (Gedung SB) dan arahkan/persilakan pengunjung untuk menuju/memasuki gedung tersebut.\n\n";
+        }
         if (!empty($companyDesc)) {
             $prompt .= "## PROFIL PERUSAHAAN (KONTEKS TAMBAHAN)\n";
             $prompt .= "{$companyDesc}\n\n";

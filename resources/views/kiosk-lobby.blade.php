@@ -2626,7 +2626,8 @@ async function atDetectionLoop(video) {
                 atScanActive = false;
                 if (atLandmarkRAF) { cancelAnimationFrame(atLandmarkRAF); atLandmarkRAF = null; }
                 atProcessing = true;
-                Livewire.dispatch('process-pic-face', { descriptor: Array.from(det.descriptor) });
+                const loc = localStorage.getItem('kiosk-location-name') || 'Belum Diatur';
+                Livewire.dispatch('process-pic-face', { descriptor: Array.from(det.descriptor), location: loc });
                 return;
             }
         }

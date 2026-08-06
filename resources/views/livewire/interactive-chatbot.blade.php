@@ -385,11 +385,18 @@
     <!-- marked.js untuk render Markdown (offline-resilient) -->
     <script src="/js/marked.min.js"></script>
     <script>
+        document.addEventListener('livewire:initialized', () => {
+            const loc = localStorage.getItem('kiosk-location-name') || 'Belum Diatur';
+            @this.set('kioskLocation', loc);
+        });
+
         if (window.marked) { marked.setOptions({ breaks: true, gfm: true }); }
 
         (function () {
             'use strict';
             let currentAudio = null;
+            let currentAbortController = null;
+            let currentBlobUrl = null;
             let fallbackIndoVoice = null;
 
             function loadFallbackVoices() {
@@ -404,6 +411,13 @@
 
             function fireTtsEvent(name) { window.dispatchEvent(new CustomEvent(name)); }
 
+            function cleanupBlobUrl() {
+                if (currentBlobUrl) {
+                    URL.revokeObjectURL(currentBlobUrl);
+                    currentBlobUrl = null;
+                }
+            }
+
             window.speakText = function (text) {
                 if (!text) return;
 
@@ -413,39 +427,60 @@
                 const plain = text.replace(/<!--.*?-->/gs, '').replace(/[*_`#>~|\-]+/g, ' ').replace(/\n+/g, '. ').replace(/\s{2,}/g, ' ').trim();
                 if (!plain) return;
 
-                // Gunakan backend Edge TTS (id-ID-GadisNeural)
-                const ttsUrl = '/api/tts?text=' + encodeURIComponent(plain);
-                const audio = new Audio(ttsUrl);
-                currentAudio = audio;
-
                 // Fire event immediately so buttons appear and avatar starts moving
                 fireTtsEvent('tts-started');
 
-                let fallbackTriggered = false;
+                // Gunakan backend Edge TTS via fetch→Blob untuk playback lebih cepat
+                const currentLang = window.appLang || 'id';
+                const ttsUrl = `/api/tts?text=${encodeURIComponent(plain)}&lang=${currentLang}`;
 
-                audio.onended = () => {
-                    currentAudio = null;
-                    fireTtsEvent('tts-ended');
-                };
+                const abortController = new AbortController();
+                currentAbortController = abortController;
 
-                audio.onerror = (e) => {
-                    if (fallbackTriggered) return;
-                    fallbackTriggered = true;
-                    console.warn("Edge TTS failed, falling back to Web Speech API", e);
-                    currentAudio = null;
-                    fallbackSpeak(plain);
-                };
+                fetch(ttsUrl, { signal: abortController.signal })
+                    .then(response => {
+                        if (!response.ok) throw new Error('TTS response not ok: ' + response.status);
+                        return response.blob();
+                    })
+                    .then(blob => {
+                        // Jika sudah di-cancel saat fetching, jangan play
+                        if (abortController.signal.aborted) return;
 
-                const playPromise = audio.play();
-                if (playPromise !== undefined) {
-                    playPromise.catch(err => {
-                        if (fallbackTriggered) return;
-                        fallbackTriggered = true;
-                        console.warn("Edge TTS play failed (e.g. autoplay restriction), falling back", err);
-                        currentAudio = null;
+                        cleanupBlobUrl();
+                        const blobUrl = URL.createObjectURL(blob);
+                        currentBlobUrl = blobUrl;
+
+                        const audio = new Audio(blobUrl);
+                        currentAudio = audio;
+
+                        audio.onended = () => {
+                            currentAudio = null;
+                            cleanupBlobUrl();
+                            fireTtsEvent('tts-ended');
+                        };
+
+                        audio.onerror = (e) => {
+                            console.warn("Edge TTS blob playback failed, falling back to Web Speech API", e);
+                            currentAudio = null;
+                            cleanupBlobUrl();
+                            fallbackSpeak(plain);
+                        };
+
+                        const playPromise = audio.play();
+                        if (playPromise !== undefined) {
+                            playPromise.catch(err => {
+                                console.warn("Edge TTS play failed (e.g. autoplay restriction), falling back", err);
+                                currentAudio = null;
+                                cleanupBlobUrl();
+                                fallbackSpeak(plain);
+                            });
+                        }
+                    })
+                    .catch(err => {
+                        if (err.name === 'AbortError') return; // Cancelled by user, ignore
+                        console.warn("Edge TTS fetch failed, falling back to Web Speech API", err);
                         fallbackSpeak(plain);
                     });
-                }
             };
 
             let currentUttId = 0;
@@ -474,11 +509,17 @@
 
             window.stopAiSpeech = () => {
                 currentUttId++; // Invalidate any ongoing fallback TTS events
+                // Cancel in-flight fetch request
+                if (currentAbortController) {
+                    currentAbortController.abort();
+                    currentAbortController = null;
+                }
                 if (currentAudio) {
                     currentAudio.pause();
                     currentAudio.currentTime = 0;
                     currentAudio = null;
                 }
+                cleanupBlobUrl();
                 if (window.speechSynthesis) {
                     window.speechSynthesis.cancel();
                 }
@@ -1223,8 +1264,8 @@
 
         .action-btn-mic,
         .action-btn-send {
-            width: 38px;
-            height: 38px;
+            width: 44px;
+            height: 44px;
             border-radius: 50%;
             border: none;
             display: flex;
@@ -1233,18 +1274,19 @@
             cursor: pointer;
             transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
             flex-shrink: 0;
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
         }
 
         .action-btn-mic svg,
         .action-btn-send svg {
-            width: 18px;
-            height: 18px;
+            width: 20px;
+            height: 20px;
         }
 
         .action-btn-mic {
-            background: #f1f5f9;
-            color: #64748b;
-            border: 1px solid #e2e8f0;
+            background: #e2e8f0;
+            color: #475569;
+            border: 2px solid #cbd5e1;
         }
 
         .action-btn-mic:hover {
@@ -1265,13 +1307,15 @@
         }
 
         .action-btn-send {
-            background: #2563EB;
+            background: linear-gradient(135deg, #3b82f6, #1d4ed8);
             color: #ffffff;
+            box-shadow: 0 4px 14px rgba(37, 99, 235, 0.4);
         }
 
         .action-btn-send:hover:not(:disabled) {
-            background: #1d4ed8;
-            transform: scale(1.05);
+            background: linear-gradient(135deg, #2563eb, #1e40af);
+            transform: scale(1.08);
+            box-shadow: 0 6px 20px rgba(37, 99, 235, 0.6);
         }
 
         .action-btn-send:active:not(:disabled) {
@@ -1511,14 +1555,26 @@
 
         /* Mic button */
         html.dark-mode .action-btn-mic {
-            background: #475569;
-            color: #94A3B8;
-            border-color: #475569;
+            background: #334155;
+            color: #cbd5e1;
+            border: 2px solid #475569;
         }
 
         html.dark-mode .action-btn-mic:hover {
-            background: #64748B;
-            color: #F1F5F9;
+            background: #475569;
+            color: #ffffff;
+            border-color: #64748b;
+        }
+        
+        /* Send button */
+        html.dark-mode .action-btn-send {
+            background: linear-gradient(135deg, #3b82f6, #2563eb);
+            box-shadow: 0 4px 14px rgba(59, 130, 246, 0.4);
+        }
+        
+        html.dark-mode .action-btn-send:hover:not(:disabled) {
+            background: linear-gradient(135deg, #60a5fa, #3b82f6);
+            box-shadow: 0 6px 20px rgba(59, 130, 246, 0.6);
         }
 
         /* Chip buttons */

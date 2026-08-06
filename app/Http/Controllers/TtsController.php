@@ -25,8 +25,9 @@ class TtsController extends Controller
             return response()->json(['error' => 'No speakable text'], 400);
         }
 
-        // Voice model: Indonesian Female (Gadis)
-        $voice = 'id-ID-GadisNeural';
+        // Voice model selection based on language parameter
+        $lang = $request->input('lang', 'id');
+        $voice = ($lang === 'en') ? 'en-US-AriaNeural' : 'id-ID-GadisNeural';
 
         // Maximum character limit to prevent abuse or timeout
         if (mb_strlen($cleanText) > 1500) {
@@ -58,39 +59,41 @@ class TtsController extends Controller
         $scriptPath = app_path('Scripts/generate_tts.py');
 
         try {
-            return response()->stream(function () use ($scriptPath, $tempTxtFile, $voice, $outputPath) {
-                // Gunakan python3 untuk Ubuntu/Linux, python untuk Windows
+            // Gunakan CLI edge-tts secara langsung (jauh lebih reliabel daripada script python)
+            // Jika edge-tts tidak ditemukan di PATH, fallback ke python -m edge_tts
+            $binary = (PHP_OS_FAMILY === 'Windows') ? 'edge-tts' : 'edge-tts';
+            
+            $command = escapeshellcmd($binary) . " --rate=+10% -f " 
+                     . escapeshellarg($tempTxtFile) . " -v " 
+                     . escapeshellarg($voice) . " --write-media "
+                     . escapeshellarg($outputPath);
+            
+            $result = Process::timeout(15)->run($command);
+            
+            // Jika eksekusi gagal, coba menggunakan fallback python -m edge_tts
+            if (!$result->successful() || !file_exists($outputPath) || filesize($outputPath) == 0) {
                 $pythonCmd = (PHP_OS_FAMILY === 'Windows') ? 'python' : 'python3';
-                $command = escapeshellcmd($pythonCmd) . " -u " . escapeshellarg($scriptPath) . " " . escapeshellarg($tempTxtFile) . " " . escapeshellarg($voice);
-                
-                $handle = popen($command, 'rb');
-                $cacheFile = fopen($outputPath, 'wb');
-                
-                if (is_resource($handle)) {
-                    while (!feof($handle)) {
-                        $chunk = fread($handle, 8192);
-                        if ($chunk !== false && $chunk !== '') {
-                            echo $chunk;
-                            if (is_resource($cacheFile)) {
-                                fwrite($cacheFile, $chunk);
-                            }
-                            ob_flush();
-                            flush(); // Force output to the browser immediately
-                        }
-                    }
-                    pclose($handle);
-                }
-                
-                if (is_resource($cacheFile)) {
-                    fclose($cacheFile);
-                }
-                
-                @unlink($tempTxtFile);
-            }, 200, [
-                'Content-Type' => 'audio/mpeg',
-                'Cache-Control' => 'no-cache, no-store, must-revalidate',
-                'X-Accel-Buffering' => 'no', // Disable buffering for instant playback
-            ]);
+                $commandFallback = escapeshellcmd($pythonCmd) . " -m edge_tts --rate=+10% -f " 
+                         . escapeshellarg($tempTxtFile) . " -v " 
+                         . escapeshellarg($voice) . " --write-media "
+                         . escapeshellarg($outputPath);
+                $result = Process::timeout(15)->run($commandFallback);
+            }
+
+            @unlink($tempTxtFile);
+
+            if ($result->successful() && file_exists($outputPath) && filesize($outputPath) > 0) {
+                return response()->file($outputPath, [
+                    'Content-Type' => 'audio/mpeg',
+                    'Cache-Control' => 'public, max-age=86400',
+                ]);
+            }
+
+            // If save-to-file failed, return error
+            return response()->json([
+                'error' => 'TTS generation failed',
+                'message' => $result->errorOutput() ?: 'Unknown error',
+            ], 500);
 
         } catch (\Throwable $e) {
             @unlink($tempTxtFile);

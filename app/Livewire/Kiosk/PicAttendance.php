@@ -25,6 +25,15 @@ class PicAttendance extends Component
     #[On('process-pic-face')]
     public function processFace($descriptor, $location = 'SA')
     {
+        // Livewire 3 might pass the object as the first parameter
+        if (is_array($descriptor) && array_key_exists('descriptor', $descriptor)) {
+            $location = $descriptor['location'] ?? $location;
+            $descriptor = $descriptor['descriptor'];
+        }
+
+        if (!is_array($descriptor)) {
+            return;
+        }
         if (!\App\Helpers\KioskHelper::isKioskLocal()) {
             $this->message = "Fitur absensi hanya dapat digunakan di jaringan lokal kantor.";
             $this->messageType = 'error';
