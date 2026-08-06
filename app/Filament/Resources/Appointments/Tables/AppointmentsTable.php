@@ -373,13 +373,13 @@ class AppointmentsTable
                         
                         $hasRolePerm = \Illuminate\Support\Facades\DB::table('role_has_permissions')
                             ->join('permissions', 'permissions.id', '=', 'role_has_permissions.permission_id')
-                            ->where('permissions.name', 'view_visitor_face_photo')
+                            ->where('permissions.name', 'ViewVisitorFacePhoto')
                             ->whereIn('role_has_permissions.role_id', $user->roles->pluck('id'))
                             ->exists();
 
                         $hasDirectPerm = \Illuminate\Support\Facades\DB::table('model_has_permissions')
                             ->join('permissions', 'permissions.id', '=', 'model_has_permissions.permission_id')
-                            ->where('permissions.name', 'view_visitor_face_photo')
+                            ->where('permissions.name', 'ViewVisitorFacePhoto')
                             ->where('model_has_permissions.model_id', $user->id)
                             ->exists();
 
