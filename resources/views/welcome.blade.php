@@ -2342,13 +2342,13 @@
         let successMaxSeconds = 180;
 
         function showSuccessPopup(appt) {
-            document.getElementById('si-name').textContent  = appt.visitor_name  || '-';
-            document.getElementById('si-pic').textContent   = appt.pic_name      || '-';
-            document.getElementById('si-room').textContent  = appt.room_name     || '-';
-            document.getElementById('si-date').textContent  = appt.visit_date    || '-';
-            document.getElementById('si-time').textContent  = appt.visit_time    || '-';
-            document.getElementById('si-checkin').textContent = appt.checkin_time || '-';
-            document.getElementById('si-purpose').textContent = appt.purpose      || '-';
+            if(document.getElementById('si-name')) document.getElementById('si-name').textContent  = appt.visitor_name  || '-';
+            if(document.getElementById('si-pic')) document.getElementById('si-pic').textContent   = appt.pic_name      || '-';
+            if(document.getElementById('si-room')) document.getElementById('si-room').textContent  = appt.room_name     || '-';
+            if(document.getElementById('si-date')) document.getElementById('si-date').textContent  = appt.visit_date    || '-';
+            if(document.getElementById('si-time')) document.getElementById('si-time').textContent  = appt.visit_time    || '-';
+            if(document.getElementById('si-checkin')) document.getElementById('si-checkin').textContent = appt.checkin_time || '-';
+            if(document.getElementById('si-purpose')) document.getElementById('si-purpose').textContent = appt.purpose      || '-';
 
             document.getElementById('modal-success').classList.add('active');
 
