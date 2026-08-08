@@ -1857,6 +1857,7 @@
         let faceScanMode       = 'checkin'; // 'checkin' atau 'walkin'
 
         async function openFaceScan(mode = 'checkin') {
+            window.ciPhotos = [];
             faceScanMode = mode;
             if (mode === 'checkin') {
                 closeMethodPicker();
@@ -2033,7 +2034,10 @@
                                 ciPreparingPhoto = true;
                                 setFaceMessage('Diam sebentar...', 'info');
                                 setTimeout(() => {
-                                    ciPhotoSnapshot  = captureKioskPhoto(document.getElementById('ci-face-video'));
+                                    const snap = captureKioskPhoto(document.getElementById('ci-face-video'));
+                                    ciPhotoSnapshot = snap;
+                                    if (!window.ciPhotos) window.ciPhotos = [];
+                                    window.ciPhotos[0] = snap;
                                     ciPreparingPhoto = false;
                                 }, 800);
                             }
@@ -2041,11 +2045,17 @@
                         }
                         setFaceMessage('Tengok ke kanan ➡', 'info');
                         showArrow('right');
-                        if (noseRatio < 0.38) livenessStep = 'right';
+                        if (noseRatio < 0.38) {
+                            if (!window.ciPhotos) window.ciPhotos = [];
+                            window.ciPhotos[1] = captureKioskPhoto(document.getElementById('ci-face-video'));
+                            livenessStep = 'right';
+                        }
                     } else if (livenessStep === 'right') {
                         setFaceMessage('⬅ Sekarang tengok ke kiri', 'info');
                         showArrow('left');
                         if (noseRatio > 0.62) {
+                            if (!window.ciPhotos) window.ciPhotos = [];
+                            window.ciPhotos[2] = captureKioskPhoto(document.getElementById('ci-face-video'));
                             livenessStep = 'smile';
                             showArrow('none');
                         }
@@ -2053,6 +2063,8 @@
                         showArrow('none');
                         setFaceMessage('Silakan Tersenyum Lebar 😊', 'info');
                         if (det.expressions && det.expressions.happy > 0.60) {
+                            if (!window.ciPhotos) window.ciPhotos = [];
+                            window.ciPhotos[3] = captureKioskPhoto(document.getElementById('ci-face-video'));
                             livenessStep = 'passed';
                             setFaceMessage('Verifikasi berhasil! Memproses...', 'success');
                             faceScanActive = false;
@@ -2066,15 +2078,15 @@
         }
 
         async function submitFaceDescriptor(descriptor) {
-            // Capture photo BEFORE closeFaceScan() resets ciPhotoSnapshot to null
-            const capturedPhoto = ciPhotoSnapshot;
+            // Capture photos BEFORE closeFaceScan() resets state
+            const capturedPhotos = (window.ciPhotos && window.ciPhotos.length > 0) ? window.ciPhotos : [ciPhotoSnapshot];
 
             if (faceScanMode === 'walkin') {
                 // Return data to Livewire component
                 closeFaceScan();
                 Livewire.dispatch('finalizeWalkin', { 
                     descriptor: Array.from(descriptor), 
-                    photoBase64: capturedPhoto 
+                    photoBase64: capturedPhotos 
                 });
                 return;
             }
@@ -2084,7 +2096,7 @@
                 closeFaceScan();
                 Livewire.dispatch('findVisitorByFace', { 
                     descriptor: Array.from(descriptor),
-                    photoBase64: capturedPhoto
+                    photoBase64: capturedPhotos
                 });
                 return;
             }

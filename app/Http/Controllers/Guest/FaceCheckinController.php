@@ -95,11 +95,17 @@ class FaceCheckinController extends Controller
 
                 $saveData = [];
 
-                // Maksimal 10 sampel per visitor — jika sudah penuh, tidak ditambah lagi
-                if (count($existingPhotos) < 10) {
-                    $existingPhotos[] = $request->input('face_photo');
-                    $saveData['face_photo'] = $existingPhotos;
+                $incomingPhotos = $request->input('face_photo');
+                if (is_array($incomingPhotos)) {
+                    foreach ($incomingPhotos as $p) {
+                        if (!empty($p) && count($existingPhotos) < 10) {
+                            $existingPhotos[] = $p;
+                        }
+                    }
+                } else if (!empty($incomingPhotos) && count($existingPhotos) < 10) {
+                    $existingPhotos[] = $incomingPhotos;
                 }
+                $saveData['face_photo'] = $existingPhotos;
                 if (count($existingFeatures) < 10) {
                     $existingFeatures[] = $incomingDescriptor;
                     $saveData['face_features'] = $existingFeatures;

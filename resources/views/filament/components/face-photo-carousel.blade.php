@@ -6,23 +6,31 @@
     // Selalu siapkan 4 slide sesuai tahapan scan wajah
     $slides = [];
     for ($i = 0; $i < 4; $i++) {
-        // Ambil foto spesifik untuk posisi $i, jika tidak ada fallback ke foto pertama [0]
         $img = $rawPhotoList[$i] ?? ($rawPhotoList[0] ?? null);
         $slides[] = [
             'label' => $stepNames[$i],
             'image' => $img,
-            'isSpecific' => isset($rawPhotoList[$i]),
+            'isReal' => isset($rawPhotoList[$i]),
         ];
     }
+    $uniqId = 'fpc_' . uniqid();
 @endphp
 
 <div
+    id="{{ $uniqId }}"
     x-data="{
         current: 0,
         total: 4,
         slides: @js($slides),
-        next() { this.current = (this.current + 1) % this.total; },
-        prev() { this.current = (this.current - 1 + this.total) % this.total; }
+        go(idx) {
+            this.current = (idx + this.total) % this.total;
+        },
+        next() {
+            this.go(this.current + 1);
+        },
+        prev() {
+            this.go(this.current - 1);
+        }
     }"
     x-on:keydown.arrow-right.window="next()"
     x-on:keydown.arrow-left.window="prev()"
@@ -37,17 +45,17 @@
                 <img
                     :src="slides[current].image"
                     :alt="slides[current].label"
-                    class="w-full h-full object-cover transition-all duration-300"
+                    class="w-full h-full object-cover transition-opacity duration-200"
                 />
 
                 {{-- Left Arrow Button --}}
                 <button
                     type="button"
-                    @click="prev()"
-                    class="absolute left-3 top-1/2 -translate-y-1/2 z-20 w-10 h-10 rounded-full bg-black/60 hover:bg-black/85 text-white flex items-center justify-center transition-all duration-200 hover:scale-110 shadow-lg border border-white/20 cursor-pointer"
+                    x-on:click.stop="prev()"
+                    class="absolute left-3 top-1/2 -translate-y-1/2 z-30 w-10 h-10 rounded-full bg-black/70 hover:bg-black/90 active:scale-95 text-white flex items-center justify-center transition-all duration-200 shadow-2xl border border-white/20 cursor-pointer pointer-events-auto"
                     title="Foto sebelumnya (←)"
                 >
-                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2.5" stroke="currentColor" class="w-5 h-5">
+                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="3" stroke="currentColor" class="w-5 h-5">
                         <path stroke-linecap="round" stroke-linejoin="round" d="M15.75 19.5L8.25 12l7.5-7.5" />
                     </svg>
                 </button>
@@ -55,18 +63,18 @@
                 {{-- Right Arrow Button --}}
                 <button
                     type="button"
-                    @click="next()"
-                    class="absolute right-3 top-1/2 -translate-y-1/2 z-20 w-10 h-10 rounded-full bg-black/60 hover:bg-black/85 text-white flex items-center justify-center transition-all duration-200 hover:scale-110 shadow-lg border border-white/20 cursor-pointer"
+                    x-on:click.stop="next()"
+                    class="absolute right-3 top-1/2 -translate-y-1/2 z-30 w-10 h-10 rounded-full bg-black/70 hover:bg-black/90 active:scale-95 text-white flex items-center justify-center transition-all duration-200 shadow-2xl border border-white/20 cursor-pointer pointer-events-auto"
                     title="Foto berikutnya (→)"
                 >
-                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2.5" stroke="currentColor" class="w-5 h-5">
+                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="3" stroke="currentColor" class="w-5 h-5">
                         <path stroke-linecap="round" stroke-linejoin="round" d="M8.25 4.5l7.5 7.5-7.5 7.5" />
                     </svg>
                 </button>
 
                 {{-- Position Label Badge (bottom center) --}}
-                <div class="absolute bottom-3 left-1/2 -translate-x-1/2 z-20">
-                    <span class="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full bg-black/75 backdrop-blur-md text-white text-xs font-semibold shadow-xl border border-white/15">
+                <div class="absolute bottom-3 left-1/2 -translate-x-1/2 z-30 pointer-events-none">
+                    <span class="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full bg-black/80 backdrop-blur-md text-white text-xs font-semibold shadow-xl border border-white/15">
                         <span class="w-5 h-5 rounded-full bg-indigo-500 flex items-center justify-center text-[10px] font-bold" x-text="current + 1"></span>
                         <span x-text="slides[current].label"></span>
                     </span>
@@ -75,11 +83,11 @@
         </div>
 
         {{-- Dot Indicators (4 Dots Always) --}}
-        <div class="flex items-center gap-2">
+        <div class="flex items-center gap-2 z-30 pointer-events-auto">
             <template x-for="(slide, index) in slides" :key="index">
                 <button
                     type="button"
-                    @click="current = index"
+                    x-on:click.stop="go(index)"
                     :class="current === index ? 'w-7 bg-indigo-500' : 'w-2.5 bg-gray-600 hover:bg-gray-400'"
                     class="h-2.5 rounded-full transition-all duration-300 cursor-pointer"
                     :title="slide.label"

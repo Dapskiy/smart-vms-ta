@@ -547,8 +547,16 @@ class KioskWalkinForm extends Component
             }
             if (!is_array($existingPhotos)) $existingPhotos = [];
             
-            if (count($existingPhotos) < 10) {
+            if (is_array($photoBase64)) {
+                foreach ($photoBase64 as $p) {
+                    if (!empty($p) && count($existingPhotos) < 10) {
+                        $existingPhotos[] = $p;
+                    }
+                }
+            } else if (!empty($photoBase64) && count($existingPhotos) < 10) {
                 $existingPhotos[] = $photoBase64;
+            }
+            if (!empty($existingPhotos)) {
                 $visitor->face_photo = $existingPhotos;
             }
             if (count($existingFeatures) < 10) {
