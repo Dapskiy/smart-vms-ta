@@ -179,93 +179,59 @@ class ManageSummaries extends ManageRecords
 
                             $currentUser = auth()->user();
                             if ($currentUser && !$currentUser->hasRole('super_admin') && $currentUser->pic) {
-                                $picId = $currentUser->pic->id;
-                                $query->whereHas('appointments', function (Builder $q) use ($picId) {
-                                    $q->whereIn('status', ['completed', 'checkout', 'inactive', 'rejected'])
-                                      ->where('pic_id', $picId);
-                                });
-                            } else {
-                                $query->whereHas('appointments', function (Builder $q) {
-                                    $q->whereIn('status', ['completed', 'checkout', 'inactive', 'rejected']);
-                                });
+                                $query->where('pic_id', $currentUser->pic->id);
                             }
 
                             if ($type === 'range') {
                                 if (!empty($urlParams['start_date']) && !empty($urlParams['end_date'])) {
                                     $from = \Carbon\Carbon::parse($urlParams['start_date'])->startOfDay();
                                     $to = \Carbon\Carbon::parse($urlParams['end_date'])->endOfDay();
-                                    
-                                    $query->whereHas('appointments', function ($q) use ($from, $to) {
-                                        $q->whereIn('status', ['completed', 'checkout', 'inactive', 'rejected'])
-                                          ->whereBetween('updated_at', [$from, $to]);
-                                    });
+                                    $query->whereBetween('updated_at', [$from, $to]);
                                 } elseif (!empty($urlParams['start_date'])) {
                                     $from = \Carbon\Carbon::parse($urlParams['start_date'])->startOfDay();
-                                    $query->whereHas('appointments', function ($q) use ($from) {
-                                        $q->whereIn('status', ['completed', 'checkout', 'inactive', 'rejected'])
-                                          ->where('updated_at', '>=', $from);
-                                    });
+                                    $query->where('updated_at', '>=', $from);
                                 } elseif (!empty($urlParams['end_date'])) {
                                     $to = \Carbon\Carbon::parse($urlParams['end_date'])->endOfDay();
-                                    $query->whereHas('appointments', function ($q) use ($to) {
-                                        $q->whereIn('status', ['completed', 'checkout', 'inactive', 'rejected'])
-                                          ->where('updated_at', '<=', $to);
-                                    });
+                                    $query->where('updated_at', '<=', $to);
                                 }
                             } elseif ($type === 'month' && !empty($urlParams['month']) && !empty($urlParams['year'])) {
-                                $month = $urlParams['month'];
-                                $year = $urlParams['year'];
-                                
-                                $query->whereHas('appointments', function ($q) use ($month, $year) {
-                                    $q->whereIn('status', ['completed', 'checkout', 'inactive', 'rejected'])
-                                      ->whereMonth('updated_at', $month)
-                                      ->whereYear('updated_at', $year);
-                                });
+                                $query->whereMonth('updated_at', $urlParams['month'])
+                                      ->whereYear('updated_at', $urlParams['year']);
                             } elseif ($type === 'year' && !empty($urlParams['year'])) {
-                                $year = $urlParams['year'];
-                                
-                                $query->whereHas('appointments', function ($q) use ($year) {
-                                    $q->whereIn('status', ['completed', 'checkout', 'inactive', 'rejected'])
-                                      ->whereYear('updated_at', $year);
-                                });
+                                $query->whereYear('updated_at', $urlParams['year']);
                             }
 
                             return $query;
                         })
                         ->withColumns([
                             \pxlrbt\FilamentExcel\Columns\Column::make('no')->heading('No')->getStateUsing(static function () { static $row = 0; return ++$row; }),
-                            \pxlrbt\FilamentExcel\Columns\Column::make('name')->heading('Nama Visitor'),
-                            \pxlrbt\FilamentExcel\Columns\Column::make('company')->heading('Instansi'),
-                            \pxlrbt\FilamentExcel\Columns\Column::make('phone')
+                            \pxlrbt\FilamentExcel\Columns\Column::make('visitor.name')->heading('Nama Visitor'),
+                            \pxlrbt\FilamentExcel\Columns\Column::make('visitor.company')->heading('Instansi'),
+                            \pxlrbt\FilamentExcel\Columns\Column::make('visitor.phone')
                                 ->heading('No. Telepon')
                                 ->getStateUsing(function ($record) {
-                                    if (empty($record->phone)) return '-';
-                                    if (\App\Helpers\PhoneMaskHelper::canReveal()) return $record->phone;
-                                    return \App\Helpers\PhoneMaskHelper::mask($record->phone);
+                                    $phone = $record->visitor?->phone;
+                                    if (empty($phone)) return '-';
+                                    if (\App\Helpers\PhoneMaskHelper::canReveal()) return $phone;
+                                    return \App\Helpers\PhoneMaskHelper::mask($phone);
                                 }),
                             \pxlrbt\FilamentExcel\Columns\Column::make('visit_date')->heading('Tanggal Berkunjung')->getStateUsing(function ($record) {
-                                $lastAppointment = $record->appointments()->whereIn('status', ['completed', 'checkout', 'inactive', 'rejected'])->latest('visit_date')->first();
-                                return $lastAppointment && $lastAppointment->visit_date ? \Carbon\Carbon::parse($lastAppointment->visit_date)->format('d M Y') : '-';
+                                return $record->visit_date ? \Carbon\Carbon::parse($record->visit_date)->format('d M Y') : '-';
                             }),
                             \pxlrbt\FilamentExcel\Columns\Column::make('visit_time')->heading('Checkin')->getStateUsing(function ($record) {
-                                $lastAppointment = $record->appointments()->whereIn('status', ['completed', 'checkout', 'inactive', 'rejected'])->latest('visit_date')->first();
-                                return $lastAppointment && $lastAppointment->visit_time ? \Carbon\Carbon::parse($lastAppointment->visit_time)->format('H:i') : '-';
+                                return $record->visit_time ? \Carbon\Carbon::parse($record->visit_time)->format('H:i') : '-';
                             }),
                             \pxlrbt\FilamentExcel\Columns\Column::make('checkout_time')->heading('Checkout')->getStateUsing(function ($record) {
-                                $lastAppointment = $record->appointments()->whereIn('status', ['completed', 'checkout', 'inactive', 'rejected'])->latest('visit_date')->first();
-                                if (!$lastAppointment) return '-';
-                                if ($lastAppointment->checkout_time) {
-                                    return \Carbon\Carbon::parse($lastAppointment->checkout_time)->format('H:i');
+                                if ($record->checkout_time) {
+                                    return \Carbon\Carbon::parse($record->checkout_time)->format('H:i');
                                 }
-                                return \Carbon\Carbon::parse($lastAppointment->updated_at)->format('H:i');
+                                return \Carbon\Carbon::parse($record->updated_at)->format('H:i');
                             }),
-                            \pxlrbt\FilamentExcel\Columns\Column::make('pic')->heading('PIC')->getStateUsing(function ($record) {
-                                $lastAppointment = $record->appointments()->whereIn('status', ['completed', 'checkout', 'inactive', 'rejected'])->latest('visit_date')->first();
-                                return $lastAppointment && $lastAppointment->pic ? $lastAppointment->pic->name : '-';
+                            \pxlrbt\FilamentExcel\Columns\Column::make('pic.name')->heading('PIC')->getStateUsing(function ($record) {
+                                return $record->pic?->name ?? '-';
                             }),
                             \pxlrbt\FilamentExcel\Columns\Column::make('purpose')->heading('Keperluan')->getStateUsing(function ($record) {
-                                $lastAppointment = $record->appointments()->whereIn('status', ['completed', 'checkout', 'inactive', 'rejected'])->latest('visit_date')->first();
-                                return $lastAppointment ? $lastAppointment->purpose : '-';
+                                return $record->purpose ?? '-';
                             }),
                         ]),
                 ])
