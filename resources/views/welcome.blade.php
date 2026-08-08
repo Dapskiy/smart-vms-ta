@@ -2066,12 +2066,15 @@
         }
 
         async function submitFaceDescriptor(descriptor) {
+            // Capture photo BEFORE closeFaceScan() resets ciPhotoSnapshot to null
+            const capturedPhoto = ciPhotoSnapshot;
+
             if (faceScanMode === 'walkin') {
                 // Return data to Livewire component
                 closeFaceScan();
                 Livewire.dispatch('finalizeWalkin', { 
                     descriptor: Array.from(descriptor), 
-                    photoBase64: ciPhotoSnapshot 
+                    photoBase64: capturedPhoto 
                 });
                 return;
             }
@@ -2081,7 +2084,7 @@
                 closeFaceScan();
                 Livewire.dispatch('findVisitorByFace', { 
                     descriptor: Array.from(descriptor),
-                    photoBase64: ciPhotoSnapshot
+                    photoBase64: capturedPhoto
                 });
                 return;
             }
@@ -2091,7 +2094,7 @@
                 closeFaceScan();
                 Livewire.dispatch('finalizeChatbotRegistration', { 
                     descriptor: Array.from(descriptor), 
-                    photoBase64: ciPhotoSnapshot 
+                    photoBase64: capturedPhoto 
                 });
                 return;
             }
@@ -2101,14 +2104,14 @@
                 closeFaceScan();
                 Livewire.dispatch('chatbotLookupVisitorByFace', { 
                     descriptor: Array.from(descriptor),
-                    photoBase64: ciPhotoSnapshot
+                    photoBase64: capturedPhoto
                 });
                 return;
             }
 
             if (faceScanMode === 'qr-register' || faceScanMode === 'qr-verify') {
                 closeFaceScan();
-                submitQrFinalCheckin(descriptor, ciPhotoSnapshot);
+                submitQrFinalCheckin(descriptor, capturedPhoto);
                 return;
             }
 
@@ -2117,7 +2120,7 @@
                 const res = await fetch('/kiosk/face-checkin', {
                     method: 'POST',
                     headers: { 'Content-Type':'application/json', 'X-CSRF-TOKEN': document.querySelector('meta[name=csrf-token]').content },
-                    body: JSON.stringify({ descriptor: Array.from(descriptor), face_photo: ciPhotoSnapshot })
+                    body: JSON.stringify({ descriptor: Array.from(descriptor), face_photo: capturedPhoto })
                 });
                 const data = await res.json();
                 if (data.success) {
