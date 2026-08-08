@@ -1766,13 +1766,16 @@
                 document.getElementById('si-token').textContent = data.token;
                 document.getElementById('si-qr').src = 'https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=' + data.token;
                 document.getElementById('si-qr').style.display = 'block';
-                successSecondsLeft = 20; // Beri waktu lebih lama (20 detik) agar pengunjung bisa memfoto QR
+                successSecondsLeft = 30; // Beri waktu lebih lama (30 detik) agar pengunjung bisa memfoto QR
             } else {
                 document.getElementById('si-token-container').style.display = 'none';
-                successSecondsLeft = 5;
+                successSecondsLeft = 15;
             }
             
             document.getElementById('modal-success').classList.add('active');
+            
+            const alertBox = document.querySelector('#modal-success .success-alert');
+            if (alertBox) alertBox.style.display = 'none';
             
             updateCountdown();
             clearInterval(successTimer);
