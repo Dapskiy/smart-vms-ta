@@ -2068,6 +2068,10 @@
             </div>
             <div class="success-heading">Check-in Berhasil! 🎉</div>
             <p class="success-sub">Selamat datang, data kunjungan Anda telah dicatat.</p>
+            <div class="success-alert" style="margin: 1rem 0 0 0; padding: 0.8rem; background: #fffbeb; border: 1px solid #fde68a; border-radius: 0.5rem; color: #b45309; font-weight: 600; font-size: 0.95rem; display: flex; align-items: center; gap: 0.5rem; justify-content: center; text-align: center;">
+                <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" style="width: 1.5rem; height: 1.5rem; flex-shrink: 0;"><path stroke-linecap="round" stroke-linejoin="round" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                <span>Mohon tukarkan Kartu Identitas (KTP/SIM) Anda dengan Visitor Badge di meja Satpam.</span>
+            </div>
             <div style="background: rgba(16, 185, 129, 0.1); border: 1px solid rgba(16, 185, 129, 0.3); color: #047857; padding: 1rem; border-radius: 8px; margin: 1rem 0; font-weight: 600; text-align: center; font-size: 1.1rem;">
                 Silakan segera menuju ruangan <span id="si-pic-room">PIC</span>
             </div>

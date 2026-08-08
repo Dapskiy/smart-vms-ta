@@ -2617,6 +2617,10 @@
             </div>
             <div class="success-heading" data-lang-id="Check-in Berhasil! 🎉" data-lang-en="Check-in Successful! 🎉">Check-in Berhasil! 🎉</div>
             <p class="success-sub" data-lang-id="Selamat datang, data kunjungan Anda telah dicatat." data-lang-en="Welcome, your visit data has been recorded.">Selamat datang, data kunjungan Anda telah dicatat.</p>
+            <div class="success-alert" style="margin: 1rem 0; padding: 0.8rem; background: #fffbeb; border: 1px solid #fde68a; border-radius: 0.5rem; color: #b45309; font-weight: 600; font-size: 0.95rem; display: flex; align-items: center; gap: 0.5rem; justify-content: center; text-align: center;">
+                <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" style="width: 1.5rem; height: 1.5rem; flex-shrink: 0;"><path stroke-linecap="round" stroke-linejoin="round" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                <span data-lang-id="Mohon tukarkan Kartu Identitas (KTP/SIM) Anda dengan Visitor Badge di meja Satpam." data-lang-en="Please exchange your ID Card (KTP/SIM) for a Visitor Badge at the Security Desk.">Mohon tukarkan Kartu Identitas (KTP/SIM) Anda dengan Visitor Badge di meja Satpam.</span>
+            </div>
             <div class="info-grid">
                 <div class="info-item"><label data-lang-id="Nama Tamu" data-lang-en="Guest Name">Nama Tamu</label><span id="si-name">-</span></div>
                 <div class="info-item"><label data-lang-id="Instansi" data-lang-en="Company">Instansi</label><span id="si-company">-</span></div>
