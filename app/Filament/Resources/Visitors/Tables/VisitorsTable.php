@@ -93,18 +93,18 @@ class VisitorsTable
                     ->icon('heroicon-o-face-smile')
                     ->color('warning')
                     ->tooltip('Lihat Foto Wajah')
-                    ->modalHeading(fn ($record) => '📸 Foto Wajah — ' . $record->name)
+                    ->modalHeading(fn ($record) => 'Foto Wajah — ' . $record->name)
                     ->modalContent(function ($record) {
                         $photos = $record->getAllFacePhotos();
                         return view('filament.components.face-photo-carousel', [
-                            'photos' => array_slice($photos, -4),
+                            'photos' => array_values(array_slice($photos, -4)),
                         ]);
                     })
                     ->modalWidth('md')
                     ->modalSubmitAction(false)
                     ->modalCancelActionLabel('Tutup')
                     ->visible(function ($record): bool {
-                        if (empty($record->face_photo)) return false;
+                        if (!$record->hasFacePhoto()) return false;
                         $user = auth()->user();
                         if (!$user) return false;
                         

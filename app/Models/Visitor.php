@@ -266,7 +266,10 @@ class Visitor extends Model
     {
         try {
             $raw = $this->getRawOriginal('face_photo');
-            if (empty($raw)) return [];
+            if (empty($raw)) {
+                $single = $this->face_photo;
+                return !empty($single) ? [$single] : [];
+            }
 
             // Decode JSON wrapper
             $jsonDecoded = json_decode($raw, true);
@@ -287,7 +290,13 @@ class Visitor extends Model
 
             // Parse array of paths/base64
             $paths = json_decode($decrypted, true);
-            if (!is_array($paths)) return [];
+            if (!is_array($paths)) {
+                if (is_string($decrypted) && !empty($decrypted)) {
+                    $paths = [$decrypted];
+                } else {
+                    $paths = [];
+                }
+            }
 
             $photos = [];
             foreach ($paths as $item) {
@@ -310,9 +319,17 @@ class Visitor extends Model
                 }
             }
 
-            return $photos;
+            if (empty($photos)) {
+                $single = $this->face_photo;
+                if (!empty($single)) {
+                    $photos = [$single];
+                }
+            }
+
+            return array_values($photos);
         } catch (\Throwable $e) {
-            return [];
+            $single = $this->face_photo;
+            return !empty($single) ? [$single] : [];
         }
     }
 
