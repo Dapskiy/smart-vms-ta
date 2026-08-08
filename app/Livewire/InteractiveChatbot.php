@@ -226,8 +226,8 @@ class InteractiveChatbot extends Component
         $prompt .= "   - HANYA tanyakan slot data yang MASIH KOSONG dari 7 slot berikut:\n";
         $prompt .= "     [1. Nama Lengkap] [2. Nama Perusahaan/Instansi] [3. No Telepon/WA] [4. Nama PIC (Harus Lengkap)] [5. Tanggal Kunjungan] [6. Jam Kunjungan] [7. Keperluan/Tujuan]\n";
         $prompt .= "   - *Ingat: Untuk Walk-In (hari ini), slot Tanggal dan Jam otomatis terisi dengan {$todayDate} dan {$currentTime}, JANGAN DITANYAKAN LAGI.*\n";
-        $prompt .= "   - Kamu **WAJIB MUTLAK** meminta **SEMUA** sisa informasi yang masih kosong SEKALIGUS dalam SATU balasan pesan.\n";
-        $prompt .= "   - Contoh Respons Walk-in: *\"Baik, untuk bertemu dengan Bapak Daffa Faris Ramadhan hari ini, mohon lengkapi data berikut sekaligus dalam satu balasan: 1. Nama Lengkap Anda, 2. Instansi/Perusahaan, 3. Nomor WA, dan 4. Keperluan.\"*\n\n";
+        $prompt .= "   - Jika pengunjung adalah **TAMU LAMA (Returning Visitor)** yang datanya sudah ditemukan (Name, Company, Phone sudah ada di JSON State), **DILARANG KERAS** meminta data tersebut lagi!\n";
+        $prompt .= "   - Kamu **WAJIB MUTLAK** meminta **HANYA sisa informasi yang masih kosong** (misal: Keperluan) SEKALIGUS dalam SATU balasan pesan.\n\n";
 
         $prompt .= "6. **FINAL CONFIRMATION (KONFIRMASI AKHIR & FORMAT ALIGNMENT)**:\n";
         $prompt .= "   - Setelah SELURUH 7 slot terisi lengkap, tampilkan ringkasan data secara rapi dan SEJAJAR rata kiri.\n";
@@ -247,7 +247,17 @@ class InteractiveChatbot extends Component
         $prompt .= "Apakah data di atas sudah benar?\n";
         $prompt .= "```\n";
         $prompt .= "   - Setelah pengunjung mengonfirmasi YA / benar, BARU sertakan marker <!--REGISTER:...--> di AKHIR respons.\n\n";
-        
+        // ── STATUS DATA TERKINI ──
+        $prompt .= "### STATUS DATA REGISTRASI SAAT INI (STATE)\n";
+        $prompt .= "Berikut adalah data pengunjung yang SUDAH terkumpul hingga saat ini:\n";
+        $prompt .= "```json\n";
+        $prompt .= json_encode($this->regData, JSON_PRETTY_PRINT) . "\n";
+        $prompt .= "```\n";
+        $prompt .= "ATURAN WAJIB:\n";
+        $prompt .= "- JIKA sebuah data di atas sudah terisi (tidak kosong/tidak null), DILARANG KERAS menanyakannya lagi!\n";
+        $prompt .= "- CUKUP tanyakan data yang masih kosong saja (string kosong `\"\"` atau `null`).\n";
+        $prompt .= "- Jika pengunjung memvalidasi wajahnya (face lookup) dan data name, company, dan phone sudah otomatis terisi di JSON atas, JANGAN minta mereka mengisi ulang!\n\n";
+
         // ── MARKER PENDAFTARAN ──
         $prompt .= "### MARKER PENDAFTARAN\n";
         $prompt .= "SETELAH semua data lengkap dan dikonfirmasi pengunjung, sertakan marker ini di AKHIR respons:\n";
