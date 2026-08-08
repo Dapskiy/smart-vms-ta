@@ -562,7 +562,7 @@
         /* ── Floating Sound Controls ──────────────────── */
         .avatar-sound-controls {
             position: absolute;
-            bottom: 12rem; /* Geser agak ke atas agar tidak tumpang tindih dengan card */
+            bottom: 9rem; /* Digeser ke bawah, tepat di atas deretan menu utama */
             left: 5%;
             display: flex;
             align-items: center;
