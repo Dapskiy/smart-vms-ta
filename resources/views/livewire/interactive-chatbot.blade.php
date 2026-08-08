@@ -562,8 +562,8 @@
         /* ── Floating Sound Controls ──────────────────── */
         .avatar-sound-controls {
             position: absolute;
-            bottom: 9.5rem;
-            left: 2.5%;
+            bottom: 16rem; /* Placed just above the 2x2 cards grid */
+            left: 5%;
             display: flex;
             align-items: center;
             gap: 0.5rem;
@@ -871,16 +871,16 @@
             line-height: 1.5;
         }
 
-        /* 4 Cards Grid - Horizontal Layout Over Avatar */
+        /* 4 Cards Grid - 2x2 Layout Over Avatar Bottom Fade */
         .cards-grid {
             position: absolute;
-            bottom: 2rem;
+            bottom: 1.5rem;
             left: 50%;
             transform: translateX(-50%);
             display: grid;
-            grid-template-columns: repeat(4, 1fr);
-            gap: 1rem;
-            width: 95%;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 0.8rem;
+            width: 90%;
             z-index: 10;
         }
         
