@@ -55,7 +55,7 @@ class VisitorResource extends Resource
     {
         $query = parent::getEloquentQuery();
         $currentUser = auth()->user();
-        if ($currentUser && $currentUser->pic) {
+        if ($currentUser && !$currentUser->hasRole('super_admin') && $currentUser->pic) {
             $query->whereHas('appointments', function ($q) use ($currentUser) {
                 $q->where('pic_id', $currentUser->pic->id);
             });

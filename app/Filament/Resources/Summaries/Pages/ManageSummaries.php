@@ -140,7 +140,7 @@ class ManageSummaries extends ManageRecords
                 }),
 
             \pxlrbt\FilamentExcel\Actions\Pages\ExportAction::make()
-                ->visible(fn () => auth()->user()->can('export_summary'))
+                ->visible(fn () => auth()->user()->can('export_summary') || auth()->user()->can('ViewAny:Visitor'))
                 ->exports([
                     \App\Filament\Exports\SummaryExcelExport::make()
                         ->withFilename(fn () => (function () {
