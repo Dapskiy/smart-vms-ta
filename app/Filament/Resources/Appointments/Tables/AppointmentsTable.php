@@ -41,6 +41,17 @@ class AppointmentsTable
                         default => 'gray',
                     })
                     ->searchable(),
+                TextColumn::make('purpose')
+                    ->label('Keperluan')
+                    ->limit(20)
+                    ->tooltip(function (TextColumn $column): ?string {
+                        $state = $column->getState();
+                        if (strlen($state) <= $column->getCharacterLimit()) {
+                            return null;
+                        }
+                        return $state;
+                    })
+                    ->searchable(),
                 TextColumn::make('visit_date')
                     ->label('Tanggal')
                     ->date('d/m/Y')
