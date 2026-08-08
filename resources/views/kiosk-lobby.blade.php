@@ -2372,9 +2372,9 @@
             </div>
             <div id="at-result" style="display:none;text-align:center;padding:1rem 0 0.5rem;">
                 <div id="at-result-icon" style="font-size:2.5rem;margin-bottom:0.4rem;"></div>
-                <div id="at-result-name" style="font-size:1.1rem;font-weight:700;color:#f0f4ff;margin-bottom:0.2rem;"></div>
-                <div id="at-result-status" style="font-size:0.82rem;color:#8899bb;"></div>
-                <button onclick="closeAttendanceModal()" style="margin-top:1rem;background:rgba(255,255,255,0.2);border:1px solid rgba(255,255,255,0.4);color:white;padding:0.4rem 1.2rem;border-radius:999px;cursor:pointer;font-size:0.85rem;">Selesai</button>
+                <div id="at-result-name" style="font-size:1.1rem;font-weight:700;color:var(--text-primary);margin-bottom:0.2rem;"></div>
+                <div id="at-result-status" style="font-size:0.82rem;color:var(--text-secondary);"></div>
+                <button class="btn-ok" onclick="closeAttendanceModal()" style="margin-top:1rem;padding:0.6rem 1.5rem;font-size:0.85rem;border-radius:999px;">Selesai</button>
             </div>
         </div>
     </div>
