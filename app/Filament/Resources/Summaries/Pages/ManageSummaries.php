@@ -143,7 +143,35 @@ class ManageSummaries extends ManageRecords
                 ->visible(fn () => auth()->user()->can('export_summary'))
                 ->exports([
                     \App\Filament\Exports\SummaryExcelExport::make()
-                        ->withFilename($fileName)
+                        ->withFilename(fn () => (function () {
+                            $referer = request()->header('referer');
+                            parse_str(parse_url($referer, PHP_URL_QUERY) ?? '', $urlParams);
+                            $type = $urlParams['type'] ?? 'range';
+                            $fileName = 'Summary Visitor Keseluruhan';
+
+                            if ($type === 'month' && !empty($urlParams['month']) && !empty($urlParams['year'])) {
+                                $dateObj = \Carbon\Carbon::createFromDate($urlParams['year'], $urlParams['month'], 1);
+                                $fileName = "Summary Visitor " . $dateObj->translatedFormat('F Y');
+                            } elseif ($type === 'year' && !empty($urlParams['year'])) {
+                                $fileName = "Summary Visitor Tahun " . $urlParams['year'];
+                            } elseif ($type === 'range' || !empty($urlParams['start_date']) || !empty($urlParams['end_date'])) {
+                                $startDate = $urlParams['start_date'] ?? null;
+                                $endDate = $urlParams['end_date'] ?? null;
+
+                                if ($startDate && $endDate) {
+                                    $start = \Carbon\Carbon::parse($startDate);
+                                    $end = \Carbon\Carbon::parse($endDate);
+                                    $fileName = "Summary Visitor " . $start->translatedFormat('d F Y') . " - " . $end->translatedFormat('d F Y');
+                                } elseif ($startDate) {
+                                    $start = \Carbon\Carbon::parse($startDate);
+                                    $fileName = "Summary Visitor Sejak " . $start->translatedFormat('d F Y');
+                                } elseif ($endDate) {
+                                    $end = \Carbon\Carbon::parse($endDate);
+                                    $fileName = "Summary Visitor Sampai " . $end->translatedFormat('d F Y');
+                                }
+                            }
+                            return $fileName;
+                        })())
                         ->modifyQueryUsing(function (Builder $query) {
                             $referer = request()->header('referer');
                             parse_str(parse_url($referer, PHP_URL_QUERY) ?? '', $urlParams);

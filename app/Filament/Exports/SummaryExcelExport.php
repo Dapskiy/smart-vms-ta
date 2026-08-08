@@ -25,19 +25,19 @@ class SummaryExcelExport extends ExcelExport
                 
                 // 2. Format Kop Laporan (Merge A - H, Bold, Center) karena ketambahan kolom No
                 // Baris 1: Judul
-                $sheet->mergeCells('A1:H1'); 
+                $sheet->mergeCells('A1:I1'); 
                 $sheet->setCellValue('A1', 'LAPORAN REKAPITULASI KUNJUNGAN TAMU');
                 $sheet->getStyle('A1')->getFont()->setBold(true)->setSize(14);
                 $sheet->getStyle('A1')->getAlignment()->setHorizontal(Alignment::HORIZONTAL_CENTER);
                 
                 // Baris 2: Nama Perusahaan
-                $sheet->mergeCells('A2:H2');
+                $sheet->mergeCells('A2:I2');
                 $sheet->setCellValue('A2', 'PT VISITA');
                 $sheet->getStyle('A2')->getFont()->setBold(true)->setSize(12);
                 $sheet->getStyle('A2')->getAlignment()->setHorizontal(Alignment::HORIZONTAL_CENTER);
 
                 // Baris 3: Periode Kunjungan
-                $sheet->mergeCells('A3:H3');
+                $sheet->mergeCells('A3:I3');
                 \Carbon\Carbon::setLocale('id');
 
                 $referer = request()->header('referer');
@@ -68,7 +68,7 @@ class SummaryExcelExport extends ExcelExport
                 $sheet->getStyle('A3')->getAlignment()->setHorizontal(Alignment::HORIZONTAL_CENTER);
 
                 // 3. Format Header Tabel (Baris 5) -> Bold & Fill Color (Abu-abu terang)
-                $headerRange = 'A5:H5';
+                $headerRange = 'A5:I5';
                 $sheet->getStyle($headerRange)->getFont()->setBold(true);
                 $sheet->getStyle($headerRange)->getFill()
                     ->setFillType(Fill::FILL_SOLID)
@@ -76,7 +76,7 @@ class SummaryExcelExport extends ExcelExport
 
                 // 4. Buat Border untuk seluruh tabel (Baris 5 sampai baris data terakhir)
                 // highestRow + 4 karena baris sudah kita geser ke bawah sebanyak 4 baris
-                $tableRange = 'A5:H' . ($highestRow + 4); 
+                $tableRange = 'A5:I' . ($highestRow + 4); 
                 $sheet->getStyle($tableRange)->getBorders()->getAllBorders()
                     ->setBorderStyle(Border::BORDER_THIN);
             }
