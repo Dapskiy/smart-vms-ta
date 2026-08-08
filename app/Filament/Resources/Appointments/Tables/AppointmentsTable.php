@@ -382,7 +382,7 @@ class AppointmentsTable
                             'photos' => array_values(array_slice($photos, -4)),
                         ]);
                     })
-                    ->modalWidth('md')
+                    ->modalWidth('sm')
                     ->modalSubmitAction(false)
                     ->modalCancelActionLabel('Tutup')
                     ->visible(function (?Appointment $record): bool {
