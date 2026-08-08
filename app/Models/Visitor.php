@@ -255,6 +255,67 @@ class Visitor extends Model
         }
     }
 
+    /**
+     * Ambil SEMUA foto wajah sebagai array data URI.
+     * Berbeda dengan accessor face_photo yang hanya mengembalikan 1 foto terakhir,
+     * method ini mengembalikan seluruh foto yang tersimpan.
+     *
+     * @return array<string> Array of "data:image/jpeg;base64,..." strings
+     */
+    public function getAllFacePhotos(): array
+    {
+        try {
+            $raw = $this->getRawOriginal('face_photo');
+            if (empty($raw)) return [];
+
+            // Decode JSON wrapper
+            $jsonDecoded = json_decode($raw, true);
+            $encrypted = $raw;
+            if (is_array($jsonDecoded) && isset($jsonDecoded['data'])) {
+                $encrypted = $jsonDecoded['data'];
+            }
+
+            // Decrypt
+            $decrypted = $encrypted;
+            for ($i = 0; $i < 3; $i++) {
+                try {
+                    $decrypted = Crypt::decryptString($decrypted);
+                } catch (\Throwable $e) {
+                    break;
+                }
+            }
+
+            // Parse array of paths/base64
+            $paths = json_decode($decrypted, true);
+            if (!is_array($paths)) return [];
+
+            $photos = [];
+            foreach ($paths as $item) {
+                if (empty($item)) continue;
+
+                // Jika item adalah path file di storage
+                if (is_string($item) && !str_starts_with($item, 'data:image')) {
+                    try {
+                        if (Storage::disk('local')->exists($item)) {
+                            $encryptedContent = Storage::disk('local')->get($item);
+                            $decryptedBinary = Crypt::decrypt($encryptedContent);
+                            $photos[] = 'data:image/jpeg;base64,' . base64_encode($decryptedBinary);
+                        }
+                    } catch (\Throwable $e) {
+                        continue;
+                    }
+                } else {
+                    // Sudah base64 data URI
+                    $photos[] = $item;
+                }
+            }
+
+            return $photos;
+        } catch (\Throwable $e) {
+            return [];
+        }
+    }
+
     // ══════════════════════════════════════════════════════════════
     //  RELATIONS
     // ══════════════════════════════════════════════════════════════

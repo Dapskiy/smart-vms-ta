@@ -375,8 +375,16 @@ class AppointmentsTable
                     ->icon('heroicon-o-face-smile')
                     ->color('warning')
                     ->tooltip('Lihat Foto Wajah')
-                    ->url(fn(Appointment $record): string => route('admin.visitor.face-photo', $record->visitor_id))
-                    ->openUrlInNewTab()
+                    ->modalHeading(fn(Appointment $record) => '📸 Foto Wajah — ' . ($record->visitor->name ?? 'Visitor'))
+                    ->modalContent(function (Appointment $record) {
+                        $photos = $record->visitor ? $record->visitor->getAllFacePhotos() : [];
+                        return view('filament.components.face-photo-carousel', [
+                            'photos' => array_slice($photos, -4),
+                        ]);
+                    })
+                    ->modalWidth('md')
+                    ->modalSubmitAction(false)
+                    ->modalCancelActionLabel('Tutup')
                     ->visible(function (?Appointment $record): bool {
                         if (empty($record?->visitor?->face_photo)) return false;
                         $user = auth()->user();
