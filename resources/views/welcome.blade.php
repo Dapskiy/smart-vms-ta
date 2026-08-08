@@ -2272,7 +2272,7 @@
 
                 // Token valid & check-in langsung berhasil → tampilkan popup sukses
                 closeQrScanner();
-                showSuccessPopup(data.appointment);
+                showSuccessPopup(data.appointment, 'qr');
 
             } catch (err) {
                 console.error("Error verifikasi QR:", err);
@@ -2304,7 +2304,7 @@
 
                 if (data.success) {
                     closeFaceScan();
-                    showSuccessPopup(data.appointment);
+                    showSuccessPopup(data.appointment, 'face');
                 } else {
                     setFaceMessage(data.message || 'Verifikasi/Registrasi gagal.', 'error');
                     setTimeout(() => { 
@@ -2341,8 +2341,17 @@
         let successSecondsLeft = 180;
         let successMaxSeconds = 180;
 
-        function showSuccessPopup(appt) {
+        function showSuccessPopup(appt, method = 'face') {
             if(document.getElementById('si-name')) document.getElementById('si-name').textContent  = appt.visitor_name  || '-';
+            
+            const alertBox = document.querySelector('#modal-success .success-alert');
+            if (alertBox) {
+                if (method === 'qr' || method === 'token') {
+                    alertBox.style.display = 'flex';
+                } else {
+                    alertBox.style.display = 'none';
+                }
+            }
             if(document.getElementById('si-company')) document.getElementById('si-company').textContent = appt.visitor_company || '-';
             if(document.getElementById('si-phone')) document.getElementById('si-phone').textContent = appt.visitor_phone || '-';
             if(document.getElementById('si-pic')) document.getElementById('si-pic').textContent   = appt.pic_name      || '-';
