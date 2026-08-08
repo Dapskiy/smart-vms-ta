@@ -1266,7 +1266,10 @@
             
             document.getElementById('modal-success').classList.add('active');
             
-            successSecondsLeft = 5;
+            const alertBox = document.querySelector('#modal-success .success-alert');
+            if (alertBox) alertBox.style.display = 'none';
+            
+            successSecondsLeft = 15;
             updateCountdown();
             clearInterval(successTimer);
             successTimer = setInterval(() => {
