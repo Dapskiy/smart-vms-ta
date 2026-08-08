@@ -2343,7 +2343,10 @@
 
         function showSuccessPopup(appt) {
             if(document.getElementById('si-name')) document.getElementById('si-name').textContent  = appt.visitor_name  || '-';
+            if(document.getElementById('si-company')) document.getElementById('si-company').textContent = appt.visitor_company || '-';
+            if(document.getElementById('si-phone')) document.getElementById('si-phone').textContent = appt.visitor_phone || '-';
             if(document.getElementById('si-pic')) document.getElementById('si-pic').textContent   = appt.pic_name      || '-';
+            if(document.getElementById('si-department')) document.getElementById('si-department').textContent = appt.department || '-';
             if(document.getElementById('si-room')) document.getElementById('si-room').textContent  = appt.room_name     || '-';
             if(document.getElementById('si-date')) document.getElementById('si-date').textContent  = appt.visit_date    || '-';
             if(document.getElementById('si-time')) document.getElementById('si-time').textContent  = appt.visit_time    || '-';
@@ -2352,8 +2355,8 @@
 
             document.getElementById('modal-success').classList.add('active');
 
-            successMaxSeconds = 180;
-            successSecondsLeft = 180;
+            successMaxSeconds = 10;
+            successSecondsLeft = 10;
             updateCountdown();
             clearInterval(successTimer);
             successTimer = setInterval(() => {
@@ -2364,7 +2367,7 @@
         }
 
         function updateCountdown() {
-            const maxSec = successSecondsLeft > 5 && successSecondsLeft <= 180 ? 180 : 5;
+            const maxSec = successMaxSeconds;
             const pct = (successSecondsLeft / maxSec) * 100;
             document.getElementById('countdown-bar').style.width = pct + '%';
             document.getElementById('countdown-text').textContent =

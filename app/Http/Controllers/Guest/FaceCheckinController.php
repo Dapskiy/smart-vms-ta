@@ -127,7 +127,7 @@ class FaceCheckinController extends Controller
         $appointment = Appointment::where('visitor_id', $bestMatch->id)
             ->whereIn('status', ['pending', 'approved'])
             ->whereDate('visit_date', today())
-            ->with(['visitor', 'pic', 'room'])
+            ->with(['visitor', 'pic.department', 'room'])
             ->first();
 
         if (!$appointment) {
@@ -155,14 +155,16 @@ class FaceCheckinController extends Controller
             'success' => true,
             'message' => 'Check-in berhasil!',
             'appointment' => [
-                'visitor_name' => $bestMatch->name,
+                'visitor_name'  => $bestMatch->name,
+                'visitor_company' => $bestMatch->company ?? '-',
                 'visitor_phone' => $bestMatch->phone ?? '-',
-                'pic_name'     => $appointment->pic?->name ?? '-',
-                'room_name'    => $appointment->room?->name ?? '-',
-                'visit_date'   => $appointment->visit_date?->translatedFormat('d F Y') ?? '-',
-                'visit_time'   => $appointment->visit_time ?? '-',
-                'checkin_time' => $appointment->checkin_time ?? now()->format('H:i'),
-                'purpose'      => $appointment->purpose ?? '-',
+                'pic_name'      => $appointment->pic?->name ?? '-',
+                'department'    => $appointment->pic?->department?->name ?? '-',
+                'room_name'     => $appointment->room?->name ?? '-',
+                'visit_date'    => $appointment->visit_date?->translatedFormat('d F Y') ?? '-',
+                'visit_time'    => $appointment->visit_time ?? '-',
+                'checkin_time'  => $appointment->checkin_time ?? now()->format('H:i'),
+                'purpose'       => $appointment->purpose ?? '-',
             ],
         ]);
     }
@@ -212,6 +214,7 @@ class FaceCheckinController extends Controller
             'success' => true,
             'appointment' => [
                 'visitor_name' => $visitor->name ?? '-',
+                'visitor_company' => $visitor->company ?? '-',
                 'visitor_phone' => $visitor->phone ?? '-',
                 'pic_name' => $appointment->pic?->name ?? '-',
                 'department' => $appointment->pic?->department?->name ?? '-',
@@ -233,7 +236,7 @@ class FaceCheckinController extends Controller
             'face_photo' => 'nullable|string',
         ]);
 
-        $appointment = Appointment::find($request->input('appointment_id'));
+        $appointment = Appointment::with(['pic.department', 'room'])->find($request->input('appointment_id'));
         $visitor = Visitor::find($request->input('visitor_id'));
 
         if (!in_array($appointment->status, ['pending', 'approved'])) {
@@ -397,8 +400,10 @@ class FaceCheckinController extends Controller
             'message' => 'Check-in berhasil!',
             'appointment' => [
                 'visitor_name' => $visitor->name,
+                'visitor_company' => $visitor->company ?? '-',
                 'visitor_phone' => $visitor->phone ?? '-',
                 'pic_name' => $appointment->pic?->name ?? '-',
+                'department' => $appointment->pic?->department?->name ?? '-',
                 'room_name' => $appointment->room?->name ?? '-',
                 'visit_date' => $appointment->visit_date?->translatedFormat('d F Y') ?? '-',
                 'visit_time' => $appointment->visit_time ?? '-',
