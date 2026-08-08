@@ -182,7 +182,7 @@ class FaceCheckinController extends Controller
                 $query->where('token', $token)
                       ->orWhere('visit_id', $token);
             })
-            ->with('visitor')
+            ->with(['visitor', 'pic.department', 'room'])
             ->first();
 
         if (!$appointment) {
@@ -192,15 +192,35 @@ class FaceCheckinController extends Controller
             ]);
         }
 
+        // Validasi: Janji temu WAJIB di-ACC oleh PIC terlebih dahulu
+        if ($appointment->approved_at === null) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Janji temu Anda belum disetujui oleh PIC.',
+            ]);
+        }
+
+        // Langsung lakukan Check-In (tanpa face scan)
+        $appointment->update([
+            'status' => 'active',
+            'checkin_time' => now()->format('H:i'),
+        ]);
+
         $visitor = $appointment->visitor;
-        $hasFace = ($visitor && !empty($visitor->face_features));
 
         return response()->json([
             'success' => true,
-            'has_face' => $hasFace,
-            'visitor_id' => $visitor->id,
-            'appointment_id' => $appointment->id,
-            'visitor_name' => $visitor->name,
+            'appointment' => [
+                'visitor_name' => $visitor->name ?? '-',
+                'visitor_phone' => $visitor->phone ?? '-',
+                'pic_name' => $appointment->pic?->name ?? '-',
+                'department' => $appointment->pic?->department?->name ?? '-',
+                'room_name' => $appointment->room?->name ?? '-',
+                'visit_date' => $appointment->visit_date?->translatedFormat('d F Y') ?? '-',
+                'visit_time' => $appointment->visit_time ?? '-',
+                'checkin_time' => $appointment->checkin_time ?? now()->format('H:i'),
+                'purpose' => $appointment->purpose ?? '-',
+            ],
         ]);
     }
 

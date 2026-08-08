@@ -2270,24 +2270,9 @@
                     return;
                 }
 
-                // Jika token valid, tutup modal QR scanner
+                // Token valid & check-in langsung berhasil → tampilkan popup sukses
                 closeQrScanner();
-
-                // Simpan data check-in saat ini di state global
-                window.currentQrCheckin = {
-                    token: token,
-                    visitor_id: data.visitor_id,
-                    appointment_id: data.appointment_id,
-                    visitor_name: data.visitor_name,
-                    has_face: data.has_face
-                };
-
-                // Buka pop-up scan wajah untuk registrasi atau verifikasi wajah
-                if (!data.has_face) {
-                    openFaceScan('qr-register');
-                } else {
-                    openFaceScan('qr-verify');
-                }
+                showSuccessPopup(data.appointment);
 
             } catch (err) {
                 console.error("Error verifikasi QR:", err);
