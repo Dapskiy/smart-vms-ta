@@ -430,57 +430,8 @@
                 // Fire event immediately so buttons appear and avatar starts moving
                 fireTtsEvent('tts-started');
 
-                // Gunakan backend Edge TTS via fetch→Blob untuk playback lebih cepat
-                const currentLang = window.appLang || 'id';
-                const ttsUrl = `/api/tts?text=${encodeURIComponent(plain)}&lang=${currentLang}`;
-
-                const abortController = new AbortController();
-                currentAbortController = abortController;
-
-                fetch(ttsUrl, { signal: abortController.signal })
-                    .then(response => {
-                        if (!response.ok) throw new Error('TTS response not ok: ' + response.status);
-                        return response.blob();
-                    })
-                    .then(blob => {
-                        // Jika sudah di-cancel saat fetching, jangan play
-                        if (abortController.signal.aborted) return;
-
-                        cleanupBlobUrl();
-                        const blobUrl = URL.createObjectURL(blob);
-                        currentBlobUrl = blobUrl;
-
-                        const audio = new Audio(blobUrl);
-                        currentAudio = audio;
-
-                        audio.onended = () => {
-                            currentAudio = null;
-                            cleanupBlobUrl();
-                            fireTtsEvent('tts-ended');
-                        };
-
-                        audio.onerror = (e) => {
-                            console.warn("Edge TTS blob playback failed, falling back to Web Speech API", e);
-                            currentAudio = null;
-                            cleanupBlobUrl();
-                            fallbackSpeak(plain);
-                        };
-
-                        const playPromise = audio.play();
-                        if (playPromise !== undefined) {
-                            playPromise.catch(err => {
-                                console.warn("Edge TTS play failed (e.g. autoplay restriction), falling back", err);
-                                currentAudio = null;
-                                cleanupBlobUrl();
-                                fallbackSpeak(plain);
-                            });
-                        }
-                    })
-                    .catch(err => {
-                        if (err.name === 'AbortError') return; // Cancelled by user, ignore
-                        console.warn("Edge TTS fetch failed, falling back to Web Speech API", err);
-                        fallbackSpeak(plain);
-                    });
+                // Gunakan Web Speech API (fallback) secara langsung
+                fallbackSpeak(plain);
             };
 
             let currentUttId = 0;
