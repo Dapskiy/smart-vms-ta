@@ -28,6 +28,33 @@
         },
         prev() {
             this.go(this.current - 1);
+        },
+        openFullImage() {
+            const src = this.slides[this.current].image;
+            if (!src) return;
+            const win = window.open('', '_blank');
+            if (win) {
+                const label = this.slides[this.current].label;
+                win.document.write(`
+                    <!DOCTYPE html>
+                    <html lang='id'>
+                    <head>
+                        <meta charset='UTF-8'>
+                        <title>Foto Full — ${label}</title>
+                        <style>
+                            body { margin: 0; padding: 24px; background: #0f172a; color: #e2e8f0; font-family: 'Plus Jakarta Sans', system-ui, sans-serif; display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 100vh; box-sizing: border-box; }
+                            .badge { font-weight: 700; font-size: 15px; color: #818cf8; margin-bottom: 16px; padding: 6px 16px; background: rgba(99, 102, 241, 0.1); border: 1px solid rgba(99, 102, 241, 0.3); border-radius: 9999px; }
+                            img { max-width: 95vw; max-height: 85vh; border-radius: 16px; box-shadow: 0 25px 60px rgba(0,0,0,0.6); border: 2px solid #334155; object-fit: contain; }
+                        </style>
+                    </head>
+                    <body>
+                        <div class='badge'>Foto Wajah — ${label}</div>
+                        <img src='${src}' alt='Full Photo' />
+                    </body>
+                    </html>
+                `);
+                win.document.close();
+            }
         }
     }"
     x-on:keydown.arrow-right.window="next()"
@@ -89,10 +116,22 @@
             </template>
         </div>
 
-        {{-- Footer Info --}}
-        <div style="font-size: 11px; color: #94a3b8; margin-top: 2px;">
-            <span style="color: #34d399; font-weight: 600;">🔒 Terenkripsi AES-256</span>
-            <span style="margin-left: 4px;">&middot; Klik <b style="color: #818cf8;">&lt;</b> atau <b style="color: #818cf8;">&gt;</b> untuk ganti foto</span>
+        {{-- Footer Info & Full Image Option --}}
+        <div style="font-size: 11px; color: #94a3b8; margin-top: 2px; display: flex; flex-direction: column; align-items: center; gap: 6px;">
+            <div>
+                <span style="color: #34d399; font-weight: 600;">🔒 Terenkripsi AES-256</span>
+                <span style="margin-left: 4px;">&middot; Klik <b style="color: #818cf8;">&lt;</b> atau <b style="color: #818cf8;">&gt;</b> untuk ganti foto</span>
+            </div>
+
+            {{-- Tombol Buka Tab Baru --}}
+            <button
+                type="button"
+                x-on:click.stop="openFullImage()"
+                style="padding: 5px 14px; border-radius: 8px; background-color: #1e293b; color: #818cf8; border: 1px solid #334155; font-size: 11px; font-weight: 600; cursor: pointer; display: inline-flex; align-items: center; gap: 6px; box-shadow: 0 2px 6px rgba(0,0,0,0.2); transition: background-color 0.2s;"
+                title="Buka foto ini di tab baru"
+            >
+                <span>🔍 Lihat Foto Ukuran Penuh (Tab Baru) ↗</span>
+            </button>
         </div>
     @else
         <div style="padding: 24px 0; text-align: center; color: #94a3b8; font-size: 13px;">
