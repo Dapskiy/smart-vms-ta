@@ -1731,21 +1731,20 @@
         }
 
         async function submitFaceDescriptor(descriptor) {
-            // Capture photos BEFORE closeFaceScan() resets state
-            const capturedPhotos = (window.ciPhotos && window.ciPhotos.length > 0) ? window.ciPhotos : [ciPhotoSnapshot];
+            // Primary photo snapshot
+            const primaryPhoto = (window.ciPhotos && window.ciPhotos[0]) ? window.ciPhotos[0] : ciPhotoSnapshot;
+            const allPhotos = (window.ciPhotos && window.ciPhotos.length > 0) ? window.ciPhotos : [ciPhotoSnapshot];
 
             if (faceScanMode === 'walkin') {
-                // Return data to Livewire component
                 closeFaceScan();
                 Livewire.dispatch('finalizeWalkin', { 
                     descriptor: Array.from(descriptor), 
-                    photoBase64: capturedPhotos 
+                    photoBase64: allPhotos 
                 });
                 return;
             }
 
             if (faceScanMode === 'walkin-search') {
-                // Return data to Livewire component to search for visitor
                 closeFaceScan();
                 Livewire.dispatch('findVisitorByFace', { 
                     descriptor: Array.from(descriptor) 
@@ -1753,24 +1752,47 @@
                 return;
             }
 
-            // Normal check-in flow via API
+            // Normal check-in flow via API (/kiosk/face-checkin)
             try {
                 const res = await fetch('/kiosk/face-checkin', {
                     method: 'POST',
-                    headers: { 'Content-Type':'application/json', 'X-CSRF-TOKEN': document.querySelector('meta[name=csrf-token]').content },
-                    body: JSON.stringify({ descriptor: Array.from(descriptor), face_photo: capturedPhotos })
+                    headers: { 
+                        'Content-Type': 'application/json',
+                        'Accept': 'application/json',
+                        'X-CSRF-TOKEN': document.querySelector('meta[name=csrf-token]').content 
+                    },
+                    body: JSON.stringify({ descriptor: Array.from(descriptor), face_photo: primaryPhoto })
                 });
-                const data = await res.json();
-                if (data.success) {
+
+                let data;
+                try {
+                    data = await res.json();
+                } catch (jsonErr) {
+                    data = null;
+                }
+
+                if (res.ok && data && data.success) {
                     closeFaceScan();
                     showSuccessPopup(data.appointment);
                 } else {
-                    setFaceMessage(data.message || 'Wajah tidak dikenali.', 'error');
-                    setTimeout(() => { faceScanActive=true; livenessStep='straight'; faceInPlace=false; faceScanLoop(document.getElementById('ci-face-video')); }, 3000);
+                    const msg = (data && data.message) ? data.message : 'Wajah tidak dikenali dalam sistem.';
+                    setFaceMessage(msg, 'error');
+                    setTimeout(() => { 
+                        faceScanActive = true; 
+                        livenessStep = 'straight'; 
+                        faceInPlace = false; 
+                        faceScanLoop(document.getElementById('ci-face-video')); 
+                    }, 3500);
                 }
             } catch(e) {
+                console.error('[Face Checkin Error]', e);
                 setFaceMessage('Koneksi gagal. Coba lagi.', 'error');
-                setTimeout(() => { faceScanActive=true; livenessStep='straight'; faceInPlace=false; faceScanLoop(document.getElementById('ci-face-video')); }, 3000);
+                setTimeout(() => { 
+                    faceScanActive = true; 
+                    livenessStep = 'straight'; 
+                    faceInPlace = false; 
+                    faceScanLoop(document.getElementById('ci-face-video')); 
+                }, 3500);
             }
         }
 
