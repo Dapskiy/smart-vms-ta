@@ -35,6 +35,7 @@ class AdminPanelProvider extends PanelProvider
             ])
             ->font('Poppins')
             ->brandName('VISITA Enterprise')
+            ->favicon(asset('favicon.png'))
             ->renderHook(
                 \Filament\View\PanelsRenderHook::HEAD_END,
                 fn(): string => \Illuminate\Support\Facades\Blade::render("
