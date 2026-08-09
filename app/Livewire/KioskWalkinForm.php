@@ -55,6 +55,9 @@ class KioskWalkinForm extends Component
     // Pending approval state
     public $pending_approval_token = null;
 
+    // Biometric consent: visitor agrees to face data storage
+    public bool $consent_biometric = false;
+
     // Duplicate face override: user confirmed they are a different person
     public bool $duplicateOverride = false;
     public ?string $duplicateWarningName = null;
@@ -78,6 +81,7 @@ class KioskWalkinForm extends Component
         $this->is_verified_returning = false;
         $this->verified_visitor_id = null;
         $this->reset(['name', 'company', 'phone', 'purpose', 'pax', 'department_id', 'search_pic', 'selected_pic_id', 'selected_pic_name', 'pic_results', 'visit_date', 'visit_time']);
+        $this->consent_biometric = false;
         $this->duplicateOverride = false;
         $this->duplicateWarningName = null;
         $this->resetValidation();
@@ -318,6 +322,7 @@ class KioskWalkinForm extends Component
             'selected_pic_id' => 'required|exists:pics,id',
             'purpose' => 'required|string',
             'visit_type' => 'required|in:walk-in,appointment',
+            'consent_biometric' => 'accepted',
         ];
 
         if ($this->visit_type === 'appointment') {
@@ -326,7 +331,8 @@ class KioskWalkinForm extends Component
         }
 
         $this->validate($rules, [
-            'selected_pic_id.required' => 'Pilih karyawan yang akan dituju dari hasil pencarian.'
+            'selected_pic_id.required' => 'Pilih karyawan yang akan dituju dari hasil pencarian.',
+            'consent_biometric.accepted' => 'Anda harus menyetujui penyimpanan data biometrik untuk melanjutkan.',
         ]);
 
         // Verifikasi tambahan: jika kunjungan hari ini, PIC wajib hadir (sudah check-in)
@@ -657,7 +663,7 @@ class KioskWalkinForm extends Component
             $this->dispatch('appointment-success', appt: $appointmentData);
         }
 
-        $this->reset(['name', 'company', 'phone', 'purpose', 'pax', 'department_id', 'search_pic', 'selected_pic_id', 'selected_pic_name', 'step', 'pic_results', 'visit_type', 'visit_date', 'visit_time', 'is_verified_returning', 'verified_visitor_id']);
+        $this->reset(['name', 'company', 'phone', 'purpose', 'pax', 'department_id', 'search_pic', 'selected_pic_id', 'selected_pic_name', 'step', 'pic_results', 'visit_type', 'visit_date', 'visit_time', 'is_verified_returning', 'verified_visitor_id', 'consent_biometric']);
     }
 
     private function euclideanDistance(array $a, array $b): float

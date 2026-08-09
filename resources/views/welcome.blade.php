@@ -2649,6 +2649,12 @@
                     </div>
                 </div>
             </div>
+            <!-- Privacy Disclaimer -->
+            <div style="margin-top: 0.6rem; padding: 0.5rem 1rem; background: rgba(99,102,241,0.08); border: 1px solid rgba(99,102,241,0.2); border-radius: 0.6rem; max-width: 300px; margin-left: auto; margin-right: auto;">
+                <p style="font-size: 0.68rem; color: #94a3b8; line-height: 1.5; margin: 0; text-align: center;" data-lang-id="Dengan melakukan scan wajah, Anda menyetujui penyimpanan data biometrik &amp; foto terenkripsi AES-256 untuk verifikasi keamanan gedung sesuai UU PDP No. 27/2022." data-lang-en="By scanning your face, you consent to encrypted biometric data &amp; photo storage (AES-256) for building security verification under Indonesia's PDP Law No. 27/2022.">
+                    Dengan melakukan scan wajah, Anda menyetujui penyimpanan data biometrik &amp; foto terenkripsi <span style="color: #34d399; font-weight: 600;">AES-256</span> untuk verifikasi keamanan gedung sesuai <span style="color: #818cf8; font-weight: 600;">UU PDP No. 27/2022</span>.
+                </p>
+            </div>
             <!-- Fallback/Skip Button -->
             <div id="face-fallback-wrap" style="margin-top: 1rem; display: flex; justify-content: center;">
                 <button id="btn-skip-face" onclick="skipFaceScan()" class="btn-ok" style="background: #475569; font-size: 0.85rem; padding: 0.6rem 1.5rem; display: none; border-radius: 0.5rem; border: none; color: #fff; cursor: pointer; font-weight: 600; font-family: 'Poppins', sans-serif;" data-lang-id="Daftar Tanpa Wajah (Manual)" data-lang-en="Register Without Face (Manual)">

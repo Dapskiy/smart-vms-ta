@@ -344,6 +344,24 @@
             @error('purpose') <span class="text-danger">{{ $message }}</span> @enderror
         </div>
 
+        {{-- Biometric Consent Checkbox (UU PDP No. 27/2022) --}}
+        <div class="form-group" style="margin-top: 0.5rem;">
+            <div style="display: flex; align-items: flex-start; gap: 0.6rem; padding: 0.7rem 0.9rem; background: rgba(99,102,241,0.06); border: 1px solid rgba(99,102,241,0.18); border-radius: 0.6rem;">
+                <input
+                    type="checkbox"
+                    id="consent_biometric"
+                    wire:model="consent_biometric"
+                    style="margin-top: 3px; width: 18px; height: 18px; accent-color: #6366f1; flex-shrink: 0; cursor: pointer;"
+                />
+                <label for="consent_biometric" style="font-size: 0.72rem; color: #94a3b8; line-height: 1.5; cursor: pointer; margin: 0;">
+                        {{ $lang === 'en'
+                        ? 'I consent to the storage of encrypted biometric data & facial photos (AES-256) for building security verification purposes, in accordance with PDP Law No. 27/2022.'
+                        : 'Saya menyetujui penyimpanan data biometrik & foto wajah terenkripsi (AES-256) untuk keperluan verifikasi keamanan gedung, sesuai UU PDP No. 27/2022.' }}
+                </label>
+            </div>
+            @error('consent_biometric') <span class="text-danger" style="font-size: 0.78rem;">{{ $message }}</span> @enderror
+        </div>
+
         <div class="form-actions">
             <button type="button" class="btn btn-secondary" wire:click="previousStep">⬅ {{ $lang === 'en' ? 'Back' : 'Kembali' }}</button>
             <button type="button" class="btn btn-primary" wire:click="submit" wire:loading.attr="disabled">
