@@ -217,20 +217,21 @@ class InteractiveChatbot extends Component
         $prompt .= "   - Contoh: *\"Apakah maksud Anda Bapak Daffa Faris Ramadhan?\"*\n";
         $prompt .= "   - Data yang disimpan di akhir NANTI haruslah **NAMA LENGKAP PIC** yang persis sama dengan database.\n\n";
 
-        $prompt .= "4. **PENANGANAN WAKTU OTOMATIS (WALK-IN)**:\n";
+        $prompt .= "4. **PENANGANAN TANGGAL & WAKTU (WALK-IN vs APPOINTMENT)**:\n";
         $prompt .= "   - Jika pengunjung memilih **HARI INI / SEKARANG (Walk-in)**, kamu **DILARANG** menanyakan jam kunjungan.\n";
-        $prompt .= "   - Anggap Tanggal = {$todayDate} dan Waktu = {$currentTime} (otomatis). Langsung tanyakan sisa data lainnya.\n\n";
+        $prompt .= "   - Anggap Tanggal = {$todayDate} dan Waktu = {$currentTime} (otomatis terisi).\n";
+        $prompt .= "   - Jika pengunjung memilih **BESOK, LUSA, ATAU HARI LAIN (Appointment)**, kamu **WAJIB** menanyakan **Jam/Waktu Kunjungan** karena jam tidak bisa menggunakan waktu saat ini.\n\n";
 
         $prompt .= "5. **BULK DATA COLLECTION (SANGAT WAJIB - JANGAN BERTANYA SATU-SATU)**:\n";
         $prompt .= "   - **DILARANG KERAS** menanyakan kelengkapan data secara dicicil atau satu per satu.\n";
-        $prompt .= "   - HANYA tanyakan slot data yang MASIH KOSONG dari 7 slot berikut:\n";
+        $prompt .= "   - Tanyakan SEMUA slot data yang MASIH KOSONG dari 7 slot berikut dalam satu pesan:\n";
         $prompt .= "     [1. Nama Lengkap] [2. Nama Perusahaan/Instansi] [3. No Telepon/WA] [4. Nama PIC (Harus Lengkap)] [5. Tanggal Kunjungan] [6. Jam Kunjungan] [7. Keperluan/Tujuan]\n";
-        $prompt .= "   - *Ingat: Untuk Walk-In (hari ini), slot Tanggal dan Jam otomatis terisi dengan {$todayDate} dan {$currentTime}, JANGAN DITANYAKAN LAGI.*\n";
-        $prompt .= "   - Jika pengunjung adalah **TAMU LAMA (Returning Visitor)** yang datanya sudah ditemukan (Name, Company, Phone sudah ada di JSON State), **DILARANG KERAS** meminta data tersebut lagi!\n";
-        $prompt .= "   - Kamu **WAJIB MUTLAK** meminta **HANYA sisa informasi yang masih kosong** (misal: Keperluan) SEKALIGUS dalam SATU balasan pesan.\n\n";
+        $prompt .= "   - *Ingat: Untuk Walk-In (hari ini), slot Tanggal dan Jam otomatis terisi dengan {$todayDate} dan {$currentTime}, JANGAN ditanyakan lagi.*\n";
+        $prompt .= "   - Jika pengunjung adalah **TAMU LAMA (Returning Visitor)** yang datanya sudah ditemukan, **DILARANG KERAS** meminta data tersebut lagi!\n";
+        $prompt .= "   - **ATURAN TAMPILAN PENTING**: Selama proses pengumpulan data (belum komplit), kamu **DILARANG KERAS menampilkan/me-listing daftar data yang sudah terkumpul**. Cukup ajukan pertanyaan untuk data yang kurang secara natural tanpa menuliskan list angka. List data hanya boleh muncul saat FINAL CONFIRMATION.\n\n";
 
         $prompt .= "6. **FINAL CONFIRMATION (KONFIRMASI AKHIR & FORMAT ALIGNMENT)**:\n";
-        $prompt .= "   - Setelah SELURUH 7 slot terisi lengkap, tampilkan ringkasan data secara rapi dan SEJAJAR rata kiri.\n";
+        $prompt .= "   - HANYA JIKA SELURUH 7 slot sudah terisi lengkap, tampilkan ringkasan data secara rapi dan SEJAJAR rata kiri.\n";
         $prompt .= "   - **FORMAT ALIGNMENT (SANGAT KRITIS)**:\n";
         $prompt .= "     - DILARANG memberikan spasi/indentasi di awal baris pada teks judul maupun pertanyaan penutup.\n";
         $prompt .= "     - Untuk Walk-in, pastikan Tanggal tertulis {$todayDate} dan Waktu tertulis {$currentTime} berupa angka pasti, JANGAN menggunakan kata 'Sekarang' atau 'Hari Ini'.\n";
@@ -255,7 +256,8 @@ class InteractiveChatbot extends Component
         $prompt .= "```\n";
         $prompt .= "ATURAN WAJIB:\n";
         $prompt .= "- JIKA sebuah data di atas sudah terisi (tidak kosong/tidak null), DILARANG KERAS menanyakannya lagi!\n";
-        $prompt .= "- CUKUP tanyakan data yang masih kosong saja (string kosong `\"\"` atau `null`).\n";
+        $prompt .= "- JANGAN pernah menampilkan JSON atau isi dari STATE ini kepada user secara langsung sebelum tahap konfirmasi akhir.\n";
+        $prompt .= "- CUKUP tanyakan data yang masih kosong saja (string kosong `\"\"` atau `null`) menggunakan kalimat natural.\n";
         $prompt .= "- Jika pengunjung memvalidasi wajahnya (face lookup) dan data name, company, dan phone sudah otomatis terisi di JSON atas, JANGAN minta mereka mengisi ulang!\n\n";
 
         // ── MARKER PENDAFTARAN ──
