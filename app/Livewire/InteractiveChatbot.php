@@ -331,16 +331,13 @@ class InteractiveChatbot extends Component
     }
 
     /**
-     * LAYER 3 — Server-Side PIC Leakage Sanitization
-     *
-     * Jaring pengaman terakhir: jika AI masih membocorkan daftar nama PIC
-     * meskipun sudah dilarang di system prompt, method ini akan mendeteksi
-     * dan menghapus respons yang mengandung terlalu banyak nama PIC.
-     *
-     * Logika: Jika respons AI mengandung ≥3 nama PIC yang berbeda dari
-     * database, itu sangat mungkin merupakan enumerasi/listing.
-     * Pengecualian: jika nama PIC juga muncul di pesan user terakhir
-     * (berarti user yang menyebutkan, bukan AI yang membocorkan).
+     * =====================================================================================
+     * 🔴 [CHEAT SHEET SIDANG] - PENCEGAHAN KEBOCORAN DATA (SANITIZATION)
+     * Ini adalah Jaring Pengaman (Layer 3) untuk AI. Jika AI 'halu' dan mencoba menyebutkan 
+     * seluruh daftar nama PIC yang ada di prompt, fungsi ini akan mencegatnya.
+     * Jika terdeteksi ≥ 3 nama PIC bocor (yang tidak ditanyakan user), respons AI akan diganti
+     * dengan pesan peringatan keamanan.
+     * =====================================================================================
      */
     private function sanitizePicLeakage(string $reply): string
     {

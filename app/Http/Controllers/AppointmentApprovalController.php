@@ -62,6 +62,13 @@ class AppointmentApprovalController extends Controller
             ]);
         }
 
+        // =====================================================================================
+        // 🔴 [CHEAT SHEET SIDANG] - ALUR PERSETUJUAN & NOTIFIKASI WHATSAPP (FONNTE)
+        // Saat PIC menekan tombol "Approve" di email, status berubah jadi 'approved'.
+        // Sistem kemudian akan mengirim pesan WhatsApp secara otomatis ke nomor Tamu
+        // menggunakan API Gateway (Fonnte). 
+        // Delay 9 detik digunakan untuk mencegah rate limit/blokir dari server Fonnte.
+        // =====================================================================================
         $appointment->update([
             'status'      => 'approved',
             'approved_at' => now(),

@@ -1677,7 +1677,13 @@
                 updateFaceGrid(true);
                 updateFaceRingColor('green');
 
-                // Head yaw liveness
+                // =====================================================================================
+                // 🔴 [CHEAT SHEET SIDANG] - LIVENESS DETECTION (ANTI-SPOOFING WAJAH)
+                // Di sini kita mencegah orang curang pakai foto 2D (Spoofing).
+                // Kita mengecek rasio jarak hidung (titik 30) terhadap sisi wajah (titik 0 & 16).
+                // Jika pakai foto 2D di layar HP, hidung tidak bisa menengok kanan/kiri secara 3D,
+                // sehingga sistem akan menolak (anti-spoofing).
+                // =====================================================================================
                 if (livenessStep !== 'passed') {
                     const pts = det.landmarks.positions;
                     const noseRatio = (pts[30].x - pts[0].x) / (pts[16].x - pts[0].x);

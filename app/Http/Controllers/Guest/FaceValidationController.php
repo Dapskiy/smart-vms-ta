@@ -25,6 +25,13 @@ class FaceValidationController extends Controller
 
         $incoming   = $request->input('descriptor');
         $currentId  = $request->input('visitor_id');
+
+        // =====================================================================================
+        // 🔴 [CHEAT SHEET SIDANG] - ANTI-DUPLIKASI WAJAH (VALIDASI)
+        // Di sinilah kita mencegah 1 wajah didaftarkan berulang kali dengan nama berbeda.
+        // Jika tingkat kemiripan (distance) di bawah threshold, sistem akan menolak registrasi 
+        // dan memberitahu bahwa wajah ini sudah terdaftar atas nama si A.
+        // =====================================================================================
         $threshold  = 0.55; // Relaxed threshold for robustness
 
         $visitors = Visitor::whereNotNull('face_features')->get();

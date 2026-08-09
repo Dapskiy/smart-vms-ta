@@ -57,6 +57,12 @@ Route::get('/admin/ai-chat/recommendations', [AdminChatController::class, 'recom
     ->middleware(['auth'])
     ->name('admin.ai.recommendations');
 
+// =====================================================================================
+// 🔴 [CHEAT SHEET SIDANG] - KIOSK ROUTING (PUBLIC API)
+// Rute-rute di bawah ini digunakan oleh layar Kiosk/Tablet di Lobi.
+// Semuanya bersifat publik (tanpa login admin), namun keamanannya 
+// dilindungi oleh KioskHelper (IP Whitelist / Subnetting).
+// =====================================================================================
 // Route untuk face check-in dari kiosk publik (no auth)
 Route::post('/kiosk/face-checkin', [FaceCheckinController::class, 'checkin'])
     ->name('kiosk.face.checkin');

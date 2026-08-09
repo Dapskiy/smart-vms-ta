@@ -587,6 +587,11 @@ class KioskWalkinForm extends Component
         $this->createAppointmentRecord($visitor);
     }
 
+    // =====================================================================================
+    // 🔴 [CHEAT SHEET SIDANG] - RATE LIMITING (ANTI SPAM)
+    // Mencegah pengunjung iseng submit form berkali-kali. 
+    // Dibatasi maksimal 3x percobaan dari 1 IP Address. Jika lebih, akan diblokir selama 1 jam (3600 detik).
+    // =====================================================================================
     private function checkRateLimit()
     {
         $ip = request()->ip();
@@ -626,8 +631,12 @@ class KioskWalkinForm extends Component
         $appointment->load(['visitor', 'pic.department']);
 
         if ($isWalkIn) {
-            // Walk-in: PIC sudah pasti hadir (sudah absen), jadi AUTO-ACC — langsung success!
-            // Kirim email NOTIFIKASI saja ke PIC (tanpa tombol Terima/Tolak)
+            // =====================================================================================
+            // 🔴 [CHEAT SHEET SIDANG] - LOGIKA AUTO-ACC (WALK-IN)
+            // Jika tamu datang langsung (Walk-in), mereka HANYA BISA memilih PIC yang sudah "Hadir" (Absen Wajah).
+            // Karena PIC dipastikan ada di tempat, maka sistem otomatis meng-Approve pendaftaran (status = active).
+            // PIC hanya akan menerima notifikasi email, tanpa perlu menekan tombol Approve lagi.
+            // =====================================================================================
             $picEmail = $appointment->pic?->email;
             if ($picEmail) {
                 Mail::to($picEmail)->send(new \App\Mail\PicWalkinNotificationMail($appointment));

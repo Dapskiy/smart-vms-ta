@@ -42,6 +42,12 @@ class Visitor extends Model
 
     // ══════════════════════════════════════════════════════════════
     //  CUSTOM ACCESSOR/MUTATOR — Backward Compatible Encryption
+    //
+    // 🔴 [CHEAT SHEET SIDANG] - ENKRIPSI DATA BIOMETRIK (AES-256)
+    // Fitur keamanan mutlak (Wajib PDPA / UU ITE): Data titik wajah (face_features) 
+    // dan foto wajah (face_photo) dienkripsi secara otomatis menggunakan algoritma 
+    // AES-256-CBC dari Laravel `Crypt` sebelum disimpan ke Database.
+    // Saat data ditarik, ia didekripsi otomatis secara transparan (on-the-fly).
     // ══════════════════════════════════════════════════════════════
 
     /**
