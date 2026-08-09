@@ -32,69 +32,70 @@
     }"
     x-on:keydown.arrow-right.window="next()"
     x-on:keydown.arrow-left.window="prev()"
-    class="flex flex-col items-center justify-center gap-2 p-1 select-none text-center max-w-full overflow-hidden"
+    style="display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 8px; padding: 4px 0; user-select: none; text-align: center; width: 100%; overflow: hidden;"
 >
     @if($hasAnyPhoto)
-        {{-- Photo Box with Integrated < [Foto] > Buttons --}}
-        <div class="relative flex items-center justify-center w-full my-1">
-            <div class="relative w-52 h-52 sm:w-60 sm:h-60 max-h-[38vh] rounded-2xl overflow-hidden bg-gray-900 border border-gray-700 shadow-2xl flex-shrink-0">
-                
-                {{-- Active Photo Image --}}
+        {{-- Side-by-Side Container: < [Foto 220x220] > --}}
+        <div style="display: flex; align-items: center; justify-content: center; gap: 12px; width: 100%; margin: 4px 0;">
+            
+            {{-- Tombol Kiri < --}}
+            <button
+                type="button"
+                x-on:click.stop="prev()"
+                style="width: 44px; height: 44px; border-radius: 50%; background-color: #4f46e5; color: #ffffff; font-size: 22px; font-weight: 900; display: flex; align-items: center; justify-content: center; border: 2px solid #818cf8; cursor: pointer; flex-shrink: 0; box-shadow: 0 4px 12px rgba(0,0,0,0.3); transition: transform 0.15s;"
+                title="Foto sebelumnya (<)"
+            >
+                &lt;
+            </button>
+
+            {{-- Image Box (Strictly Forced 220px x 220px) --}}
+            <div style="position: relative; width: 220px; height: 220px; border-radius: 16px; overflow: hidden; background-color: #0f172a; border: 2px solid #334155; flex-shrink: 0; box-shadow: 0 8px 20px rgba(0,0,0,0.35);">
                 <img
                     :src="slides[current].image"
                     :alt="slides[current].label"
-                    class="w-full h-full object-cover transition-opacity duration-200"
+                    style="width: 100%; height: 100%; object-fit: cover; display: block;"
                 />
 
-                {{-- Tombol Kanan-Kiri < > Di Atas Foto --}}
-                <button
-                    type="button"
-                    x-on:click.stop="prev()"
-                    class="absolute left-2.5 top-1/2 -translate-y-1/2 z-30 w-10 h-10 rounded-full bg-indigo-600/90 hover:bg-indigo-500 active:scale-95 text-white font-black text-2xl flex items-center justify-center transition-all duration-150 shadow-2xl border border-white/30 cursor-pointer pointer-events-auto"
-                    title="Foto sebelumnya (<)"
-                >
-                    &lt;
-                </button>
-
-                <button
-                    type="button"
-                    x-on:click.stop="next()"
-                    class="absolute right-2.5 top-1/2 -translate-y-1/2 z-30 w-10 h-10 rounded-full bg-indigo-600/90 hover:bg-indigo-500 active:scale-95 text-white font-black text-2xl flex items-center justify-center transition-all duration-150 shadow-2xl border border-white/30 cursor-pointer pointer-events-auto"
-                    title="Foto berikutnya (>)"
-                >
-                    &gt;
-                </button>
-
                 {{-- Position Label Badge --}}
-                <div class="absolute bottom-2.5 left-1/2 -translate-x-1/2 z-30 pointer-events-none">
-                    <span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-black/85 backdrop-blur-md text-white text-xs font-semibold shadow-xl border border-white/20">
-                        <span class="w-4 h-4 rounded-full bg-indigo-500 flex items-center justify-center text-[10px] font-bold" x-text="current + 1"></span>
+                <div style="position: absolute; bottom: 8px; left: 50%; transform: translateX(-50%); z-index: 20; white-space: nowrap; pointer-events: none;">
+                    <span style="display: inline-flex; align-items: center; gap: 6px; padding: 3px 10px; border-radius: 9999px; background: rgba(0,0,0,0.85); color: #ffffff; font-size: 11px; font-weight: 600; border: 1px solid rgba(255,255,255,0.2); box-shadow: 0 4px 10px rgba(0,0,0,0.4);">
+                        <span style="width: 16px; height: 16px; border-radius: 50%; background: #6366f1; display: inline-flex; align-items: center; justify-content: center; font-size: 9px; font-weight: 700; color: #fff;" x-text="current + 1"></span>
                         <span x-text="slides[current].label"></span>
                     </span>
                 </div>
             </div>
+
+            {{-- Tombol Kanan > --}}
+            <button
+                type="button"
+                x-on:click.stop="next()"
+                style="width: 44px; height: 44px; border-radius: 50%; background-color: #4f46e5; color: #ffffff; font-size: 22px; font-weight: 900; display: flex; align-items: center; justify-content: center; border: 2px solid #818cf8; cursor: pointer; flex-shrink: 0; box-shadow: 0 4px 12px rgba(0,0,0,0.3); transition: transform 0.15s;"
+                title="Foto berikutnya (>)"
+            >
+                &gt;
+            </button>
         </div>
 
         {{-- Dot Indicators --}}
-        <div class="flex items-center gap-2 mt-1">
+        <div style="display: flex; align-items: center; gap: 6px; margin-top: 2px;">
             <template x-for="(slide, index) in slides" :key="index">
                 <button
                     type="button"
                     x-on:click.stop="go(index)"
-                    :class="current === index ? 'w-6 bg-indigo-500' : 'w-2.5 bg-gray-600 hover:bg-gray-400'"
-                    class="h-2 rounded-full transition-all duration-300 cursor-pointer"
+                    :style="current === index ? 'width: 24px; background-color: #6366f1;' : 'width: 8px; background-color: #475569;'"
+                    style="height: 7px; border-radius: 9999px; border: none; cursor: pointer; transition: all 0.3s;"
                     :title="slide.label"
                 ></button>
             </template>
         </div>
 
         {{-- Footer Info --}}
-        <div class="text-[11px] text-gray-400 mt-0.5">
-            <span class="text-emerald-400 font-semibold">🔒 Terenkripsi AES-256</span>
-            <span class="ml-1">&middot; Klik <b class="text-indigo-400">&lt;</b> atau <b class="text-indigo-400">&gt;</b> untuk ganti foto</span>
+        <div style="font-size: 11px; color: #94a3b8; margin-top: 2px;">
+            <span style="color: #34d399; font-weight: 600;">🔒 Terenkripsi AES-256</span>
+            <span style="margin-left: 4px;">&middot; Klik <b style="color: #818cf8;">&lt;</b> atau <b style="color: #818cf8;">&gt;</b> untuk ganti foto</span>
         </div>
     @else
-        <div class="py-6 text-center text-gray-400 text-sm">
+        <div style="padding: 24px 0; text-align: center; color: #94a3b8; font-size: 13px;">
             <p>Foto wajah belum tersedia untuk pengunjung ini.</p>
         </div>
     @endif
