@@ -101,9 +101,10 @@ class AppointmentInfolist
                         TextEntry::make('pax')
                             ->label('Total Orang'),
 
-                        TextEntry::make('vehicle_number')
-                            ->label('Plat Nomor')
-                            ->placeholder('Tidak ada'),
+                        // --- SEMENTARA DIKIMENTARI: Plat Nomor Kendaraan tidak dibutuhkan saat ini ---
+                        // TextEntry::make('vehicle_number')
+                        //     ->label('Plat Nomor')
+                        //     ->placeholder('Tidak ada'),
 
                         TextEntry::make('token')
                             ->label('Token Undangan')

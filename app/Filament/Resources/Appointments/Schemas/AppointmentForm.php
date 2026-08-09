@@ -280,34 +280,35 @@ class AppointmentForm
                         </style>
                     ')),
 
-                // 13. Label Plat Nomor
-                Placeholder::make('plat_nomor_label')
-                    ->hiddenLabel()
-                    ->content(new HtmlString('<h3 class="text-base font-semibold">Plat Nomor Kendaraan</h3>'))
-                    ->columnSpanFull(),
+                // --- SEMENTARA DIKIMENTARI: Plat Nomor Kendaraan tidak dibutuhkan saat ini ---
+                // // 13. Label Plat Nomor
+                // Placeholder::make('plat_nomor_label')
+                //     ->hiddenLabel()
+                //     ->content(new HtmlString('<h3 class="text-base font-semibold">Plat Nomor Kendaraan</h3>'))
+                //     ->columnSpanFull(),
 
-                // 14. Input Plat Nomor
-                Group::make([
-                    TextInput::make('v_prefix')
-                        ->placeholder('H')
-                        ->maxLength(2)
-                        ->extraAttributes(['class' => 'nopol-prefix']),
-                    TextInput::make('v_number')
-                        ->placeholder('1234')
-                        ->maxLength(4)
-                        ->extraAttributes(['class' => 'nopol-number']),
-                    TextInput::make('v_suffix')
-                        ->placeholder('AB')
-                        ->maxLength(3)
-                        ->extraAttributes(['class' => 'nopol-suffix']),
-                ])
-                    ->columns(3)
-                    ->columnSpanFull(),
+                // // 14. Input Plat Nomor
+                // Group::make([
+                //     TextInput::make('v_prefix')
+                //         ->placeholder('H')
+                //         ->maxLength(2)
+                //         ->extraAttributes(['class' => 'nopol-prefix']),
+                //     TextInput::make('v_number')
+                //         ->placeholder('1234')
+                //         ->maxLength(4)
+                //         ->extraAttributes(['class' => 'nopol-number']),
+                //     TextInput::make('v_suffix')
+                //         ->placeholder('AB')
+                //         ->maxLength(3)
+                //         ->extraAttributes(['class' => 'nopol-suffix']),
+                // ])
+                //     ->columns(3)
+                //     ->columnSpanFull(),
 
-                // --- Hidden Fields ---
-                Hidden::make('vehicle_number')
-                    ->dehydrated(true)
-                    ->dehydrateStateUsing(fn($get) => strtoupper(trim("{$get('v_prefix')} {$get('v_number')} {$get('v_suffix')}"))),
+                // // --- Hidden Fields ---
+                // Hidden::make('vehicle_number')
+                //     ->dehydrated(true)
+                //     ->dehydrateStateUsing(fn($get) => strtoupper(trim("{$get('v_prefix')} {$get('v_number')} {$get('v_suffix')}"))),
 
                 Hidden::make('type')
                     ->default(function () {
