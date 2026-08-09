@@ -647,6 +647,12 @@ class KioskWalkinForm extends Component
             ];
             $this->dispatch('walkin-success', appt: $appointmentData);
         } else {
+            // Kirim email approval ke PIC
+            $picEmail = $appointment->pic?->email;
+            if ($picEmail) {
+                Mail::to($picEmail)->send(new \App\Mail\PicApprovalMail($appointment));
+            }
+
             // Appointment biasa — langsung tampilkan konfirmasi
             $appointmentData = [
                 'visitorName' => $this->name,
