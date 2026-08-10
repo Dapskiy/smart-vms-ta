@@ -68,9 +68,12 @@ class InteractiveChatbot extends Component
     private function getSystemPrompt(): string
     {
         // ── Base Instruction ──────────────────────────────────────────────────
-        $todayDate = now()->locale('id')->translatedFormat('l, d F Y');
-        $currentTime = now()->format('H:i');
-        $hour = now()->setTimezone('Asia/Jakarta')->format('H');
+        $now = now()->setTimezone('Asia/Jakarta');
+        $todayDateId = $now->copy()->locale('id')->translatedFormat('l, d F Y');
+        $todayDateIso = $now->copy()->format('Y-m-d');
+        $tomorrowDateIso = $now->copy()->addDay()->format('Y-m-d');
+        $currentTime = $now->copy()->format('H:i');
+        $hour = $now->copy()->format('H');
         
         if ($this->lang === 'en') {
             $timeGreeting = 'Good Morning';
@@ -109,7 +112,8 @@ class InteractiveChatbot extends Component
             $prompt .= "{$companyDesc}\n\n";
         }
         $prompt .= "## WAKTU SAAT INI (PENTING)\n";
-        $prompt .= "- Hari & Tanggal: {$todayDate}\n";
+        $prompt .= "- Hari & Tanggal Ini: {$todayDateId} (Format ISO: {$todayDateIso})\n";
+        $prompt .= "- Tanggal Besok: {$tomorrowDateIso}\n";
         $prompt .= "- Jam Sekarang: {$currentTime}\n";
         $prompt .= "Gunakan info waktu di atas untuk menafsirkan kata relatif seperti 'besok', 'lusa', atau 'senin depan' menjadi format YYYY-MM-DD yang presisi.\n\n";
         $prompt .= "Tugas utama kamu adalah menyambut pengunjung, memandu alur kunjungan (Walk-In, Janji Temu, Absensi Karyawan), serta membantu pengunjung mengetahui ketersediaan karyawan (PIC) yang ingin mereka temui hari ini — semua tanpa perlu bantuan resepsionis fisik.\n\n";
@@ -219,14 +223,15 @@ class InteractiveChatbot extends Component
 
         $prompt .= "4. **PENANGANAN TANGGAL & WAKTU (WALK-IN vs APPOINTMENT)**:\n";
         $prompt .= "   - Jika pengunjung memilih **HARI INI / SEKARANG (Walk-in)**, kamu **DILARANG** menanyakan jam kunjungan.\n";
-        $prompt .= "   - Anggap Tanggal = {$todayDate} dan Waktu = {$currentTime} (otomatis terisi).\n";
-        $prompt .= "   - Jika pengunjung memilih **BESOK, LUSA, ATAU HARI LAIN (Appointment)**, kamu **WAJIB** menanyakan **Jam/Waktu Kunjungan** karena jam tidak bisa menggunakan waktu saat ini.\n\n";
+        $prompt .= "   - Anggap Tanggal = {$todayDateIso} dan Waktu = {$currentTime} (otomatis terisi).\n";
+        $prompt .= "   - Jika pengunjung memilih **BESOK, LUSA, ATAU HARI LAIN (Appointment)**, kamu **WAJIB** menanyakan **Jam/Waktu Kunjungan** karena jam tidak bisa menggunakan waktu saat ini.\n";
+        $prompt .= "   - Jika pengunjung meminta dijadwalkan **BESOK**, gunakan tanggal {$tomorrowDateIso} sebagai visit_date.\n\n";
 
         $prompt .= "5. **BULK DATA COLLECTION (SANGAT WAJIB - JANGAN BERTANYA SATU-SATU)**:\n";
         $prompt .= "   - **DILARANG KERAS** menanyakan kelengkapan data secara dicicil atau satu per satu.\n";
         $prompt .= "   - Tanyakan SEMUA slot data yang MASIH KOSONG dari 7 slot berikut dalam satu pesan:\n";
         $prompt .= "     [1. Nama Lengkap] [2. Nama Perusahaan/Instansi] [3. No Telepon/WA] [4. Nama PIC (Harus Lengkap)] [5. Tanggal Kunjungan] [6. Jam Kunjungan] [7. Keperluan/Tujuan]\n";
-        $prompt .= "   - *Ingat: Untuk Walk-In (hari ini), slot Tanggal dan Jam otomatis terisi dengan {$todayDate} dan {$currentTime}, JANGAN ditanyakan lagi.*\n";
+        $prompt .= "   - *Ingat: Untuk Walk-In (hari ini), slot Tanggal dan Jam otomatis terisi dengan {$todayDateIso} dan {$currentTime}, JANGAN ditanyakan lagi.*\n";
         $prompt .= "   - Jika pengunjung adalah **TAMU LAMA (Returning Visitor)** yang datanya sudah ditemukan, **DILARANG KERAS** meminta data tersebut lagi!\n";
         $prompt .= "   - **ATURAN TAMPILAN PENTING**: Selama proses pengumpulan data (belum komplit), kamu **DILARANG KERAS menampilkan/me-listing daftar data yang sudah terkumpul**. Cukup ajukan pertanyaan untuk data yang kurang secara natural tanpa menuliskan list angka. List data hanya boleh muncul saat FINAL CONFIRMATION.\n\n";
 
@@ -234,7 +239,7 @@ class InteractiveChatbot extends Component
         $prompt .= "   - HANYA JIKA SELURUH 7 slot sudah terisi lengkap, tampilkan ringkasan data secara rapi dan SEJAJAR rata kiri.\n";
         $prompt .= "   - **FORMAT ALIGNMENT (SANGAT KRITIS)**:\n";
         $prompt .= "     - DILARANG memberikan spasi/indentasi di awal baris pada teks judul maupun pertanyaan penutup.\n";
-        $prompt .= "     - Untuk Walk-in, pastikan Tanggal tertulis {$todayDate} dan Waktu tertulis {$currentTime} berupa angka pasti, JANGAN menggunakan kata 'Sekarang' atau 'Hari Ini'.\n";
+        $prompt .= "     - Untuk Walk-in, pastikan Tanggal tertulis {$todayDateId} dan Waktu tertulis {$currentTime} berupa angka pasti, JANGAN menggunakan kata 'Sekarang' atau 'Hari Ini'.\n";
         $prompt .= "     - Gunakan format list standar berikut:\n";
         $prompt .= "```\n";
         $prompt .= "Data Diri Kunjungan:\n";
@@ -242,7 +247,7 @@ class InteractiveChatbot extends Component
         $prompt .= "• Perusahaan: PT ABC\n";
         $prompt .= "• Telepon: 08123456789\n";
         $prompt .= "• Menemui: Daffa Faris Ramadhan\n";
-        $prompt .= "• Tanggal: {$todayDate}\n";
+        $prompt .= "• Tanggal: {$todayDateId} (atau YYYY-MM-DD)\n";
         $prompt .= "• Waktu: {$currentTime}\n";
         $prompt .= "• Keperluan: Meeting Proyek\n\n";
         $prompt .= "Apakah data di atas sudah benar?\n";
@@ -268,7 +273,8 @@ class InteractiveChatbot extends Component
         $prompt .= "- JANGAN sertakan <!--REGISTER:...--> sampai pengunjung mengonfirmasi data sudah benar\n";
         $prompt .= "- pic_name harus PERSIS sama dengan **NAMA LENGKAP** di data PIC di bawah\n";
         $prompt .= "- type harus \"appointment\" untuk jadwal hari lain, \"walk-in\" untuk hari ini\n";
-        $prompt .= "- Untuk \"walk-in\", isi visit_date dengan tanggal hari ini (YYYY-MM-DD) dan visit_time dengan {$currentTime}.\n";
+        $prompt .= "- Untuk \"walk-in\", type=\"walk-in\", visit_date=\"{$todayDateIso}\", dan visit_time=\"{$currentTime}\".\n";
+        $prompt .= "- Untuk \"appointment\", type=\"appointment\", visit_date diisi sesuai tanggal yang diminta (misal {$tomorrowDateIso} untuk besok), dan visit_time diisi sesuai jam yang diminta.\n";
         $prompt .= "- pax wajib selalu diisi dengan angka 1\n\n";
 
         // ── Konteks Data PIC Real-Time dari Database (Hanya jika Onsite) ────────
