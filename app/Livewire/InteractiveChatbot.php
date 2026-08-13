@@ -793,7 +793,8 @@ class InteractiveChatbot extends Component
             if (!is_array($picStored)) continue;
             if (isset($picStored[0]) && !is_array($picStored[0])) $picStored = [$picStored];
             foreach ($picStored as $picDesc) {
-                if ($this->euclideanDistance($picDesc, $descriptor) <= 0.45) {
+                $dist = $this->euclideanDistance($picDesc, $descriptor);
+                if ($dist <= 0.55) {
                     if ($visitor->wasRecentlyCreated) {
                         $visitor->delete();
                     }
@@ -805,29 +806,23 @@ class InteractiveChatbot extends Component
             }
         }
 
-        // Global face duplicate check (Auto-Merge)
+        // Global face duplicate check: Mencegah pendaftaran jika wajah sudah terdaftar atas nama visitor lain
         $allOthers = Visitor::whereNotNull('face_features')->where('id', '!=', $visitor->id)->get();
-        $merged = false;
         foreach ($allOthers as $other) {
             $otherStored = $other->face_features ?? [];
             if (!is_array($otherStored)) continue;
             if (isset($otherStored[0]) && !is_array($otherStored[0])) $otherStored = [$otherStored];
             foreach ($otherStored as $otherDesc) {
-                if ($this->euclideanDistance($otherDesc, $descriptor) <= 0.45) {
-                    // Wajah ini sudah ada di visitor lain ($other)!
-                    // Pengunjung mungkin mengganti nomor HP-nya saat ngobrol dengan AI.
-                    // Alih-alih error, kita gabungkan (merge) ke profil lama.
+                $dist = $this->euclideanDistance($otherDesc, $descriptor);
+                if ($dist <= 0.55) {
                     if ($visitor->wasRecentlyCreated) {
                         $visitor->delete();
                     }
-                    $visitor = $other;
-                    $visitor->update([
-                        'name'    => $this->regData['name'],
-                        'company' => $this->regData['company'],
-                        'phone'   => $this->regData['phone'],
-                    ]);
-                    $merged = true;
-                    break 2; // Keluar dari kedua loop
+                    $companyInfo = $other->company ? " dari {$other->company}" : "";
+                    $this->messages[] = ['role' => 'assistant', 'content' => "⚠️ Pendaftaran Gagal: Wajah Anda sudah terdaftar atas nama '{$other->name}'{$companyInfo}. Silakan hubungi Resepsionis jika membutuhkan bantuan."];
+                    $this->dispatch('chatbot-scrolled');
+                    $this->dispatch('chatbot-face-error');
+                    return;
                 }
             }
         }

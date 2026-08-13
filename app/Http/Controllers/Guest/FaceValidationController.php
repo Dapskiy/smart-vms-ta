@@ -34,6 +34,40 @@ class FaceValidationController extends Controller
         // =====================================================================================
         $threshold  = 0.55; // Relaxed threshold for robustness
 
+        // 1. Cek terhadap Wajah PIC/Karyawan
+        $pics = \App\Models\Pic::whereNotNull('face_features')->get();
+        foreach ($pics as $pic) {
+            $picStored = $pic->face_features ?? [];
+            if (!is_array($picStored)) continue;
+            if (isset($picStored[0]) && !is_array($picStored[0])) $picStored = [$picStored];
+
+            foreach ($picStored as $descriptor) {
+                if (!is_array($descriptor) || count($descriptor) !== count($incoming)) continue;
+
+                $distance = $this->euclideanDistance($incoming, $descriptor);
+                if ($distance <= $threshold) {
+                    \App\Models\FaceVerificationLog::create([
+                        'visitor_id' => null,
+                        'visitor_name' => $pic->name,
+                        'type' => 'pic-duplicate-check',
+                        'euclidean_distance' => $distance,
+                        'threshold' => $threshold,
+                        'is_success' => false,
+                        'error_message' => "Wajah terdeteksi sebagai Karyawan/PIC ({$pic->name}).",
+                        'ip_address' => $request->ip(),
+                    ]);
+
+                    return response()->json([
+                        'is_duplicate' => true,
+                        'distance'     => round($distance, 4),
+                        'matched_name' => $pic->name,
+                        'message'      => "Akses Ditolak: Wajah Anda terdeteksi sebagai Karyawan/PIC ({$pic->name}). Silakan gunakan menu Absensi PIC.",
+                    ]);
+                }
+            }
+        }
+
+        // 2. Cek terhadap Wajah Visitor Lain
         $visitors = Visitor::whereNotNull('face_features')->get();
 
         $bestMatch    = null;

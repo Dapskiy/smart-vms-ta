@@ -449,29 +449,39 @@ class KioskWalkinForm extends Component
             return;
         }
 
-        // PIC Check: Prevent PICs from registering as visitors
+        // 1. PIC Check: Mencegah PIC/Karyawan mendaftar sebagai visitor
         $allPics = \App\Models\Pic::whereNotNull('face_features')->get();
         foreach ($allPics as $pic) {
             $picStored = $pic->face_features ?? [];
             if (!is_array($picStored)) continue;
             if (isset($picStored[0]) && !is_array($picStored[0])) $picStored = [$picStored];
             foreach ($picStored as $picDesc) {
-                if ($this->euclideanDistance($picDesc, $descriptor) <= 0.45) {
+                $dist = $this->euclideanDistance($picDesc, $descriptor);
+                if ($dist <= 0.55) {
                     if ($visitor->wasRecentlyCreated) {
                         $visitor->delete();
                     }
-                    $this->addError('general', "Akses Ditolak: Wajah Anda terdeteksi sebagai Karyawan/PIC ({$pic->name}). Silakan gunakan menu Absensi.");
+                    \App\Models\FaceVerificationLog::create([
+                        'visitor_id' => null,
+                        'visitor_name' => $pic->name,
+                        'type' => 'pic-registration-blocked',
+                        'euclidean_distance' => $dist,
+                        'threshold' => 0.55,
+                        'is_success' => false,
+                        'error_message' => "Wajah terdeteksi sebagai Karyawan/PIC ({$pic->name}).",
+                        'ip_address' => request()->ip(),
+                    ]);
+                    $this->addError('general', "Akses Ditolak: Wajah Anda terdeteksi sebagai Karyawan/PIC ({$pic->name}). Silakan gunakan menu Absensi PIC.");
                     $this->dispatch('walkin-error');
                     return;
                 }
             }
         }
 
-        // 2. Global Face Duplicate Check (Auto-Merge / Seamless Returning Visitor)
-        // Jika pengunjung baru mendaftar dengan wajah yang sudah ada (tapi mungkin salah masuk nomor HP)
+        // 2. Global Face Duplicate Check: Mencegah pendaftaran jika wajah sudah terdaftar atas nama visitor lain
         if (!$this->duplicateOverride) {
             $allOtherVisitors = Visitor::whereNotNull('face_features')->where('id', '!=', $visitor->id)->get();
-            $globalThreshold = 0.55; // Relaxed threshold for robustness
+            $globalThreshold = 0.55;
 
             foreach ($allOtherVisitors as $otherVisitor) {
                 $otherStored = $otherVisitor->face_features ?? [];
@@ -479,21 +489,28 @@ class KioskWalkinForm extends Component
                 if (isset($otherStored[0]) && !is_array($otherStored[0])) $otherStored = [$otherStored];
 
                 foreach ($otherStored as $otherDescriptor) {
-                    if ($this->euclideanDistance($otherDescriptor, $descriptor) <= $globalThreshold) {
-                        // Wajah dikenali sebagai visitor lama!
-                        // Daripada menampilkan pesan error "Wajah sudah terdaftar",
-                        // kita otomatis hubungkan (merge) ke profil lamanya agar lebih cerdas.
+                    $dist = $this->euclideanDistance($otherDescriptor, $descriptor);
+                    if ($dist <= $globalThreshold) {
+                        // Hapus record temporary visitor jika baru dibuat agar tidak meninggalkan draf kosong
                         if ($visitor->wasRecentlyCreated) {
                             $visitor->delete();
                         }
-                        $visitor = $otherVisitor;
-                        // Perbarui data jika pengunjung mengetik data baru di form
-                        $visitor->update([
-                            'name' => $this->name ?: $visitor->name,
-                            'company' => $this->company ?: $visitor->company,
-                            'phone' => $this->phone ?: $visitor->phone,
+
+                        \App\Models\FaceVerificationLog::create([
+                            'visitor_id' => $otherVisitor->id,
+                            'visitor_name' => $otherVisitor->name,
+                            'type' => 'duplicate-registration-blocked',
+                            'euclidean_distance' => $dist,
+                            'threshold' => $globalThreshold,
+                            'is_success' => false,
+                            'error_message' => "Wajah sudah terdaftar atas nama {$otherVisitor->name}.",
+                            'ip_address' => request()->ip(),
                         ]);
-                        break 2; // Keluar dari kedua loop dan lanjut ke pembuatan janji
+
+                        $companyInfo = $otherVisitor->company ? " dari {$otherVisitor->company}" : "";
+                        $this->addError('general', "Pendaftaran Gagal: Wajah Anda sudah terdaftar atas nama '{$otherVisitor->name}'{$companyInfo}. Silakan gunakan menu 'Sudah Pernah Berkunjung' atau hubungi Resepsionis.");
+                        $this->dispatch('walkin-error');
+                        return;
                     }
                 }
             }
