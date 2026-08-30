@@ -28,11 +28,6 @@ class Pic extends Model
         'face_features' => 'array',
     ];
 
-    // =====================================================================================
-    // 🔴 [CHEAT SHEET SIDANG] - ENKRIPSI DATA BIOMETRIK (AES-256)
-    // Sama seperti Visitor, data biometrik PIC juga dienkripsi 
-    // menggunakan algoritma AES-256-CBC secara transparan (on-the-fly) via Mutator.
-    // =====================================================================================
 
     protected function facePhoto(): Attribute
     {

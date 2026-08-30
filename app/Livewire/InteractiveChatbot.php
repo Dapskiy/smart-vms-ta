@@ -339,13 +339,7 @@ class InteractiveChatbot extends Component
     }
 
     /**
-     * =====================================================================================
-     * 🔴 [CHEAT SHEET SIDANG] - PENCEGAHAN KEBOCORAN DATA (SANITIZATION)
-     * Ini adalah Jaring Pengaman (Layer 3) untuk AI. Jika AI 'halu' dan mencoba menyebutkan 
-     * seluruh daftar nama PIC yang ada di prompt, fungsi ini akan mencegatnya.
-     * Jika terdeteksi ≥ 3 nama PIC bocor (yang tidak ditanyakan user), respons AI akan diganti
-     * dengan pesan peringatan keamanan.
-     * =====================================================================================
+     * Sanitization to prevent AI from leaking the full list of PICs.
      */
     private function sanitizePicLeakage(string $reply): string
     {

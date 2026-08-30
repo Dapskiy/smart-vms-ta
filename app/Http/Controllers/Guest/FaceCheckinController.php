@@ -30,11 +30,7 @@ class FaceCheckinController extends Controller
         $bestMatch     = null;
         $bestDistance  = PHP_FLOAT_MAX;
 
-        // =====================================================================================
-        // 🔴 [CHEAT SHEET SIDANG] - THRESHOLD (BATAS TOLERANSI KEMIRIPAN WAJAH)
-        // Nilai 0.55 adalah batas toleransi. Jika jarak (distance) di bawah 0.55, maka dianggap "Cocok/Dikenali".
-        // Jika di atas 0.55, maka dianggap "Wajah Tidak Dikenali".
-        // =====================================================================================
+
         $threshold     = 0.55; // Euclidean distance threshold
 
         foreach ($visitors as $visitor) {
@@ -51,12 +47,7 @@ class FaceCheckinController extends Controller
                     continue;
                 }
 
-                // =====================================================================================
-                // 🔴 [CHEAT SHEET SIDANG] - ALGORITMA BIOMETRIK (EUCLIDEAN DISTANCE)
-                // Di sinilah proses pencocokan wajah terjadi. 
-                // Kita menghitung jarak/perbedaan antara matriks wajah dari kamera dengan matriks di database.
-                // Semakin kecil nilai $distance, semakin mirip wajahnya.
-                // =====================================================================================
+
                 $distance = $this->euclideanDistance($incomingDescriptor, $descriptor);
 
                 if ($distance < $bestDistance) {
@@ -107,12 +98,7 @@ class FaceCheckinController extends Controller
 
                 $saveData = [];
 
-                // =====================================================================================
-                // 🔴 [CHEAT SHEET SIDANG] - AKUMULASI FOTO WAJAH (MACHINE LEARNING ENHANCEMENT)
-                // Setiap kali tamu berhasil check-in, foto wajah terbarunya akan disimpan (akumulasi).
-                // Kita membatasi maksimal 10 sampel foto per tamu (count < 10) agar database tidak bengkak.
-                // Tujuannya agar sistem semakin pintar mengenali wajah tamu dari berbagai sudut/pencahayaan.
-                // =====================================================================================
+
                 $incomingPhotos = $request->input('face_photo');
                 if (is_array($incomingPhotos)) {
                     foreach ($incomingPhotos as $p) {

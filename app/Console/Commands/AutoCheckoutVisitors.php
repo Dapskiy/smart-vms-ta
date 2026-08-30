@@ -19,12 +19,7 @@ class AutoCheckoutVisitors extends Command
     {
         $isDryRun = $this->option('dry-run');
 
-        // =====================================================================================
-        // 🔴 [CHEAT SHEET SIDANG] - LOGIKA AUTO-CHECKOUT (CRON JOB)
-        // Command ini dijalankan otomatis oleh server setiap hari pukul 23:59.
-        // Jika ada Tamu (atau PIC) yang lupa absen pulang, sistem akan otomatis
-        // menganggap kunjungan/kehadiran telah selesai dan mengubah statusnya.
-        // =====================================================================================
+
         $this->info('[AUTO-CHECKOUT] Memulai proses auto-checkout...');
         $this->info('[AUTO-CHECKOUT] Mode: ' . ($isDryRun ? 'DRY-RUN (tidak ada perubahan)' : 'LIVE'));
 

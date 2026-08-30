@@ -28,12 +28,7 @@ class KioskHelper
     }
 
     /**
-     * =====================================================================================
-     * 🔴 [CHEAT SHEET SIDANG] - KIOSK SECURITY (IP WHITELIST & SUBNETTING)
-     * Kiosk berjalan di endpoint publik. Untuk mencegah orang luar/hacker 
-     * mengakses menu Check-in/Check-out dari rumah mereka, kita menggunakan IP Whitelist.
-     * Hanya IP lokal kantor (misal 192.168.1.0/24) yang diizinkan mengakses fitur ini.
-     * =====================================================================================
+     * Check if the current request is from an authorized Kiosk IP or subnet.
      */
     public static function isKioskLocal(): bool
     {
